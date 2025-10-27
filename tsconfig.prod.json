@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "removeComments": true,
+    "sourceMap": false,
+    "declaration": false,
+    "declarationMap": false,
+    "incremental": false,
+    "tsBuildInfoFile": null,
+    "noEmitOnError": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/_*",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/*.e2e-spec.ts",
+    "test/**/*"
+  ]
+} 
