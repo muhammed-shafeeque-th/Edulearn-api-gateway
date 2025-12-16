@@ -2,9 +2,13 @@ import path from 'path';
 import { GrpcClient } from '@/shared/utils/grpc/client';
 import { GrpcClientOptions } from '@/shared/utils/grpc/types';
 import {
+  ClearUserNotificationsRequest,
+  ClearUserNotificationsResponse,
+  DeleteNotificationRequest,
+  DeleteNotificationResponse,
   ForgotPasswordRequest,
-  GetAllNotificationsRequest,
-  GetAllNotificationsResponse,
+  GetNotificationsRequest,
+  GetNotificationsResponse,
   GetNotificationRequest,
   GetNotificationResponse,
   MarkAllNotificationsRequest,
@@ -26,7 +30,12 @@ export class NotificationService {
       config.grpc.services.notificationService.split(':');
 
     this.client = new GrpcClient({
-      protoPath: path.join(__dirname, 'proto', 'notification.proto'),
+      protoPath: path.join(
+        process.cwd(),
+        'proto',
+        'notification',
+        'notification.proto'
+      ),
       packageName: 'notification',
       serviceName: 'NotificationService',
       host,
@@ -59,15 +68,15 @@ export class NotificationService {
   }
 
   async getAllNotifications(
-    request: GetAllNotificationsRequest,
+    request: GetNotificationsRequest,
     options: GrpcClientOptions = {}
-  ): Promise<GetAllNotificationsResponse> {
+  ): Promise<GetNotificationsResponse> {
     const response = await this.client.unaryCall(
-      'getAllNotifications',
+      'getNotifications',
       request,
       options
     );
-    return response as GetAllNotificationsResponse;
+    return response as GetNotificationsResponse;
   }
 
   async forgotPassword(
@@ -82,16 +91,38 @@ export class NotificationService {
     return response as ForgotPasswordResponse;
   }
 
-  async getANotification(
+  async getNotification(
     request: GetNotificationRequest,
     options: GrpcClientOptions = {}
   ): Promise<GetNotificationResponse> {
     const response = await this.client.unaryCall(
-      'getANotification',
+      'getNotification',
       request,
       options
     );
     return response as GetNotificationResponse;
+  }
+  async deleteNotification(
+    request: DeleteNotificationRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<DeleteNotificationResponse> {
+    const response = await this.client.unaryCall(
+      'deleteNotification',
+      request,
+      options
+    );
+    return response as DeleteNotificationResponse;
+  }
+  async clearUserNotifications(
+    request: ClearUserNotificationsRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<ClearUserNotificationsResponse> {
+    const response = await this.client.unaryCall(
+      'clearUserNotifications',
+      request,
+      options
+    );
+    return response as ClearUserNotificationsResponse;
   }
 
   async markAllAsRead(
