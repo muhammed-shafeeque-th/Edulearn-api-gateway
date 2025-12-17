@@ -19,22 +19,21 @@ router.post(
 );
 router.get(
   '/:provider/status/:id',
-  authenticate,
+  authenticate
   // asyncHandler(payment.getOrdersByUser.bind(payment))
 );
 
-router.post(
-  '/razorpay/verify',
+router.patch(
+  '/:provider/verify',
   authenticate,
-  asyncHandler(payment.verifyRazorPayPayment.bind(payment))
+  asyncHandler(payment.verifyPayment.bind(payment))
+);
+router.patch(
+  '/:provider/cancel',
+  authenticate,
+  asyncHandler(payment.cancelPayment.bind(payment))
 );
 
-
-router.post(
-  '/paypal/capture',
-  asyncHandler(payment.capturePaypalPayment.bind(payment))
-);
-
-
+router.get('/:paymentId', asyncHandler(payment.getPayment.bind(payment)));
 
 export { router as paymentRoutesV1 };
