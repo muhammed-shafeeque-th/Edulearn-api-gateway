@@ -20,7 +20,8 @@
       "@/utils/*": ["./utils/*"],
       "@/middlewares/*": ["./middlewares/*"],
       "@/services/*": ["./services/*"],
-      "@/routes/*": ["./routes/*"]
+      "@/routes/*": ["./routes/*"],
+      "@/domains/*": ["./domains/*"]
     },
     "typeRoots": ["node_modules/@types", "./src/shared/types"],
     "declaration": true,
@@ -30,17 +31,16 @@
     "noImplicitAny": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
+    "noUncheckedIndexedAccess": true
     // "exactOptionalPropertyTypes": true
   },
-  "include": [
-    "src/**/*"
-  ],
+  "include": ["src/**/*"],
   "exclude": [
     "node_modules",
     "dist",
     "**/*.test.ts",
-    "**/*.spec.ts"
+    "**/*.spec.ts",
+    "**/_*/**",
+    "**/_*"
   ]
 }
-  
