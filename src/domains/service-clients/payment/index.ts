@@ -1,15 +1,15 @@
 import path from 'path';
 import {
-  CapturePaymentRequest,
-  CapturePaymentResponse,
+  CancelPaymentRequest,
+  CancelPaymentResponse,
   CreatePaymentRequest,
   CreatePaymentResponse,
+  GetPaymentRequest,
+  GetPaymentResponse,
   PaymentServiceClient,
-  ProcessRefundRequest,
-  ProcessRefundResponse,
-  RazorpayVerifyPaymentRequest,
-  RazorpayVerifyResponse,
-} from './proto/generated/payment-service';
+  VerifyPaymentRequest,
+  VerifyPaymentResponse,
+} from './proto/generated/payment_service';
 import { config } from 'config';
 import { GrpcClient } from '@/shared/utils/grpc/client';
 import { GrpcClientOptions } from '@/shared/utils/grpc/types';
@@ -23,7 +23,12 @@ export class PaymentService {
       config.grpc.services.paymentService.split(':');
 
     this.client = new GrpcClient({
-      protoPath: path.join(__dirname, 'proto', 'payment_service.proto'),
+      protoPath: path.join(
+        process.cwd(),
+        'proto',
+        'payment',
+        'payment_service.proto'
+      ),
       packageName: 'payment_service',
       serviceName: 'PaymentService',
       host,
@@ -49,41 +54,52 @@ export class PaymentService {
     return response as CreatePaymentResponse;
   }
 
-  async payPalPaymentCapture(
-    request: CapturePaymentRequest,
+  async verifyPayment(
+    request: VerifyPaymentRequest,
     options: GrpcClientOptions = {}
-  ): Promise<CapturePaymentResponse> {
+  ): Promise<VerifyPaymentResponse> {
     const response = await this.client.unaryCall(
-      'payPalPaymentCapture',
+      'verifyPayment',
       request,
       options
     );
-    return response as CapturePaymentResponse;
+    return response as VerifyPaymentResponse;
   }
 
-  async razorpayVerifyPayment(
-    request: RazorpayVerifyPaymentRequest,
+  async cancelPayment(
+    request: CancelPaymentRequest,
     options: GrpcClientOptions = {}
-  ): Promise<RazorpayVerifyResponse> {
+  ): Promise<CancelPaymentResponse> {
     const response = await this.client.unaryCall(
-      'razorpayVerifyPayment',
+      'cancelPayment',
       request,
       options
     );
-    return response as RazorpayVerifyResponse;
+    return response as CancelPaymentResponse;
+  }
+  async getPayment(
+    request: GetPaymentRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<GetPaymentResponse> {
+    const response = await this.client.unaryCall(
+      'getPayment',
+      request,
+      options
+    );
+    return response as GetPaymentResponse;
   }
 
-  async processRefund(
-    request: ProcessRefundRequest,
-    options: GrpcClientOptions = {}
-  ): Promise<ProcessRefundResponse> {
-    const response = await this.client.unaryCall(
-      'processRefund',
-      request,
-      options
-    );
-    return response as ProcessRefundResponse;
-  }
+  // async processRefund(
+  //   request: ProcessRefundRequest,
+  //   options: GrpcClientOptions = {}
+  // ): Promise<ProcessRefundResponse> {
+  //   const response = await this.client.unaryCall(
+  //     'processRefund',
+  //     request,
+  //     options
+  //   );
+  //   return response as ProcessRefundResponse;
+  // }
 
   // Singleton pattern
   public static getInstance(): PaymentService {
