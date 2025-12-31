@@ -3,8 +3,8 @@ import { CreateConversationRequest } from '@/domains/service-clients/chat/proto/
 
 export const createConversationSchema: ZodType<CreateConversationRequest> =
   z.object({
-    userId: z.string(),
-    otherUserId: z.string(),
+    userId: z.string().uuid(),
+    otherUserId: z.string().uuid(),
     role: z.string(),
     /** Optional for future: explicit type. */
     type: z.string(),
