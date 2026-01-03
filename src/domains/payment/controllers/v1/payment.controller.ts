@@ -10,9 +10,11 @@ import { Observe } from '@/services/observability/decorators';
 import { PaymentService } from '@/domains/service-clients/payment';
 import { attachMetadata } from '../../utils/attach-metadata';
 import { createPaymentSchema } from '../../schemas/create-payment.schema';
-import { capturePaypalPaySchema } from '../../schemas/capture-payment.schema';
-import { verifyRazorPaySchema } from '../../schemas/verify-payment.schema';
-import { CreatePaymentSuccess } from '@/domains/service-clients/payment/proto/generated/payment-service';
+import { verifyPaymentSchema } from '../../schemas/verify-payment.schema';
+import { CreatePaymentSuccess } from '@/domains/service-clients/payment/proto/generated/payment_service';
+import { cancelPaymentSchema } from '../../schemas/cancel-payment.schema';
+import { getPaymentSchema } from '../../schemas/get-payment.schema';
+import { PAYMENT_MESSAGES } from '../../utils/resposne-messages';
 
 @Observe({ logLevel: 'debug' })
 export class PaymentController {
@@ -29,12 +31,10 @@ export class PaymentController {
   }
 
   async createPayment(req: Request, res: Response) {
-    console.log('Req headers : ' + JSON.stringify(req.headers, null, 2));
-
     const validPayload = validateSchema(
       {
         ...req.body,
-        paymentGateway: req.params?.provider,
+        provider: req.params?.provider,
         ...req.user,
         idempotencyKey:
           req.headers['idempotency-key'] ?? req.headers['x-request-id'],
@@ -54,42 +54,49 @@ export class PaymentController {
     );
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.OK)
-      .success(this.mapToResponse(success), 'Payment created successfully');
+      .status(PAYMENT_MESSAGES.PAYMENT_CREATED.statusCode)
+      .success(
+        {
+          userDetails: {
+            email: req.user?.email,
+            name: req.user?.username,
+          },
+          ...this.mapToResponse(success),
+        },
+        PAYMENT_MESSAGES.PAYMENT_CREATED.message
+      );
   }
 
-  async capturePaypalPayment(req: Request, res: Response) {
+  async verifyPayment(req: Request, res: Response) {
     const validPayload = validateSchema(
       {
         ...req.body,
         ...req.params,
       },
-      capturePaypalPaySchema
+      verifyPaymentSchema
     )!;
 
-    const { success } = await this.paymentServiceClient.payPalPaymentCapture(
+    const { success } = await this.paymentServiceClient.verifyPayment(
       validPayload,
       { attachMetadata: attachMetadata(req) }
     );
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.OK)
-      .success(success, 'Payment captured successfully');
+      .status(PAYMENT_MESSAGES.PAYMENT_CAPTURED.statusCode)
+      .success(success, PAYMENT_MESSAGES.PAYMENT_CAPTURED.message);
   }
 
-  async verifyRazorPayPayment(req: Request, res: Response) {
-    // console.log('req.body ' + JSON.stringify({ body: req.body }, null, 2));
-
+  async cancelPayment(req: Request, res: Response) {
     const validPayload = validateSchema(
       {
         ...req.body,
         ...req.params,
         ...req.user,
       },
-      verifyRazorPaySchema
+      cancelPaymentSchema
     )!;
 
-    const { success } = await this.paymentServiceClient.razorpayVerifyPayment(
+    const { success } = await this.paymentServiceClient.cancelPayment(
       validPayload,
       {
         attachMetadata: attachMetadata(req),
@@ -97,19 +104,59 @@ export class PaymentController {
     );
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.OK)
-      .success(success, 'Payment verified successfully');
+      .status(PAYMENT_MESSAGES.PAYMENT_VERIFIED.statusCode)
+      .success(success, PAYMENT_MESSAGES.PAYMENT_VERIFIED.message);
+  }
+
+  async getPayment(req: Request, res: Response) {
+    const validPayload = validateSchema(
+      {
+        ...req.body,
+        ...req.params,
+        ...req.user,
+      },
+      getPaymentSchema
+    )!;
+
+    const { success } = await this.paymentServiceClient.getPayment(
+      validPayload,
+      {
+        attachMetadata: attachMetadata(req),
+      }
+    );
+
+    return new ResponseWrapper(res)
+      .status(PAYMENT_MESSAGES.PAYMENT_VERIFIED.statusCode)
+      .success(success, PAYMENT_MESSAGES.PAYMENT_VERIFIED.message);
+  }
+
+  // --- Future Example Methods ---
+
+  /**
+   * For demonstration: Refund payment (future)
+   */
+  async refundPayment(req: Request, res: Response) {
+    // Implementation for future
+    return new ResponseWrapper(res)
+      .status(PAYMENT_MESSAGES.PAYMENT_REFUNDED.statusCode)
+      .success({}, PAYMENT_MESSAGES.PAYMENT_REFUNDED.message);
+  }
+
+  /**
+   * For demonstration: Update payment status (future)
+   */
+  async updatePaymentStatus(req: Request, res: Response) {
+    // Implementation for future
+    return new ResponseWrapper(res)
+      .status(PAYMENT_MESSAGES.PAYMENT_STATUS_UPDATED.statusCode)
+      .success({}, PAYMENT_MESSAGES.PAYMENT_STATUS_UPDATED.message);
   }
 
   // Mapping Functions
   private mapToResponse = (dto?: CreatePaymentSuccess) => {
     if (!dto) return undefined;
     return {
-      ...(dto.paypal
-        ? { paypal: { ...dto.paypal } }
-        : dto.razorpay
-          ? { razorpay: { ...dto.razorpay } }
-          : { stripe: { ...dto.stripe } }),
+      ...dto,
     };
   };
 }

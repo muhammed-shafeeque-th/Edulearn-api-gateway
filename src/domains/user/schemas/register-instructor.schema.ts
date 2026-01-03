@@ -1,4 +1,4 @@
-import { RegisterInstructorRequest } from '@/domains/service-clients/user/proto/generated/user_service';
+import { RegisterInstructorRequest } from '@/domains/service-clients/user/proto/generated/user/types/user_types';
 import { z, ZodType } from 'zod';
 
 export const registerInstructorSchema: ZodType<RegisterInstructorRequest> =
@@ -21,7 +21,6 @@ export const registerInstructorSchema: ZodType<RegisterInstructorRequest> =
     experience: z.string(),
     expertise: z.string(),
     education: z.string(),
-    
   });
 
 export type RegisterInstructorDto = z.infer<typeof registerInstructorSchema>;

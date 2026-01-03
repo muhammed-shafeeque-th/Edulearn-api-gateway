@@ -1,18 +1,17 @@
-# Stage 1: Build 
+# Stage 1: Build
 FROM node:20-alpine AS builder
 
 # Set working directory
 WORKDIR /app
 
 # Install build dependencies
-RUN apk add --no-cache python3 make g++ && \
-    npm install -g npm@latest
+RUN apk add --no-cache python3 make g++
 
 # Copy package files first for better caching
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+# Install all dependencies (dev deps needed to build)
+RUN npm ci && npm cache clean --force
 
 # Copy source code
 COPY tsconfig.json ./
@@ -32,14 +31,12 @@ RUN apk add --no-cache tini curl && \
 # Set working directory
 WORKDIR /app
 
-# Copy built application
+# Copy built application and package manifests
 COPY --from=builder --chown=appuser:appgroup /app/dist ./dist
 COPY --from=builder --chown=appuser:appgroup /app/package*.json ./
-COPY --from=builder --chown=appuser:appgroup /app/src/domains/clients/user/proto ./dist/domains/clients/user/proto
-COPY --from=builder --chown=appuser:appgroup /app/src/domains/clients/notification/proto ./dist/domains/clients/notification/proto
 
 # Install only production dependencies
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Create logs directory
 RUN mkdir -p /app/logs && chown -R appuser:appgroup /app

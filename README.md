@@ -24,17 +24,20 @@ A robust, scalable API Gateway built with Node.js, TypeScript, and Express.js fo
 ## 🛠️ Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd api-gateway
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Environment setup**
+
    ```bash
    cp env.example .env
    # Edit .env with your configuration
@@ -48,16 +51,19 @@ A robust, scalable API Gateway built with Node.js, TypeScript, and Express.js fo
 ## 🚀 Development
 
 ### Start development server
+
 ```bash
 npm run dev
 ```
 
 ### Build for production
+
 ```bash
 npm run build:prod
 ```
 
 ### Run tests
+
 ```bash
 # Unit tests
 npm test
@@ -70,6 +76,7 @@ npm run test:coverage
 ```
 
 ### Code quality
+
 ```bash
 # Lint
 npm run lint
@@ -87,11 +94,13 @@ npm run security-check
 ## 🐳 Docker
 
 ### Build image
+
 ```bash
 docker build -t edulearn-api-gateway .
 ```
 
 ### Run with Docker Compose
+
 ```bash
 docker-compose up -d
 ```
@@ -100,18 +109,19 @@ docker-compose up -d
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NODE_ENV` | Environment mode | `development` |
-| `PORT` | Server port | `4000` |
-| `REDIS_URL` | Redis connection URL | `redis://localhost:6379` |
-| `ACCESS_TOKEN_SECRET` | JWT access token secret | - |
-| `REFRESH_TOKEN_SECRET` | JWT refresh token secret | - |
-| `ALLOWED_ORIGINS` | CORS allowed origins | `http://localhost:3000` |
+| Variable               | Description              | Default                  |
+| ---------------------- | ------------------------ | ------------------------ |
+| `NODE_ENV`             | Environment mode         | `development`            |
+| `PORT`                 | Server port              | `4000`                   |
+| `REDIS_URL`            | Redis connection URL     | `redis://localhost:6379` |
+| `ACCESS_TOKEN_SECRET`  | JWT access token secret  | -                        |
+| `REFRESH_TOKEN_SECRET` | JWT refresh token secret | -                        |
+| `ALLOWED_ORIGINS`      | CORS allowed origins     | `http://localhost:3000`  |
 
 ### Rate Limiting
 
 Configure rate limiting in your environment:
+
 ```bash
 RATE_LIMIT_POINTS=100    # Requests per window
 RATE_LIMIT_DURATION=60   # Window in seconds
@@ -120,18 +130,22 @@ RATE_LIMIT_DURATION=60   # Window in seconds
 ## 📊 Monitoring & Observability
 
 ### Health Checks
+
 - **Health**: `GET /health` - Comprehensive health check
 - **Liveness**: `GET /live` - Simple liveness probe
 
 ### Metrics
+
 - **Prometheus**: `GET /metrics` - Application metrics
 
 ### Tracing
+
 - **Jaeger**: Distributed tracing with OpenTelemetry
 
 ## 🔒 Security
 
 ### Security Headers
+
 - Content Security Policy (CSP)
 - X-Frame-Options
 - X-Content-Type-Options
@@ -139,11 +153,13 @@ RATE_LIMIT_DURATION=60   # Window in seconds
 - Strict-Transport-Security
 
 ### Authentication
+
 - JWT-based authentication
 - Role-based authorization
 - Token refresh mechanism
 
 ### Rate Limiting
+
 - IP-based rate limiting
 - User-based rate limiting
 - Configurable limits and windows
@@ -175,15 +191,18 @@ RATE_LIMIT_DURATION=60   # Window in seconds
 ## 📝 API Documentation
 
 ### Authentication Endpoints
+
 - `POST /api/v1/auth/login` - User login
 - `POST /api/v1/auth/refresh` - Refresh token
 - `POST /api/v1/auth/logout` - User logout
 
 ### User Management
+
 - `GET /api/v1/users/profile` - Get user profile
 - `PUT /api/v1/users/profile` - Update user profile
 
 ### Course Management
+
 - `GET /api/v1/courses` - List courses
 - `POST /api/v1/courses` - Create course
 - `GET /api/v1/courses/:id` - Get course details
@@ -191,6 +210,7 @@ RATE_LIMIT_DURATION=60   # Window in seconds
 ## 🧪 Testing
 
 ### Test Structure
+
 ```
 test/
 ├── unit/           # Unit tests
@@ -199,6 +219,7 @@ test/
 ```
 
 ### Running Tests
+
 ```bash
 # All tests
 npm test
@@ -213,16 +234,19 @@ npm run test:coverage
 ## 🚀 Deployment
 
 ### Kubernetes
+
 ```bash
 kubectl apply -f k8s/
 ```
 
 ### Docker Swarm
+
 ```bash
 docker stack deploy -c docker-compose.yml edulearn
 ```
 
 ### Environment-Specific Configs
+
 - `docker-compose.dev.yml` - Development
 - `docker-compose.prod.yml` - Production
 - `docker-compose.test.yml` - Testing
@@ -230,12 +254,14 @@ docker stack deploy -c docker-compose.yml edulearn
 ## 📈 Performance
 
 ### Optimization Tips
+
 1. **Caching**: Use Redis for session and data caching
 2. **Connection Pooling**: Configure database connection pools
 3. **Compression**: Enable gzip compression
 4. **Load Balancing**: Use multiple instances behind a load balancer
 
 ### Monitoring
+
 - **CPU Usage**: Monitor with Prometheus
 - **Memory Usage**: Track heap and RSS
 - **Response Times**: APM with Jaeger
@@ -251,6 +277,7 @@ docker stack deploy -c docker-compose.yml edulearn
 6. Submit a pull request
 
 ### Code Style
+
 - Follow TypeScript best practices
 - Use ESLint and Prettier
 - Write meaningful commit messages
@@ -263,6 +290,7 @@ MIT License - see LICENSE file for details
 ## 🆘 Support
 
 For support and questions:
+
 - Create an issue in the repository
 - Contact the development team
 - Check the documentation
@@ -270,8 +298,9 @@ For support and questions:
 ## 🔄 Changelog
 
 ### v1.0.0
+
 - Initial release
 - Basic authentication and authorization
 - Rate limiting
 - Health checks
-- Docker support 
+- Docker support
