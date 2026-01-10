@@ -1,4 +1,3 @@
-import { PaginationRequest } from '@/domains/service-clients/user/proto/generated/user_service';
 import { z, ZodType } from 'zod';
 
 export const paginationSchema = z.object({
