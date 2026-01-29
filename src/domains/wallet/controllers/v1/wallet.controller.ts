@@ -17,15 +17,16 @@ import { getWalletTransactionsSchema } from '../../schemas/get-wallet-transactio
 import { UserWallet, WalletTransaction } from '../../types';
 import { mapPaginationResponse } from '@/shared/utils/map-pagination';
 import { WalletResponseMapper } from '../../utils/mappers';
+import { WalletService } from '@/domains/service-clients/wallet';
 
 @Observe({ logLevel: 'debug' })
 export class WalletController {
-  private userServiceClient: UserService;
+  private walletServiceClient: WalletService;
   private notificationService: NotificationService;
   private courseServiceClient: CourseService;
 
   constructor() {
-    this.userServiceClient = UserService.getInstance();
+    this.walletServiceClient = WalletService.getInstance();
     this.notificationService = NotificationService.getInstance();
     this.courseServiceClient = CourseService.getInstance();
   }
@@ -40,7 +41,7 @@ export class WalletController {
       getWalletTransactionsSchema
     )!;
 
-    const { success } = await this.userServiceClient.getWalletTransactions(
+    const { success } = await this.walletServiceClient.getWalletTransactions(
       validPayload,
       {
         metadata: attachMetadata(req),
@@ -70,7 +71,7 @@ export class WalletController {
       getUserWalletSchema
     )!;
 
-    const { success } = await this.userServiceClient.getUserWallet(
+    const { success } = await this.walletServiceClient.getUserWallet(
       validPayload,
       {
         metadata: attachMetadata(req),
