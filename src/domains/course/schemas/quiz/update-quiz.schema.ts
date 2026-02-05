@@ -1,9 +1,9 @@
-import { UpdateQuizRequest } from '@/domains/service-clients/course/proto/generated/course_service';
+import { UpdateQuizRequest } from '@/domains/service-clients/course/proto/generated/course/types/quiz';
 import { z, ZodType } from 'zod';
 
 export const updateQuizSchema: ZodType<UpdateQuizRequest> = z.object({
-  quizId: z.string(),
-  courseId: z.string(),
+  quizId: z.string().uuid(),
+  courseId: z.string().uuid(),
   userId: z.string().uuid(),
   maxAttempts: z.number(),
   passingScore: z.number(),
@@ -12,7 +12,6 @@ export const updateQuizSchema: ZodType<UpdateQuizRequest> = z.object({
   timeLimit: z.number(),
   description: z.string(),
   questions: z.array(z.any()),
-  
 });
 
 export type UpdateQuizDto = z.infer<typeof updateQuizSchema>;
