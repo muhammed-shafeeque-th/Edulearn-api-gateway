@@ -1,4 +1,4 @@
-import { CreateSectionRequest } from '@/domains/service-clients/course/proto/generated/course_service';
+import { CreateSectionRequest } from '@/domains/service-clients/course/proto/generated/course/types/section';
 import { z, ZodType } from 'zod';
 
 // export type BasicInfoRequestPayload = {
@@ -16,8 +16,8 @@ import { z, ZodType } from 'zod';
 // };
 
 export const createSectionSchema: ZodType<CreateSectionRequest> = z.object({
-  courseId: z.string(),
-  userId: z.string(),
+  courseId: z.string().uuid(),
+  userId: z.string().uuid(),
   title: z.string(),
   description: z.string().optional(),
   order: z.number(),

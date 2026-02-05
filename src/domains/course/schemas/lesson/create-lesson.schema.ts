@@ -1,6 +1,5 @@
-import { CreateLessonRequest,  } from '@/domains/service-clients/course/proto/generated/course_service';
+import { CreateLessonRequest } from '@/domains/service-clients/course/proto/generated/course/types/lesson';
 import { z, ZodType } from 'zod';
-
 
 export const createLessonSchema: ZodType<CreateLessonRequest> = z.object({
   sectionId: z.string().uuid(),
@@ -15,7 +14,6 @@ export const createLessonSchema: ZodType<CreateLessonRequest> = z.object({
   isPublished: z.boolean().optional(),
   order: z.number().optional(),
   title: z.string().optional(),
-  
 }) as ZodType<CreateLessonRequest>;
 
 export type CreateLessonDto = z.infer<typeof createLessonSchema>;

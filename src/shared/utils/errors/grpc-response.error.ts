@@ -2,7 +2,7 @@ import { BaseError } from './base-error';
 import {
   Error,
   ErrorDetail,
-} from '@/domains/service-clients/user/proto/generated/user_service';
+} from '@/domains/service-clients/user/proto/generated/user/common';
 import { ErrorStatusCodes } from './error-status-codes';
 
 export class GrpcResponseError extends BaseError {
@@ -17,49 +17,54 @@ export class GrpcResponseError extends BaseError {
       ? error.details
       : [{ message: error.message || 'Unknown error' }];
 
-    Object.setPrototypeOf(this, new.target.prototype);
   }
 
   private mapErrorCodeToHttpStatus(errorCode: string): ErrorStatusCodes {
     const lowerErrorCode = errorCode.toLowerCase();
 
-    if (["invalid", "invalid"].includes(lowerErrorCode)) {
+    if (['invalid', 'invalid'].includes(lowerErrorCode)) {
       return ErrorStatusCodes.BAD_REQUEST; // 400
     }
-    if (["notfound", "not_found"].includes(lowerErrorCode)) {
+    if (['notfound', 'not_found'].includes(lowerErrorCode)) {
       return ErrorStatusCodes.NOT_FOUND; // 404
     }
-    if (["alreadyexist", "already_exist"].includes(lowerErrorCode)) {
+    if (['alreadyexist', 'already_exist'].includes(lowerErrorCode)) {
       return ErrorStatusCodes.CONFLICT; // 409
     }
-    if (["permissiondenied", "permission_denied"].includes(lowerErrorCode)) {
+    if (['permissiondenied', 'permission_denied', "forbidden_error"].includes(lowerErrorCode)) {
       return ErrorStatusCodes.PERMISSION_DENIED; // 403
     }
-    if (["unauthenticated", "unauthenticated"].includes(lowerErrorCode)) {
+    if (['unauthenticated', 'unauthenticated'].includes(lowerErrorCode)) {
       return ErrorStatusCodes.UNAUTHORIZED; // 401
     }
-    if (["failed_precondition", "failed_precondition"].includes(lowerErrorCode)) {
+    if (
+      ['failed_precondition', 'failed_precondition'].includes(lowerErrorCode)
+    ) {
       return ErrorStatusCodes.PRECONDITION_FAILED; // 412
     }
-    if (["resource_exhausted", "resource_exhausted"].includes(lowerErrorCode)) {
+    if (['resource_exhausted', 'resource_exhausted'].includes(lowerErrorCode)) {
       return ErrorStatusCodes.TOO_MANY_REQUESTS; // 429
     }
-    if (["unavailable", "unavailable"].includes(lowerErrorCode)) {
+    if (['unavailable', 'unavailable'].includes(lowerErrorCode)) {
       return ErrorStatusCodes.UNAVAILABLE; // 503
     }
-    if (["internal", "internal"].includes(lowerErrorCode)) {
+    if (['internal', 'internal'].includes(lowerErrorCode)) {
       return ErrorStatusCodes.INTERNAL_ERROR; // 500
     }
-    if (["cancelled", "cancelled"].includes(lowerErrorCode)) {
+    if (['cancelled', 'cancelled'].includes(lowerErrorCode)) {
       return ErrorStatusCodes.CLIENT_CLOSED_REQUEST || 499; // 499 (non-standard)
     }
-    if (["alreadyexist", "already_exist"].includes(errorCode.toLowerCase())) {
+    if (['alreadyexist', 'already_exist'].includes(errorCode.toLowerCase())) {
       return ErrorStatusCodes.CONFLICT; // 409
     }
-    if (["alreadyexist", "already_exist"].includes(errorCode.toLowerCase())) {
+    if (['alreadyexist', 'already_exist'].includes(errorCode.toLowerCase())) {
       return ErrorStatusCodes.CONFLICT; // 409
     }
-    if (["deadline_exceeded", "deadlineexceeded"].includes(errorCode.toLowerCase())) {
+    if (
+      ['deadline_exceeded', 'deadlineexceeded'].includes(
+        errorCode.toLowerCase()
+      )
+    ) {
       return ErrorStatusCodes.GATEWAY_TIMEOUT; // 504
     }
     if (errorCode.includes('UNIMPLEMENTED')) {

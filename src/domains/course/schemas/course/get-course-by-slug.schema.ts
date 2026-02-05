@@ -1,11 +1,8 @@
-import { GetCourseBySlugRequest } from '@/domains/service-clients/course/proto/generated/course_service';
+import { GetCourseBySlugRequest } from '@/domains/service-clients/course/proto/generated/course/types/course';
 import { z, ZodType } from 'zod';
 
 export const getCourseBySlugSchema: ZodType<GetCourseBySlugRequest> = z.object({
-  slug: z
-    .string()
+  slug: z.string(),
 });
-
-
 
 export type GetCourseBySlugDto = z.infer<typeof getCourseBySlugSchema>;

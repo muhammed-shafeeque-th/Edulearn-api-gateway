@@ -3,30 +3,28 @@ import { GrpcClient } from '@/shared/utils/grpc/client';
 import { GrpcClientOptions } from '@/shared/utils/grpc/types';
 import {
   AddReactionRequest,
-  ArchiveConversationRequest,
+  ArchiveChatRequest,
   ChatServiceClient,
-  ConversationResponse,
-  CreateConversationRequest,
-  CreateConversationResponse,
-  DeleteConversationRequest,
+  ChatResponse,
+  CreateChatRequest,
+  DeleteChatRequest,
   DeleteMessageRequest,
   EditMessageRequest,
-  EditMessageResponse,
   Empty,
-  GetConversationRequest,
-  GetConversationResponse,
+  GetChatRequest,
   GetMessagesRequest,
   GetMessagesResponse,
-  ListUserConversationsRequest,
-  ListUserConversationsResponse,
+  ListStudentChatsRequest,
   MarkMessagesReadRequest,
   MessageResponse,
-  PinConversationRequest,
+  PinChatRequest,
   RemoveReactionRequest,
   SendMessageRequest,
-  SendMessageResponse,
-  UnArchiveConversationRequest,
-  UnPinConversationRequest,
+  UnArchiveChatRequest,
+  UnPinChatRequest,
+  ChatsListResponse,
+  ListInstructorChatsRequest,
+  OnlineUsersResponse,
 } from './proto/generated/chat_service';
 import { config } from 'config';
 
@@ -71,104 +69,114 @@ export class ChatService {
     );
     return response as MessageResponse;
   }
-  async archiveConversation(
-    request: ArchiveConversationRequest,
+  async archiveChat(
+    request: ArchiveChatRequest,
     options: GrpcClientOptions = {}
-  ): Promise<ConversationResponse> {
+  ): Promise<ChatResponse> {
     const response = await this.client.unaryCall(
-      'archiveConversation',
+      'archiveChat',
       request,
       options
     );
-    return response as ConversationResponse;
+    return response as ChatResponse;
   }
-  async getConversation(
-    request: GetConversationRequest,
+  async getChat(
+    request: GetChatRequest,
     options: GrpcClientOptions = {}
-  ): Promise<GetConversationResponse> {
-    const response = await this.client.unaryCall(
-      'getConversation',
-      request,
-      options
-    );
-    return response as GetConversationResponse;
+  ): Promise<ChatResponse> {
+    const response = await this.client.unaryCall('getChat', request, options);
+    return response as ChatResponse;
   }
-  async deleteConversation(
-    request: DeleteConversationRequest,
+  async deleteChat(
+    request: DeleteChatRequest,
     options: GrpcClientOptions = {}
   ): Promise<Empty> {
     const response = await this.client.unaryCall(
-      'deleteConversation',
+      'deleteChat',
       request,
       options
     );
     return response as Empty;
   }
-  async listUserConversations(
-    request: ListUserConversationsRequest,
+  async listStudentChats(
+    request: ListStudentChatsRequest,
     options: GrpcClientOptions = {}
-  ): Promise<ListUserConversationsResponse> {
+  ): Promise<ChatsListResponse> {
     const response = await this.client.unaryCall(
-      'listUserConversations',
+      'listStudentChats',
       request,
       options
     );
-    return response as ListUserConversationsResponse;
+    return response as ChatsListResponse;
   }
-  async createConversation(
-    request: CreateConversationRequest,
+  async listInstructorChats(
+    request: ListInstructorChatsRequest,
     options: GrpcClientOptions = {}
-  ): Promise<CreateConversationResponse> {
+  ): Promise<ChatsListResponse> {
     const response = await this.client.unaryCall(
-      'createConversation',
+      'listInstructorChats',
       request,
       options
     );
-    return response as CreateConversationResponse;
+    return response as ChatsListResponse;
   }
-  async pinConversation(
-    request: PinConversationRequest,
+  async createOrGetChat(
+    request: CreateChatRequest,
     options: GrpcClientOptions = {}
-  ): Promise<ConversationResponse> {
+  ): Promise<ChatResponse> {
     const response = await this.client.unaryCall(
-      'pinConversation',
+      'createChat',
       request,
       options
     );
-    return response as ConversationResponse;
+    return response as ChatResponse;
   }
-  async unPinConversation(
-    request: UnPinConversationRequest,
+  async pinChat(
+    request: PinChatRequest,
     options: GrpcClientOptions = {}
-  ): Promise<ConversationResponse> {
-    const response = await this.client.unaryCall(
-      'unPinConversation',
-      request,
-      options
-    );
-    return response as ConversationResponse;
+  ): Promise<ChatResponse> {
+    const response = await this.client.unaryCall('pinChat', request, options);
+    return response as ChatResponse;
   }
-  async unArchiveConversation(
-    request: UnArchiveConversationRequest,
+  async unPinChat(
+    request: UnPinChatRequest,
     options: GrpcClientOptions = {}
-  ): Promise<ConversationResponse> {
+  ): Promise<ChatResponse> {
+    const response = await this.client.unaryCall('unPinChat', request, options);
+    return response as ChatResponse;
+  }
+  async unArchiveChat(
+    request: UnArchiveChatRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<ChatResponse> {
     const response = await this.client.unaryCall(
-      'unArchiveConversation',
+      'unArchiveChat',
       request,
       options
     );
-    return response as ConversationResponse;
+    return response as ChatResponse;
+  }
+  async getOnlineUsers(
+    request: Empty,
+    options: GrpcClientOptions = {}
+  ): Promise<OnlineUsersResponse> {
+    const response = await this.client.unaryCall(
+      'getOnlineUsers',
+      request,
+      options
+    );
+    return response as OnlineUsersResponse;
   }
   async sendMessage(
     request: SendMessageRequest,
     options: GrpcClientOptions = {}
-  ): Promise<SendMessageResponse> {
+  ): Promise<MessageResponse> {
     const response = await this.client.unaryCall(
       'sendMessage',
       request,
       options
     );
-    return response as SendMessageResponse;
+    return response as MessageResponse;
   }
   async getMessages(
     request: GetMessagesRequest,
@@ -185,13 +193,13 @@ export class ChatService {
   async editMessage(
     request: EditMessageRequest,
     options: GrpcClientOptions = {}
-  ): Promise<EditMessageResponse> {
+  ): Promise<MessageResponse> {
     const response = await this.client.unaryCall(
       'editMessage',
       request,
       options
     );
-    return response as EditMessageResponse;
+    return response as MessageResponse;
   }
   async deleteMessage(
     request: DeleteMessageRequest,
@@ -218,13 +226,13 @@ export class ChatService {
   async markMessagesRead(
     request: MarkMessagesReadRequest,
     options: GrpcClientOptions = {}
-  ): Promise<ConversationResponse> {
+  ): Promise<ChatResponse> {
     const response = await this.client.unaryCall(
       'markMessagesRead',
       request,
       options
     );
-    return response as ConversationResponse;
+    return response as ChatResponse;
   }
 
   close() {

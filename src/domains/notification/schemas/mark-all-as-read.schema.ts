@@ -3,7 +3,7 @@ import { z, ZodType } from 'zod';
 
 export const markAllAsReadSchema: ZodType<MarkAllNotificationsRequest> =
   z.object({
-    userId: z.string(),
+    userId: z.string().uuid(),
   });
 
 export type MarkAllAsReadSchemaType = z.infer<typeof markAllAsReadSchema>;

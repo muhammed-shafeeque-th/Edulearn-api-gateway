@@ -1,12 +1,10 @@
-import {  DeleteLessonRequest, DeleteSectionRequest } from '@/domains/service-clients/course/proto/generated/course_service';
+import { DeleteLessonRequest } from '@/domains/service-clients/course/proto/generated/course/types/lesson';
 import { z, ZodType } from 'zod';
 
-
-
 export const deleteLessonSchema: ZodType<DeleteLessonRequest> = z.object({
-  lessonId: z.string(),
-  courseId: z.string(),
-  userId: z.string(),
+  lessonId: z.string().uuid(),
+  courseId: z.string().uuid(),
+  userId: z.string().uuid(),
 });
 
-export type DeleteLessonDto = z.infer<typeof deleteLessonSchema>
+export type DeleteLessonDto = z.infer<typeof deleteLessonSchema>;

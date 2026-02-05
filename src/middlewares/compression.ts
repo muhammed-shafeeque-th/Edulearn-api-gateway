@@ -10,13 +10,12 @@ const getCompressionLevel = (size: number): number => {
 
 export const compress = compression({
   filter: (req: Request, res: Response) => {
-    // Skip compression for small responses and binary data
+    // Skip compression for small responses 
     const contentType = res.getHeader('Content-Type');
     if (!contentType) return false;
 
     const contentTypeStr = contentType.toString();
 
-    // Don't compress binary data, images, or already compressed formats
     if (
       /image|audio|video|application\/pdf|application\/zip/.test(contentTypeStr)
     ) {
@@ -37,8 +36,8 @@ export const compress = compression({
   //   }
   //   return 6;
   // },
-  // Add windowBits for better compression
+  // windowBits for better compression
   windowBits: 15,
-  // Add memLevel for memory usage optimization
+  // memLevel for memory usage optimization
   memLevel: 8,
 } as CompressionOptions);

@@ -3,8 +3,8 @@ import { DeleteNotificationRequest } from '@/domains/service-clients/notificatio
 
 export const deleteNotificationSchema: ZodType<DeleteNotificationRequest> =
   z.object({
-    userId: z.string(),
-    notificationId: z.string(),
+    userId: z.string().uuid(),
+    notificationId: z.string().uuid(),
   });
 
 export type GetNotificationSchemaType = z.infer<

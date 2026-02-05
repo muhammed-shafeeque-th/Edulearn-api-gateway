@@ -241,7 +241,7 @@ export class BloomFilterFacade implements IBloomFilterService {
   }
 
   /**
-   * Gracefully shutdown the bloom filter service (disconnect Redis, cleanup resources)
+   * Gracefully shutdown the bloom filter service
    */
   public async gracefulShutdown(): Promise<void> {
     try {

@@ -1,15 +1,19 @@
-export interface Conversation {
+import { UserInfo } from '@/domains/user/types';
+
+export interface Chat {
   id: string;
+  enrollmentId: string;
   studentId: string;
-  type: string;
-  participants: string[];
-  createdAt: number;
-  updatedAt: number;
-  /** Settings */
+  student?: UserInfo;
+  instructor?: UserInfo;
+  instructorId: string;
+  createdAt: string;
+  updatedAt: string;
+  lastMessageId: string;
+  /** viewer specific */
   isPinned: boolean;
-  isMuted: boolean;
   isArchived: boolean;
-  mutedUntil: number;
+  isMuted: boolean;
 }
 
 export interface MessageReaction {
@@ -21,17 +25,11 @@ export interface MessageReaction {
 
 export interface Message {
   id: string;
-  conversationId: string;
+  chatId: string;
   senderId: string;
   content: string;
-  status: string;
-  createdAt: number;
-  updatedAt: number;
-  receiverId?: string | undefined;
-  type?: string | undefined;
-  fileName?: string | undefined;
-  fileUrl?: string | undefined;
-  fileSize?: string | undefined;
-  replayTo?: string | undefined;
+  createdAt: string;
+  updatedAt: string;
+  sequence: number;
   reactions: MessageReaction[];
 }

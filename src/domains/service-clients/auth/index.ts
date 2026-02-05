@@ -5,12 +5,8 @@ import {
   Auth2SignRequest,
   Auth2SignResponse,
   AuthServiceClient,
-  BlockUserRequest,
-  BlockUserResponse,
   ChangePasswordRequest,
   ChangePasswordResponse,
-  CheckUserByEmailRequest,
-  CheckUserByEmailResponse,
   ForgotPasswordRequest,
   ForgotPasswordResponse,
   RefreshTokenRequest,
@@ -19,16 +15,16 @@ import {
   LoginUserResponse,
   LogoutUserRequest,
   LogoutUserResponse,
-  RegisterInstructorRequest,
-  RegisterInstructorResponse,
   RegisterUserRequest,
   RegisterUserResponse,
   ResetPasswordRequest,
   ResetPasswordResponse,
-  UnBlockUserRequest,
-  UnBlockUserResponse,
   VerifyUserRequest,
   VerifyUserResponse,
+  AdminLoginRequest,
+  AdminLoginResponse,
+  AdminRefreshRequest,
+  AdminRefreshResponse,
 } from './proto/generated/auth_service';
 import { config } from 'config';
 
@@ -41,7 +37,12 @@ export class AuthService {
       config.grpc.services.authService.split(':');
 
     this.client = new GrpcClient({
-      protoPath: path.join(__dirname, 'proto', 'auth_service.proto'),
+      protoPath: path.join(
+        process.cwd(),
+        'proto',
+        'auth',
+        'auth_service.proto'
+      ),
       packageName: 'auth_service',
       serviceName: 'AuthService',
       host,
@@ -157,24 +158,44 @@ export class AuthService {
     return response as ResetPasswordResponse;
   }
 
-  async blockUser(
-    request: BlockUserRequest,
+  // async blockUser(
+  //   request: BlockUserRequest,
+  //   options: GrpcClientOptions = {}
+  // ): Promise<BlockUserResponse> {
+  //   const response = await this.client.unaryCall('blockUser', request, options);
+  //   return response as BlockUserResponse;
+  // }
+
+
+
+  // Admin  Auth
+  async adminLogin(
+    request: AdminLoginRequest,
     options: GrpcClientOptions = {}
-  ): Promise<BlockUserResponse> {
-    const response = await this.client.unaryCall('blockUser', request, options);
-    return response as BlockUserResponse;
+  ): Promise<AdminLoginResponse> {
+    const response = await this.client.unaryCall('adminLogin', request, options);
+    return response as AdminLoginResponse;
   }
-  async unBlockUser(
-    request: UnBlockUserRequest,
+  async adminRefresh(
+    request: AdminRefreshRequest,
     options: GrpcClientOptions = {}
-  ): Promise<UnBlockUserResponse> {
-    const response = await this.client.unaryCall(
-      'unBlockUser',
-      request,
-      options
-    );
-    return response as UnBlockUserResponse;
+  ): Promise<AdminRefreshResponse> {
+    const response = await this.client.unaryCall('adminRefresh', request, options);
+    return response as AdminRefreshResponse;
   }
+
+
+  // async unBlockUser(
+  //   request: UnBlockUserRequest,
+  //   options: GrpcClientOptions = {}
+  // ): Promise<UnBlockUserResponse> {
+  //   const response = await this.client.unaryCall(
+  //     'unBlockUser',
+  //     request,
+  //     options
+  //   );
+  //   return response as UnBlockUserResponse;
+  // }
 
   close() {
     this.client.close();

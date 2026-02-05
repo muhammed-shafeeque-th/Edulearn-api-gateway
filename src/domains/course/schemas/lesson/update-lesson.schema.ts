@@ -1,11 +1,11 @@
-import { UpdateLessonRequest } from '@/domains/service-clients/course/proto/generated/course_service';
+import { UpdateLessonRequest } from '@/domains/service-clients/course/proto/generated/course/types/lesson';
 import { z, ZodType } from 'zod';
 
 export const updateLessonSchema: ZodType<UpdateLessonRequest> = z.object({
-  lessonId: z.string(),
-  courseId: z.string(),
+  lessonId: z.string().uuid(),
+  courseId: z.string().uuid(),
   userId: z.string().uuid(),
-  sectionId: z.string(),
+  sectionId: z.string().uuid(),
   contentType: z.string().optional(),
   contentUrl: z.string().optional(),
   description: z.string().optional(),

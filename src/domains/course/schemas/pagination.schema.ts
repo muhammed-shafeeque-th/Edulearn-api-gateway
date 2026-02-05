@@ -1,9 +1,15 @@
-import { Pagination } from '@/domains/service-clients/course/proto/generated/course_service';
+import { Pagination } from '@/domains/service-clients/course/proto/generated/course/common';
 import { z, ZodType } from 'zod';
 
 export const paginationSchema: ZodType<Pagination> = z.object({
-  pageSize: z.number().min(1, 'Page limit must be at least one'),
-  page: z.number().min(1, 'Page number must be at least one'),
+  pageSize: z.preprocess(
+    val => (typeof val === 'string' ? Number(val) : val),
+    z.number().min(1, 'PageSize limit must be at least one')
+  ),
+  page: z.preprocess(
+    val => (typeof val === 'string' ? Number(val) : val),
+    z.number().min(1, 'PageSize limit must be at least one')
+  ),
   sortBy: z.string().optional(),
   sortOrder: z
     .enum(['ASC', 'DESC'], {
@@ -12,6 +18,6 @@ export const paginationSchema: ZodType<Pagination> = z.object({
       description: 'Sort order, can be ASC or DESC',
     })
     .optional(),
-});
+}) as ZodType<Pagination>;
 
 export type PaginationDto = z.infer<typeof paginationSchema>;

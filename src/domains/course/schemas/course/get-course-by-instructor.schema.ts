@@ -1,17 +1,20 @@
-import { GetCoursesByInstructorRequest, Pagination } from '@/domains/service-clients/course/proto/generated/course_service';
+import {
+  GetCoursesByInstructorRequest,
+} from '@/domains/service-clients/course/proto/generated/course/types/course';
 import { z, ZodType } from 'zod';
-import { paginationSchema } from '../get-course-by-instructor.schema';
+import { paginationSchema } from '../pagination.schema';
 
-export const getCourseByInstructorSchema: ZodType<GetCoursesByInstructorRequest> = z.object({
-  // override or add fields here
-  instructorId: z
-    .string(),
-  pagination: paginationSchema.optional()
-  
-  
-  
-});
+export const getCourseByInstructorSchema: ZodType<GetCoursesByInstructorRequest> =
+  z.object({
+    instructorId: z.string().uuid(),
+    pagination: paginationSchema.default({
+      page: 1,
+      pageSize: 10,
+      sortBy: 'updatedAt',
+      sortOrder: 'DESC',
+    }),
+  }) as ZodType<GetCoursesByInstructorRequest>;
 
-
-
-export type GetCourseByInstructorDto = z.infer<typeof getCourseByInstructorSchema>;
+export type GetCourseByInstructorDto = z.infer<
+  typeof getCourseByInstructorSchema
+>;

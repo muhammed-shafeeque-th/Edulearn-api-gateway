@@ -7,8 +7,8 @@ import {
   GetPaymentRequest,
   GetPaymentResponse,
   PaymentServiceClient,
-  VerifyPaymentRequest,
-  VerifyPaymentResponse,
+  ResolvePaymentRequest,
+  ResolvePaymentResponse,
 } from './proto/generated/payment_service';
 import { config } from 'config';
 import { GrpcClient } from '@/shared/utils/grpc/client';
@@ -33,11 +33,12 @@ export class PaymentService {
       serviceName: 'PaymentService',
       host,
       port: parseInt(port),
+      deadlineMs: 30000,
       circuitBreakerConfig: {
         errorThresholdPercentage: 50,
         resetTimeout: 3000,
         volumeThreshold: Number.MAX_SAFE_INTEGER,
-        timeout: 30000,
+        timeout: 60_000,
       },
     });
   }
@@ -54,16 +55,16 @@ export class PaymentService {
     return response as CreatePaymentResponse;
   }
 
-  async verifyPayment(
-    request: VerifyPaymentRequest,
+  async resolvePayment(
+    request: ResolvePaymentRequest,
     options: GrpcClientOptions = {}
-  ): Promise<VerifyPaymentResponse> {
+  ): Promise<ResolvePaymentResponse> {
     const response = await this.client.unaryCall(
-      'verifyPayment',
+      'resolvePayment',
       request,
       options
     );
-    return response as VerifyPaymentResponse;
+    return response as ResolvePaymentResponse;
   }
 
   async cancelPayment(

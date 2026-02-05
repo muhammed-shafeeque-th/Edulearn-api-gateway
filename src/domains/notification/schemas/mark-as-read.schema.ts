@@ -2,8 +2,8 @@ import { MarkNotificationRequest } from '@/domains/service-clients/notification/
 import { z, ZodType } from 'zod';
 
 export const markAsReadSchema: ZodType<MarkNotificationRequest> = z.object({
-  notificationId: z.string(),
-  userId: z.string(),
+  notificationId: z.string().uuid(),
+  userId: z.string().uuid(),
 });
 
 export type MarkAsReadSchemaType = z.infer<typeof markAsReadSchema>;

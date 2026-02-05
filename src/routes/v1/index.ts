@@ -1,4 +1,4 @@
-import { adminRoutesV1 } from '@/domains/admin/routers/v1/users/admin.router';
+import { adminRoutesV1 } from '@/domains/admin/routers/v1/admin.router';
 import { authRoutesV1 } from '@/domains/auth/routers/v1/auth.router';
 import { cartRoutesV1 } from '@/domains/cart/routers/v1/cart.router';
 import { chatRoutesV1 } from '@/domains/chat/routers/v1/chat.router';

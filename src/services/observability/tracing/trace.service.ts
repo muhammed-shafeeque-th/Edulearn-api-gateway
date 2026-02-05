@@ -70,7 +70,9 @@ export class TracingService {
     });
   }
 
-  // Starts a non-active span (useful if you manage context manually or for specific async flows)
+  /**
+   *  Starts a non-active span
+   */
   startSpan(
     name: string,
     attributes?: Attributes | Record<string | any, string | any>,
@@ -99,7 +101,7 @@ export class TracingService {
     span.setAttribute(key, value);
   }
 
-  // Get the current active span (useful for adding attributes to an existing span)
+  // Get the current active span
   getCurrentSpan(): Span | undefined {
     return trace.getSpan(context.active());
   }

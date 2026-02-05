@@ -1,72 +1,57 @@
 import path from 'path';
 import { GrpcClient } from '@/shared/utils/grpc/client';
 import { GrpcClientOptions } from '@/shared/utils/grpc/types';
+import { config } from 'config';
 import {
-  CourseServiceClient,
-  GetAllCoursesRequest,
-  CoursesResponse,
-  GetCourseRequest,
   CourseResponse,
+  CoursesListResponse,
   CreateCourseRequest,
-  UpdateCourseRequest,
   DeleteCourseRequest,
   DeleteCourseResponse,
+  GetCourseBySlugRequest,
+  GetCourseRequest,
+  GetCoursesByIdsRequest,
+  GetCoursesByIdsResponse,
   GetCoursesByInstructorRequest,
+  GetCoursesRequest,
   GetEnrolledCoursesRequest,
+  PublishCourseRequest,
+  UnPublishCourseRequest,
+  UpdateCourseRequest,
+} from './proto/generated/course/types/course';
+import {
   CreateLessonRequest,
-  LessonResponse,
+  DeleteLessonRequest,
+  DeleteLessonResponse,
+  GetLessonRequest,
   GetLessonsBySectionRequest,
+  LessonResponse,
   LessonsResponse,
   UpdateLessonRequest,
-  DeleteLessonRequest,
-  SectionResponse,
-  CreateSectionRequest,
-  GetSectionRequest,
-  UpdateSectionRequest,
-  DeleteSectionResponse,
-  DeleteSectionRequest,
-  GetSectionsByCourseRequest,
-  SectionsResponse,
-  GetLessonRequest,
-  QuizResponse,
+} from './proto/generated/course/types/lesson';
+import {
   GetQuizRequest,
-  CreateQuizRequest,
-  UpdateQuizRequest,
   DeleteQuizRequest,
   DeleteQuizResponse,
   GetQuizzesByCourseRequest,
+  QuizResponse,
+  UpdateQuizRequest,
   QuizzesResponse,
-  CreateEnrollmentRequest,
-  EnrollmentResponse,
-  GetEnrollmentRequest,
-  UpdateEnrollmentRequest,
-  DeleteEnrollmentRequest,
-  DeleteEnrollmentResponse,
-  GetEnrollmentsByUserRequest,
-  EnrollmentsResponse,
-  GetEnrollmentsByCourseRequest,
-  CreateProgressRequest,
-  ProgressResponse,
-  GetProgressRequest,
-  UpdateProgressRequest,
-  DeleteProgressRequest,
-  DeleteProgressResponse,
-  GetProgressByEnrollmentRequest,
-  ProgressesResponse,
-  CreateReviewRequest,
-  ReviewResponse,
-  DeleteLessonResponse,
-  DeleteReviewRequest,
-  DeleteReviewResponse,
-  ReviewsResponse,
-  GetReviewsByCourseRequest,
-  UpdateReviewRequest,
-  GetReviewRequest,
-  GetCourseBySlugRequest,
-  GetCoursesByIdsRequest,
-  GetCoursesByIdsResponse,
-} from './proto/generated/course_service';
-import { config } from 'config';
+  CreateQuizRequest,
+} from './proto/generated/course/types/quiz';
+import {
+  GetSectionRequest,
+  DeleteSectionRequest,
+  DeleteSectionResponse,
+  GetSectionsByCourseRequest,
+  SectionResponse,
+  SectionsResponse,
+  UpdateSectionRequest,
+  CreateSectionRequest,
+} from './proto/generated/course/types/section';
+import { CourseServiceClient } from './proto/generated/course_service';
+import { GetCoursesStatsResponse, GetInstructorCourseRatingStatsRequest, GetInstructorCourseRatingStatsResponse, GetInstructorCoursesStatsRequest, GetInstructorCoursesStatsResponse } from './proto/generated/course/types/stats';
+import { Empty } from './proto/generated/course/common';
 
 export class CourseService {
   private readonly client: GrpcClient<CourseServiceClient>;
@@ -77,11 +62,27 @@ export class CourseService {
       config.grpc.services.courseService.split(':');
 
     this.client = new GrpcClient({
-      protoPath: path.join(__dirname, 'proto', 'course_service.proto'),
-      packageName: 'course',
+      protoPath: path.join(
+        process.cwd(),
+        'proto',
+        'course',
+        'course_service.proto'
+      ),
+      packageName: 'course_service',
       serviceName: 'CourseService',
+      // // To use mTLS/SSL credentials, import grpc and configure certificates like so:
+      // // Make sure to import 'grpc' at the top:
+      // // import * as grpc from '@grpc/grpc-js';
+      // credentials: credentials.createSsl(
+      //   readFileSync(path.join(__dirname, 'certs', 'ca.crt')), // Root CA cert
+      //   readFileSync(path.join(__dirname, 'certs', 'client.key')), // Client private key
+      //   readFileSync(path.join(__dirname, 'certs', 'client.crt')) // Client cert chain
+      // ),
       host,
       port: parseInt(port),
+      loaderOptions: {
+        includeDirs: [path.join(process.cwd(), 'proto', 'course')],
+      },
     });
   }
 
@@ -93,16 +94,16 @@ export class CourseService {
     return CourseService.instance;
   }
 
-  async getAllCourse(
-    request: GetAllCoursesRequest,
+  async listCourses(
+    request: GetCoursesRequest,
     options: GrpcClientOptions = {}
-  ): Promise<CoursesResponse> {
+  ): Promise<CoursesListResponse> {
     const response = await this.client.unaryCall(
-      'getAllCourse',
+      'getCourses',
       request,
       options
     );
-    return response as CoursesResponse;
+    return response as CoursesListResponse;
   }
 
   async getCourse(
@@ -148,29 +149,52 @@ export class CourseService {
     );
     return response as DeleteCourseResponse;
   }
+  async publishCourse(
+    request: PublishCourseRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<CourseResponse> {
+    const response = await this.client.unaryCall(
+      'publishCourse',
+      request,
+      options
+    );
+    return response as CourseResponse;
+  }
+
+  async unPublishCourse(
+    request: UnPublishCourseRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<CourseResponse> {
+    const response = await this.client.unaryCall(
+      'unPublishCourse',
+      request,
+      options
+    );
+    return response as CourseResponse;
+  }
 
   async getCoursesByInstructor(
     request: GetCoursesByInstructorRequest,
     options: GrpcClientOptions = {}
-  ): Promise<CoursesResponse> {
+  ): Promise<CoursesListResponse> {
     const response = await this.client.unaryCall(
       'getCoursesByInstructor',
       request,
       options
     );
-    return response as CoursesResponse;
+    return response as CoursesListResponse;
   }
 
   async getEnrolledCourses(
     request: GetEnrolledCoursesRequest,
     options: GrpcClientOptions = {}
-  ): Promise<CoursesResponse> {
+  ): Promise<CoursesListResponse> {
     const response = await this.client.unaryCall(
       'getEnrolledCourses',
       request,
       options
     );
-    return response as CoursesResponse;
+    return response as CoursesListResponse;
   }
   async getCoursesBySlug(
     request: GetCourseBySlugRequest,
@@ -354,180 +378,41 @@ export class CourseService {
     );
     return response as QuizzesResponse;
   }
-
-  async createEnrollment(
-    request: CreateEnrollmentRequest,
+  
+  // Stats
+  async getInstructorCoursesStats(
+    request: GetInstructorCoursesStatsRequest,
     options: GrpcClientOptions = {}
-  ): Promise<EnrollmentResponse> {
+  ): Promise<GetInstructorCoursesStatsResponse> {
     const response = await this.client.unaryCall(
-      'createEnrollment',
+      'getInstructorCoursesStats',
       request,
       options
     );
-    return response as EnrollmentResponse;
+    return response as GetInstructorCoursesStatsResponse;
   }
-  async getEnrollment(
-    request: GetEnrollmentRequest,
+  async getCoursesStats(
+    request: Empty,
     options: GrpcClientOptions = {}
-  ): Promise<EnrollmentResponse> {
+  ): Promise<GetCoursesStatsResponse> {
     const response = await this.client.unaryCall(
-      'getEnrollment',
+      'getCoursesStats',
       request,
       options
     );
-    return response as EnrollmentResponse;
+    return response as GetCoursesStatsResponse;
   }
-  async updateEnrollment(
-    request: UpdateEnrollmentRequest,
+  
+  async getInstructorCourseRatingStats(
+    request: GetInstructorCourseRatingStatsRequest,
     options: GrpcClientOptions = {}
-  ): Promise<EnrollmentResponse> {
+  ): Promise<GetInstructorCourseRatingStatsResponse> {
     const response = await this.client.unaryCall(
-      'updateEnrollment',
+      'getInstructorCourseRatingStats',
       request,
       options
     );
-    return response as EnrollmentResponse;
-  }
-  async deleteEnrollment(
-    request: DeleteEnrollmentRequest,
-    options: GrpcClientOptions = {}
-  ): Promise<DeleteEnrollmentResponse> {
-    const response = await this.client.unaryCall(
-      'deleteEnrollment',
-      request,
-      options
-    );
-    return response as DeleteEnrollmentResponse;
-  }
-  async getEnrollmentsByUser(
-    request: GetEnrollmentsByUserRequest,
-    options: GrpcClientOptions = {}
-  ): Promise<EnrollmentsResponse> {
-    const response = await this.client.unaryCall(
-      'getEnrollmentsByUser',
-      request,
-      options
-    );
-    return response as EnrollmentsResponse;
-  }
-  async getEnrollmentsByCourse(
-    request: GetEnrollmentsByCourseRequest,
-    options: GrpcClientOptions = {}
-  ): Promise<EnrollmentsResponse> {
-    const response = await this.client.unaryCall(
-      'getEnrollmentsByCourse',
-      request,
-      options
-    );
-    return response as EnrollmentsResponse;
-  }
-
-  async createProgress(
-    request: CreateProgressRequest,
-    options: GrpcClientOptions = {}
-  ): Promise<ProgressResponse> {
-    const response = await this.client.unaryCall(
-      'createProgress',
-      request,
-      options
-    );
-    return response as ProgressResponse;
-  }
-  async getProgress(
-    request: GetProgressRequest,
-    options: GrpcClientOptions = {}
-  ): Promise<ProgressResponse> {
-    const response = await this.client.unaryCall(
-      'getProgress',
-      request,
-      options
-    );
-    return response as ProgressResponse;
-  }
-  async updateProgress(
-    request: UpdateProgressRequest,
-    options: GrpcClientOptions = {}
-  ): Promise<ProgressResponse> {
-    const response = await this.client.unaryCall(
-      'updateProgress',
-      request,
-      options
-    );
-    return response as ProgressResponse;
-  }
-  async deleteProgress(
-    request: DeleteProgressRequest,
-    options: GrpcClientOptions = {}
-  ): Promise<DeleteProgressResponse> {
-    const response = await this.client.unaryCall(
-      'deleteProgress',
-      request,
-      options
-    );
-    return response as DeleteProgressResponse;
-  }
-  async getProgressByEnrollment(
-    request: GetProgressByEnrollmentRequest,
-    options: GrpcClientOptions = {}
-  ): Promise<ProgressesResponse> {
-    const response = await this.client.unaryCall(
-      'getProgressByEnrollment',
-      request,
-      options
-    );
-    return response as ProgressesResponse;
-  }
-
-  async createReview(
-    request: CreateReviewRequest,
-    options: GrpcClientOptions = {}
-  ): Promise<ReviewResponse> {
-    const response = await this.client.unaryCall(
-      'createReview',
-      request,
-      options
-    );
-    return response as ReviewResponse;
-  }
-  async getReview(
-    request: GetReviewRequest,
-    options: GrpcClientOptions = {}
-  ): Promise<ReviewResponse> {
-    const response = await this.client.unaryCall('getReview', request, options);
-    return response as ReviewResponse;
-  }
-  async updateReview(
-    request: UpdateReviewRequest,
-    options: GrpcClientOptions = {}
-  ): Promise<ReviewResponse> {
-    const response = await this.client.unaryCall(
-      'updateReview',
-      request,
-      options
-    );
-    return response as ReviewResponse;
-  }
-  async deleteReview(
-    request: DeleteReviewRequest,
-    options: GrpcClientOptions = {}
-  ): Promise<DeleteReviewResponse> {
-    const response = await this.client.unaryCall(
-      'deleteReview',
-      request,
-      options
-    );
-    return response as DeleteReviewResponse;
-  }
-  async getReviewsByCourse(
-    request: GetReviewsByCourseRequest,
-    options: GrpcClientOptions = {}
-  ): Promise<ReviewsResponse> {
-    const response = await this.client.unaryCall(
-      'getReviewsByCourse',
-      request,
-      options
-    );
-    return response as ReviewsResponse;
+    return response as GetInstructorCourseRatingStatsResponse;
   }
 
   close() {

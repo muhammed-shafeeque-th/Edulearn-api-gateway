@@ -4,7 +4,6 @@ import {
 import { z, ZodType } from 'zod';
 
 export const addReactionSchema: ZodType<AddReactionRequest> = z.object({
-  conversationId: z.string().uuid(),
   /** user sending message */
   messageId: z.string().uuid(),
   userId: z.string().uuid(),
