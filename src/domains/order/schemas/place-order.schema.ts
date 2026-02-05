@@ -1,9 +1,8 @@
 import { PlaceOrderRequest } from '@/domains/service-clients/order/proto/generated/order_service';
 import { z, ZodType } from 'zod';
 
-
 export const placeOrderSchema: ZodType<PlaceOrderRequest> = z.object({
-  userId: z.string(),
+  userId: z.string().uuid(),
   couponCode: z.string().optional(),
   courseIds: z.array(z.string()),
 });
