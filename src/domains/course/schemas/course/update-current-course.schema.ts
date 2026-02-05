@@ -10,7 +10,6 @@ export const updateCourseSchema = createCourseSchema
     requirements: z.array(z.string()).optional().default([]),
     thumbnail: z.string().optional(),
     trailer: z.string().optional(),
-    status: z.string().optional(),
     courseId: z.string().uuid(),
     userId: z.string().uuid(),
     price: z.number().min(0).optional(),
