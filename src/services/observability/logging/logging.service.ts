@@ -1,90 +1,93 @@
 import { config } from '@/config';
-import { logger, shutdownLogger } from './setup'; // Correct import path
-import { context, trace } from '@opentelemetry/api'; // Import OpenTelemetry context API
+import { logger, shutdownLogger } from './setup';
+import { context, trace } from '@opentelemetry/api';
 
-// Define a more robust LogContext interface
-interface LogContext {
-  traceId?: string; // OpenTelemetry Trace ID
-  spanId?: string; // OpenTelemetry Span ID
-  userId?: string; // Logged-in user ID
-  correlationId?: string; // General correlation ID if different from traceId
+
+export interface LogContext {
+  traceId?: string;
+  spanId?: string;
+  userId?: string;
+  correlationId?: string;
   service?: string;
   environment?: string;
-  ctx?: string; // Method or class in which logging
-  // Allows arbitrary additional context properties
+  ctx?: string; // e.g., method or component
   [key: string]: unknown;
 }
 
+
 export class LoggingService {
   private readonly serviceName: string;
-  public static instance: LoggingService;
+  private readonly boundContext: LogContext;
 
-  private constructor() {
+  private constructor(defaultContext: LogContext = {}) {
     this.serviceName = config.serviceName;
+    this.boundContext = { ...defaultContext };
   }
 
-  public static getInstance(): LoggingService {
-    // Service name is mandatory
-    if (!LoggingService.instance) {
-      LoggingService.instance = new LoggingService();
+
+  public static getLogger(context: LogContext = {}): LoggingService {
+    return new LoggingService(context);
+  }
+
+  /**
+   * @deprecated Prefer `getLogger()` with explicit context. Provided for backward compatibility.
+   */
+  public static getInstance(context: LogContext = {}): LoggingService {
+    if (!LoggingService.singleton) {
+      LoggingService.singleton = new LoggingService(context);
     }
-    return LoggingService.instance;
+    return LoggingService.singleton;
   }
+  private static singleton: LoggingService;
 
-  // Private helper to build common log entry structure
-  private buildLogEntry(
-    level: string,
+  
+  private composeLog(
+    level: 'info' | 'warn' | 'error' | 'debug',
     message: string,
-    logContext?: LogContext
+    ctx: LogContext = {}
   ) {
-    // Get current active OpenTelemetry span context for correlation
-    const activeSpan = trace.getSpan(context.active());
-    const spanContext = activeSpan?.spanContext();
+    const merged: LogContext = { ...this.boundContext, ...ctx };
+    const span = trace.getSpan(context.active());
+    const spanCtx = span?.spanContext();
 
     return {
       level,
       message,
-      // Prioritize traceId/spanId from active OpenTelemetry context
-      traceId: spanContext?.traceId,
-      spanId: spanContext?.spanId,
-      // Fallback to context provided if not from active span
-      userId: logContext?.userId,
-      correlationId: logContext?.correlationId,
-      service: logContext?.service || this.serviceName,
+      traceId: spanCtx?.traceId ?? merged.traceId,
+      spanId: spanCtx?.spanId ?? merged.spanId,
+      userId: merged.userId,
+      correlationId: merged.correlationId,
+      service: merged.service || this.serviceName,
       environment: config.nodeEnv || 'development',
-      caller:
-        config.nodeEnv !== 'production' ? this.getCaller() + ' ' : undefined,
-      // Include any other custom context provided directly
-      ...logContext,
+      caller: config.nodeEnv !== 'production' ? this.getCaller() : undefined,
+      ...merged,
     };
   }
 
-  // Use winston's logger directly with metadata object
   info(message: string, context?: LogContext): void {
-    const logEntry = this.buildLogEntry('info', message, context);
-    logger.info(message, logEntry);
+    logger.info(message, this.composeLog('info', message, context));
   }
 
   error(message: string, context?: LogContext): void {
-    const logEntry = this.buildLogEntry('error', message, context);
-    logger.error(message, logEntry);
+    logger.error(message, this.composeLog('error', message, context));
   }
 
   warn(message: string, context?: LogContext): void {
-    // Renamed from warning to warn for consistency with Winston
-    const logEntry = this.buildLogEntry('warn', message, context);
-    logger.warn(message, logEntry);
+    logger.warn(message, this.composeLog('warn', message, context));
   }
 
   debug(message: string, context?: LogContext): void {
-    const logEntry = this.buildLogEntry('debug', message, context);
-    logger.debug(message, logEntry);
+    logger.debug(message, this.composeLog('debug', message, context));
   }
 
   async shutdown(): Promise<void> {
     await shutdownLogger();
   }
 
+  /**
+   * Returns stack caller for debugging (not included in prod).
+   * @private
+   */
   private getCaller(): string | undefined {
     const stack = new Error().stack;
     if (!stack) return undefined;
