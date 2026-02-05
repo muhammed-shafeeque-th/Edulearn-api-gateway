@@ -27,7 +27,7 @@ export class CourseNameAvailabilityStrategy extends BaseBloomFilterStrategy {
       let hasMore = true;
 
       while (hasMore) {
-        const response = await this.courseService.getAllCourse({
+        const response = await this.courseService.listCourses({
           params: {
             pagination: {
               page,
@@ -122,7 +122,7 @@ export class CourseNameAvailabilityStrategy extends BaseBloomFilterStrategy {
       let hasMore = true;
 
       while (hasMore) {
-        const response = await this.courseService.getAllCourse({
+        const response = await this.courseService.listCourses({
           params: {
             pagination: {
               page,

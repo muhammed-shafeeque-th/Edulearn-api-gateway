@@ -1,5 +1,5 @@
 import { BloomFilterFacade } from './bloom-filter.facade';
-import { RedisService } from '@/shared/utils/redis';
+import { RedisService } from '@/services/redis';
 import { getBloomFilterConfig } from './bloom-filter.config';
 
 /**

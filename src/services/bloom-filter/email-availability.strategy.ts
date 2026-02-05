@@ -27,13 +27,13 @@ export class EmailAvailabilityStrategy extends BaseBloomFilterStrategy {
           JSON.stringify(success, null, 2)
       );
 
-      if (!success || !success.email) {
+      if (!success || !success.emails) {
         throw new Error('Failed to fetch user emails from server');
       }
 
-      const emails = Array.isArray(success.email)
-        ? success.email
-        : [success.email];
+      const emails = Array.isArray(success.emails)
+        ? success.emails
+        : [success.emails];
 
       this.logger.info(`Seeding ${emails.length} emails to bloom filter`, {
         ctx: EmailAvailabilityStrategy.name,
