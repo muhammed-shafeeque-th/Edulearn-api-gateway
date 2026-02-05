@@ -1,4 +1,4 @@
-import { status as GrpcStatus, ServiceError } from '@grpc/grpc-js';
+import { status as GrpcStatus, ServiceError, Metadata } from '@grpc/grpc-js';
 import { BaseError } from './base-error';
 
 /**
@@ -77,6 +77,17 @@ const mapGrpcErrorCode: Record<number, string> = {
   [GrpcStatus.UNIMPLEMENTED]: 'UNIMPLEMENTED_ERROR',
 };
 
+function getMetadataValue(
+  metadata: Metadata | undefined,
+  key: string
+): string | undefined {
+  if (!metadata) return undefined;
+  const value = metadata.get(key);
+  if (Array.isArray(value) && value.length > 0) {
+    return value[0]?.toString();
+  }
+  return undefined;
+}
 
 export class GrpcServiceError extends BaseError {
   statusCode: number;
@@ -84,16 +95,42 @@ export class GrpcServiceError extends BaseError {
   details: string[];
 
   constructor(serviceError: ServiceError) {
-    const message =
-      mapErrorMessages[serviceError.code] || serviceError.message || 'Unknown gRPC error';
-    super(message);
+    // Extract errorCode and detail from metadata if present
+    let extractedErrorCode: string | undefined;
+    let extractedDetail: string | undefined;
 
-    this.statusCode = mapErrorToHttpStatus(serviceError.code); // Bad Gateway for upstream errors
-    this.errorCode = mapGrpcErrorCode[serviceError.code] || 'UNKNOWN_ERROR';
-    this.details = [serviceError.details || message];
+    if (
+      'metadata' in serviceError &&
+      serviceError.metadata instanceof Metadata
+    ) {
+      extractedErrorCode = getMetadataValue(
+        serviceError.metadata,
+        'error_code'
+      );
+      extractedDetail = getMetadataValue(serviceError.metadata, 'detail');
+    }
+
+    // Fallbacks for errorCode and detail if not set in metadata
+    const errorCode =
+      extractedErrorCode ||
+      mapGrpcErrorCode[serviceError.code] ||
+      'UNKNOWN_ERROR';
+
+    const detail =
+      extractedDetail ||
+      serviceError.details ||
+      mapErrorMessages[serviceError.code] ||
+      serviceError.message ||
+      'Unknown gRPC error';
+
+    super(detail);
+
+    this.statusCode = mapErrorToHttpStatus(serviceError.code);
+    this.errorCode = errorCode;
+    this.details = [detail];
   }
 
   serializeErrors() {
-    return this.details.map((msg) => ({ message: msg }));
+    return this.details.map(msg => ({ message: msg }));
   }
 }
