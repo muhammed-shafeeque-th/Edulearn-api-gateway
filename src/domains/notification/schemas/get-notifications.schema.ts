@@ -4,7 +4,7 @@ import { notificationParamsSchema } from './pagination.schema';
 
 export const getNotificationsSchema: ZodType<GetNotificationsRequest> =
   z.object({
-    userId: z.string(),
+    userId: z.string().uuid(),
     params: notificationParamsSchema,
   });
 
