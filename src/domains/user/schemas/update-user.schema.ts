@@ -1,4 +1,4 @@
-import { UpdateUserDetailsRequest } from '@/domains/service-clients/user/proto/generated/user_service';
+import { UpdateUserDetailsRequest } from '@/domains/service-clients/user/proto/generated/user/types/user_types';
 import { z, ZodType } from 'zod';
 
 export const updateUserSchema: ZodType<UpdateUserDetailsRequest> = z.object({
@@ -41,10 +41,14 @@ export const updateUserSchema: ZodType<UpdateUserDetailsRequest> = z.object({
   gender: z.enum(['male', 'female', 'other']).optional(),
   phone: z
     .string()
-    .regex(/^\+?[0-9]{7,15}$/, {
-      message: 'Phone must be a valid phone number',
-    })
-    .optional(),
-});
+    .optional()
+    .or(z.literal(''))
+    .refine(
+      phone =>
+        !phone ||
+        /^[\d\s()+-]{7,20}$/.test(phone), // accepts international numbers with spaces, +, -, (, )
+      { message: 'Phone must be a valid phone number' }
+    ),
+}) as ZodType<UpdateUserDetailsRequest>;
 
 export type UpdateUserDto = z.infer<typeof updateUserSchema>;

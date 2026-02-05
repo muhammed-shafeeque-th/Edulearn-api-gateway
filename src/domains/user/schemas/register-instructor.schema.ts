@@ -1,4 +1,4 @@
-import { RegisterInstructorRequest } from '@/domains/service-clients/user/proto/generated/user/types/user_types';
+import { RegisterInstructorRequest } from '@/domains/service-clients/user/proto/generated/user/types/instructor_types';
 import { z, ZodType } from 'zod';
 
 export const registerInstructorSchema: ZodType<RegisterInstructorRequest> =

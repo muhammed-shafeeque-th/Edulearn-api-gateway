@@ -1,7 +1,7 @@
 import { z, ZodType } from 'zod';
 import { SortOrder as GrpcSortOrder } from '@/domains/service-clients/user/proto/generated/user/common';
 import {
-  GetUsersRequest,
+  ListUsersRequest,
   UserStatus as GrpcUserStatus,
 } from '@/domains/service-clients/user/proto/generated/user/types/user_types';
 import { paginationSchema } from './pagination.schema';
@@ -61,7 +61,7 @@ const userFilterSchema = z
   .partial();
 
 
-export const getUsersRequestSchema: ZodType<GetUsersRequest> = z
+export const getUsersRequestSchema: ZodType<ListUsersRequest> = z
   .object({
     pagination: paginationSchema.optional(),
     filter: userFilterSchema.optional(),
@@ -79,7 +79,7 @@ export const getUsersRequestSchema: ZodType<GetUsersRequest> = z
     pagination: data.pagination ?? {},
     filter: data.filter ?? {},
     sort: data.sort,
-  })) as unknown as ZodType<GetUsersRequest>;
+  })) as unknown as ZodType<ListUsersRequest>;
 
 // --- Aliasing for compatibility with previous type/usage ---
 export const getUsersSchema = getUsersRequestSchema;
