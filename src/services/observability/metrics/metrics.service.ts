@@ -5,16 +5,29 @@ import {
   gRPCRequestDurationSeconds,
   gRPCErrorsTotal,
 } from './setup';
-import {Counter, Histogram, register} from 'prom-client'; // Import for register
+import {
+  Counter,
+  Histogram,
+  Gauge,
+  Summary,
+  collectDefaultMetrics,
+  Registry,
+  register as globalRegister,
+} from 'prom-client';
 
-interface MetricLabels {
+export interface MetricLabels {
   [key: string]: string | number;
 }
 
 export class MetricsService {
   private static instance: MetricsService;
+  private readonly registry: Registry;
 
-  private constructor() {}
+  private constructor() {
+    this.registry = globalRegister;
+
+    collectDefaultMetrics({ register: this.registry });
+  }
 
   public static getInstance(): MetricsService {
     if (!MetricsService.instance) {
@@ -23,102 +36,167 @@ export class MetricsService {
     return MetricsService.instance;
   }
 
-  // Measure duration http requests
-  measureHttpRequestDuration(
+  public measureHttpRequestDuration(
     method: string,
     route: string,
     duration?: number
-  ): (statusCode: number) => void;
-  measureHttpRequestDuration(method: string, route: string, duration?: number): void |  ((statusCode: number) => void) {
-    if (duration) {
+  ): void | ((statusCode: number) => void) {
+    if (typeof duration === 'number') {
       httpRequestDurationSeconds.observe({ method, route }, duration);
       return;
     }
     const end = httpRequestDurationSeconds.startTimer({ method, route });
     return (statusCode: number) => {
-      end({ status_code: statusCode.toString() }); // Ensure status code is a string label
-    };
-  }
-  // Measure duration Grpc requests
-  measureGRPCRequestDuration(
-    method: string,
-    serviceFrom: string,
-    serviceTo: string
-  ): () => void {
-    const end = gRPCRequestDurationSeconds.startTimer({
-      method,
-      serviceFrom,
-      serviceTo,
-    });
-    return () => {
-      end(); // Ensure status code is a string label
+      end({ status_code: statusCode.toString() });
     };
   }
 
-  incrementHttpRequestCounter(
+  public measureGRPCRequestDuration(
+    method: string,
+    duration?: number,
+    serviceTo?: string
+  ): void | (() => void) {
+    if (typeof duration === 'number') {
+      gRPCRequestDurationSeconds.observe(
+        { method, serviceTo, duration },
+        duration
+      );
+      return;
+    }
+    const end = gRPCRequestDurationSeconds.startTimer({ method, serviceTo });
+    return () => {
+      end();
+    };
+  }
+
+  public incrementHttpRequestCounter(
     method: string,
     route: string,
-    statusCode: number
+    statusCode?: number | string
   ): void {
     httpRequestsTotal.inc({
+      method,
+      route,
+      status_code: statusCode?.toString(),
+    });
+  }
+
+  public incrementHttpErrorCounter(
+    method: string,
+    route: string,
+    statusCode: number | string
+  ): void {
+    httpErrorsTotal.inc({
       method,
       route,
       status_code: statusCode.toString(),
     });
   }
 
-  incrementHttpErrorCounter(
+  public incrementGrpcErrorCounter(
     method: string,
-    route: string,
-    statusCode: number
+    errorName?: string,
+    serviceTo?: string,
+    code?: string
   ): void {
-    httpErrorsTotal.inc({ method, route, status_code: statusCode.toString() });
-  }
-  incrementGrpcErrorCounter(
-    method: string,
-    serviceFrom: string,
-    serviceTo: string,
-    code: string
-  ): void {
-    gRPCErrorsTotal.inc({ method, serviceFrom, serviceTo, code });
+    gRPCErrorsTotal.inc({
+      method,
+      errorName,
+      serviceTo,
+      code,
+    });
   }
 
-  // Generic counter increment for custom metrics (requires pre-defined metric instance)
-  // Best practice: Inject specific metric instances or use a factory if many custom metrics.
-  incrementCounter(metricName: string, labels?: MetricLabels): void {
-    // This method assumes you have a way to get the specific Counter instance by name.
-    const counter = register.getSingleMetric(metricName);
+  public incrementCounter(metricName: string, labels?: MetricLabels): void {
+    const counter = this.registry.getSingleMetric(metricName);
     if (counter && counter instanceof Counter) {
       counter.inc({ ...labels });
     } else {
       console.warn(
-        `Counter '${metricName}' not found or not a Counter instance.`
-      );
-    }
-  }
-  // Generic histogram record for custom metrics (requires pre-defined metric instance)
-  recordHistogram(
-    metricName: string,
-    value: number,
-    labels?: MetricLabels
-  ): void {
-    const histogram = register.getSingleMetric(metricName);
-    if (histogram && histogram instanceof Histogram) {
-      histogram.observe({ ...labels }, value);
-    } else {
-      console.warn(
-        `Histogram '${metricName}' not found or not a Histogram instance.`
+        `[MetricsService] Counter metric '${metricName}' not found.`
       );
     }
   }
 
-  // Expose metrics for Prometheus to scrape
-  async getMetrics(): Promise<string> {
+  public recordHistogram(
+    metricName: string,
+    value: number,
+    labels?: MetricLabels
+  ): void {
+    const histogram = this.registry.getSingleMetric(metricName);
+    if (histogram && histogram instanceof Histogram) {
+      histogram.observe({ ...labels }, value);
+    } else {
+      console.warn(
+        `[MetricsService] Histogram metric '${metricName}' not found.`
+      );
+    }
+  }
+
+  public setGauge(
+    metricName: string,
+    value: number,
+    labels?: MetricLabels
+  ): void {
+    const metric = this.registry.getSingleMetric(metricName);
+    if (metric && metric instanceof Gauge) {
+      metric.set({ ...labels }, value);
+    } else {
+      console.warn(`[MetricsService] Gauge metric '${metricName}' not found.`);
+    }
+  }
+
+  public observeSummary(
+    metricName: string,
+    value: number,
+    labels?: MetricLabels
+  ): void {
+    const metric = this.registry.getSingleMetric(metricName);
+    if (metric && metric instanceof Summary) {
+      metric.observe({ ...labels }, value);
+    } else {
+      console.warn(
+        `[MetricsService] Summary metric '${metricName}' not found.`
+      );
+    }
+  }
+
+  public removeMetric(metricName: string): void {
     try {
-      return register.metrics();
+      this.registry.removeSingleMetric(metricName);
+    } catch (err) {
+      console.warn(
+        `[MetricsService] Failed removing metric '${metricName}'.`,
+        err
+      );
+    }
+  }
+
+  public async getMetrics(): Promise<string> {
+    try {
+      return this.registry.metrics();
     } catch (error) {
-      console.error('Error while fetching prometheus metrics', error);
+      console.error(
+        '[MetricsService] Error while fetching prometheus metrics:',
+        error
+      );
       throw error;
     }
+  }
+
+  public resetAllMetrics(): void {
+    this.registry.resetMetrics();
+  }
+
+  public listMetricNames(): string[] {
+    return Object.keys(
+      this.registry.getMetricsAsArray().reduce(
+        (acc, m) => {
+          acc[m.name] = true;
+          return acc;
+        },
+        {} as Record<string, boolean>
+      )
+    );
   }
 }
