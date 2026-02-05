@@ -5,11 +5,16 @@ import {
   BookSessionRequest,
   BookSessionResponse,
   GetOrderByIdRequest,
-  GetOrderByUserIdRequest,
+  GetOrdersRequest,
+  GetOrderStatusRequest,
+  GetRevenueStatsRequest,
+  GetRevenueStatsResponse,
   OrderResponse,
   OrderServiceClient,
   OrdersResponse,
+  OrderStatusResponse,
   PlaceOrderRequest,
+  RestoreOrderRequest,
 } from './proto/generated/order_service';
 import { config } from 'config';
 
@@ -22,11 +27,17 @@ export class OrderService {
       config.grpc.services.orderService.split(':');
 
     this.client = new GrpcClient({
-      protoPath: path.join(__dirname, 'proto', 'order_service.proto'),
+      protoPath: path.join(
+        process.cwd(),
+        'proto',
+        'order',
+        'order_service.proto'
+      ),
       packageName: 'order_service',
       serviceName: 'OrderService',
       host,
       port: parseInt(port),
+      deadlineMs: 30000,
     });
   }
 
@@ -60,15 +71,33 @@ export class OrderService {
     );
     return response as OrderResponse;
   }
-  async getOrdersByUserId(
-    request: GetOrderByUserIdRequest,
+  async resetOrder(
+    request: RestoreOrderRequest,
     options: GrpcClientOptions = {}
-  ): Promise<OrdersResponse> {
+  ): Promise<OrderResponse> {
     const response = await this.client.unaryCall(
-      'getOrdersByUserId',
+      'restoreOrder',
       request,
       options
     );
+    return response as OrderResponse;
+  }
+  async getOrderStatus(
+    request: GetOrderStatusRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<OrderStatusResponse> {
+    const response = await this.client.unaryCall(
+      'getOrderStatus',
+      request,
+      options
+    );
+    return response as OrderStatusResponse;
+  }
+  async getOrdersByUserId(
+    request: GetOrdersRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<OrdersResponse> {
+    const response = await this.client.unaryCall('getOrders', request, options);
     return response as OrdersResponse;
   }
   async placeOrder(
@@ -81,6 +110,17 @@ export class OrderService {
       options
     );
     return response as OrderResponse;
+  }
+  async getRevenueStats(
+    request: GetRevenueStatsRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<GetRevenueStatsResponse> {
+    const response = await this.client.unaryCall(
+      'getRevenueStats',
+      request,
+      options
+    );
+    return response as GetRevenueStatsResponse;
   }
 
   close() {
