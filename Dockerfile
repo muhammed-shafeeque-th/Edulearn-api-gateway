@@ -16,6 +16,7 @@ RUN npm ci && npm cache clean --force
 # Copy source code
 COPY tsconfig.json ./
 COPY src ./src
+COPY proto ./proto    
 
 # Build the TypeScript application
 RUN npm run build
@@ -33,6 +34,7 @@ WORKDIR /app
 
 # Copy built application and package manifests
 COPY --from=builder --chown=appuser:appgroup /app/dist ./dist
+COPY --from=builder --chown=appuser:appgroup /app/proto ./proto
 COPY --from=builder --chown=appuser:appgroup /app/package*.json ./
 
 # Install only production dependencies
