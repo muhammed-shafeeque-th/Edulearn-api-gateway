@@ -1,245 +1,151 @@
-import { AuthService } from '../../../service-clients/auth';
 import { Request, Response } from 'express';
-import validateSchema from '../../../../services/validate-schema';
+import { injectable, inject } from 'inversify';
+import { AuthService } from '@/domains/service-clients/auth';
+import { NotificationService } from '@/domains/service-clients/notification';
+import validateSchema from '@/services/validate-schema';
 import { RegisterUserSchema } from '../../schemas/register-user.schema';
 import { LoginUserSchema } from '../../schemas/login-user.schema';
 import { ResponseWrapper } from '@/shared/utils/response-wrapper';
-
-import { NotificationService } from '../../../service-clients/notification';
 import { VerifyUserSchema } from '../../schemas/verify-user.schema';
 import { ResendOtpSchema } from '../../schemas/resend-otp.schema';
 import { Auth2SignSchema } from '../../schemas/auth2-sign.schema';
 import { LogoutUserSchema } from '../../schemas/logout.schema';
 import { refreshTokenSchema } from '../../schemas/refresh-token.schema';
-
 import { emailAvailabilitySchema } from '../../../user/schemas/email-availability.schema';
-import { LoggingService } from 'services/observability/logging/logging.service';
-import { TracingService } from 'services/observability/tracing/trace.service';
-import { MetricsService } from 'services/observability/monitoring/monitoring.service';
-import { MetadataManager } from '@/shared/utils/metadata-manager';
-import { HttpStatus } from '@/shared/constants/http-status';
+import { LoggingService } from '@/services/observability/logging/logging.service';
 import { changePasswordSchema } from '../../schemas/change-password.schema';
 import { BloomFilterFacade } from '@/services/bloom-filter';
 import { forgotPasswordSchema } from '../../schemas/forgot-password.schema';
-import { withRetry } from '@/shared/utils/retryable';
 import { authRefreshToken } from '../../utils/constants';
-import { attachCookies, clearCookies } from '../../utils/manage-cookies';
+import { attachCookies, clearCookies } from '../../utils/manage-cookies copy'; 
 import { resetPasswordSchema } from '../../schemas/reset-password.schema';
+import { attachMetadata } from '../../utils/attach-metadata';
+import { AUTH_MESSAGES } from '../../utils/resposne-messages';
+import { Trace, MonitorGrpc } from '@/shared/utils/decorators';
+import { TYPES } from '@/services/di';
 
+@injectable()
 export class AuthController {
-  private userServiceClient: AuthService;
-  private notificationService: NotificationService;
-  private emailAvailabilityService?: BloomFilterFacade;
-  private logger: LoggingService;
-  private tracer: TracingService;
-  private monitor: MetricsService;
+  private _emailAvailabilityService?: BloomFilterFacade;
 
-  constructor() {
-    // Observability services
-    this.logger = LoggingService.getInstance();
-    this.tracer = TracingService.getInstance();
-    this.monitor = MetricsService.getInstance();
+  constructor(
+    @inject(TYPES.LoggingService) private logger: LoggingService,
+    @inject(TYPES.AuthService) private userServiceClient: AuthService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService
+  ) {}
 
-    // Business services
-    this.userServiceClient = AuthService.getInstance();
-    this.notificationService = NotificationService.getInstance();
-
-    try {
-      // Util services
-      withRetry(
-        async () =>
-          (() => {
-            this.emailAvailabilityService = BloomFilterFacade.getInstance();
-          })(),
-        {
-          onRetry: (error, attempt, delay) => {
-            console.log(
-              `Attempt ${attempt} failed: ${error.message}. Retrying in ${delay}ms`
-            );
-          },
-        }
-      );
-    } catch (error) {}
-  }
-
-  async registerUser(req: Request, res: Response) {
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-
-    try {
-      await this.tracer.startActiveSpan(
-        'AuthController.registerUser',
-        async span => {
-          this.logger.info(`Processing grpc method 'registerUser'`);
-          span.setAttribute('grpc.method', 'getUser');
-
-          const {
-            email,
-            password,
-            role,
-            avatar,
-            firstName,
-            lastName,
-            authType,
-          } = validateSchema(req.body, RegisterUserSchema)!;
-          span.setAttribute('request.email', email);
-
-          this.logger.debug(
-            'Initiate `RegisterUser` request to `AuthService`',
-            {
-              ...req.body,
-            }
-          );
-          let endRegisterUser = this.monitor.measureGRPCRequestDuration(
-            'RegisterUser',
-            'Api-Gateway',
-            'AuthService'
-          );
-          const response = await this.userServiceClient.registerUser(
-            {
-              avatar: avatar || '',
-              email,
-              password,
-              firstName,
-              lastName,
-              role,
-              authType,
-            },
-            { metadata: metadata.metadata }
-          );
-          this.logger.debug(
-            '`RegisterUser` request for `AuthService` has completed',
-            {
-              userId: response.userId || '',
-            }
-          );
-
-          // Record time taken to run the request
-          endRegisterUser();
-
-          this.logger.debug(
-            'Initiated `SendOtp` request for `NotificationService` ',
-            {
-              userId: response.userId || '',
-              email,
-            }
-          );
-          let endSendOtp = this.monitor.measureGRPCRequestDuration(
-            'SendOtp',
-            'Api-Gateway',
-            'NotificationService'
-          );
-
-          // Business Logic
-          const { success } = await this.notificationService.sendOtp(
-            {
-              email,
-              userId: response.userId!,
-              username: firstName + ' ' + lastName,
-            },
-            { metadata: metadata.metadata }
-          );
-
-          endSendOtp();
-          this.logger.debug(
-            '`SendOtp` request to `NotificationService` has completed ',
-            {
-              userId: response.userId || '',
-              email,
-            }
-          );
-
-          const resWrap = new ResponseWrapper(res);
-          resWrap
-            .status(HttpStatus.OK)
-            .success(response, 'OTP send successfully');
-        }
-      );
-    } catch (error: any) {
-      this.logger.error(
-        `Error calling  'RegisterUser' for email: ${req.body.email}: ${error.message}`
-      );
-
-      this.monitor.incrementGrpcErrorCounter(
-        req.method,
-        'AuthService',
-        req.path,
-        error?.statusCode || 500
-      );
-      throw error;
+  // Lazy getter for BloomFilterFacade 
+  private get emailAvailabilityService(): BloomFilterFacade {
+    if (!this._emailAvailabilityService) {
+      this.logger.debug('Initializing BloomFilterFacade...');
+      this._emailAvailabilityService = BloomFilterFacade.getInstance();
     }
+    return this._emailAvailabilityService;
   }
 
+  @Trace('AuthController.registerUser')
+  @MonitorGrpc('AuthService', 'RegisterUser')
+  async registerUser(req: Request, res: Response) {
+    this.logger.info(`Processing grpc method 'registerUser'`);
+
+    const { email, password, role, avatar, firstName, lastName, authType } =
+      validateSchema(req.body, RegisterUserSchema)!;
+
+    this.logger.debug('Initiate `RegisterUser` request to `AuthService`', {
+      ...req.body,
+    });
+
+    const response = await this.userServiceClient.registerUser(
+      {
+        avatar: avatar || '',
+        email,
+        password,
+        firstName,
+        lastName,
+        role,
+        authType,
+      },
+      { metadata: attachMetadata(req) }
+    );
+
+    this.logger.debug(
+      '`RegisterUser` request for `AuthService` has completed',
+      { userId: response.userId || '' }
+    );
+
+    // this.logger.debug(
+    //   'Initiated `SendOtp` request for `NotificationService` ',
+    //   { userId: response.userId || '', email }
+    // );
+
+    // // calls to notificationService for OTP would go here (commented out in original)
+
+    // this.logger.debug(
+    //   '`SendOtp` request to `NotificationService` has completed ',
+    //   { userId: response.userId || '', email }
+    // );
+
+    const resWrap = new ResponseWrapper(res);
+    resWrap
+      .status(AUTH_MESSAGES.REGISTER_USER.statusCode)
+      .success(response, AUTH_MESSAGES.REGISTER_USER.message);
+  }
+
+  @Trace('AuthController.changePassword')
+  @MonitorGrpc('AuthService', 'ChangePassword')
   async changePassword(req: Request, res: Response) {
     const { currentPassword, newPassword, userId } = validateSchema(
       { ...req.body, userId: req.user?.userId },
       changePasswordSchema
     )!;
 
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user, correlationId: req.correlationId }); // send user data in `x-user` header
-
-    const { success } = await this.userServiceClient.changePassword(
+    await this.userServiceClient.changePassword(
       { oldPassword: currentPassword, newPassword, userId },
-      {
-        metadata: metadata.metadata,
-      }
+      { metadata: attachMetadata(req) }
     );
 
-    const resWrap = new ResponseWrapper(res);
-
-    return resWrap
-      .status(HttpStatus.OK)
-      .success({ updated: true }, 'Password has been updated successfully');
+    return new ResponseWrapper(res)
+      .status(AUTH_MESSAGES.CHANGE_PASSWORD.statusCode)
+      .success({ updated: true }, AUTH_MESSAGES.CHANGE_PASSWORD.message);
   }
 
+  @Trace('AuthController.resetPassword')
+  @MonitorGrpc('AuthService', 'ResetPassword')
   async resetPassword(req: Request, res: Response) {
     const schemaResponse = validateSchema(
       { ...req.body, ...req.params },
       resetPasswordSchema
     )!;
 
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user, correlationId: req.correlationId }); // send user data in `x-user` header
-
-    const { success } = await this.userServiceClient.resetPassword(
-      schemaResponse,
-      {
-        metadata: metadata.metadata,
-      }
-    );
+    await this.userServiceClient.resetPassword(schemaResponse, {
+      metadata: attachMetadata(req),
+    });
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.OK)
-      .success({ updated: true }, 'Password has been updated successfully');
+      .status(AUTH_MESSAGES.RESET_PASSWORD.statusCode)
+      .success({ updated: true }, AUTH_MESSAGES.RESET_PASSWORD.message);
   }
 
+  @Trace('AuthController.forgotPassword')
+  @MonitorGrpc('AuthService', 'ForgotPassword')
   async forgotPassword(req: Request, res: Response) {
     const schemaResponse = validateSchema(req.body, forgotPasswordSchema)!;
 
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user, correlationId: req.correlationId }); // send user data in `x-user` header
-
     const { success } = await this.userServiceClient.forgotPassword(
       schemaResponse,
-      {
-        metadata: metadata.metadata,
-      }
+      { metadata: attachMetadata(req) }
     );
 
-    const response = await this.notificationService.forgotPassword(success!);
+    await this.notificationService.forgotPassword(success!);
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.OK)
-      .success(
-        { updated: true },
-        'Password reset link has been sent to your email, please check your email address'
-      );
+      .status(AUTH_MESSAGES.FORGOT_PASSWORD.statusCode)
+      .success({ updated: true }, AUTH_MESSAGES.FORGOT_PASSWORD.message);
   }
 
+  @Trace('AuthController.oauthSign')
+  @MonitorGrpc('AuthService', 'Auth2Sign')
   async oauthSign(req: Request, res: Response) {
     const { provider, token, authType } = validateSchema(
       req.body,
@@ -252,74 +158,66 @@ export class AuthController {
       authType,
     });
 
-    const resWrap = new ResponseWrapper(res);
-    // Attach token to to response cookies
-    attachCookies(
-      resWrap,
-      serverResponse!.refreshToken,
-      serverResponse!.accessToken
-    );
-
-    return resWrap
-      .status(HttpStatus.OK)
-      .success(
-        { token: serverResponse!.accessToken },
-        'oauth request been completed successfully'
-      );
+    return new ResponseWrapper(res)
+      .status(AUTH_MESSAGES.OAUTH_SIGN.statusCode)
+      .success(serverResponse, AUTH_MESSAGES.OAUTH_SIGN.message);
   }
 
+  @Trace('AuthController.checkEmailAvailability')
   async checkEmailAvailability(req: Request, res: Response) {
-    const { email } = validateSchema(req.body, emailAvailabilitySchema)!;
+    const { email } = validateSchema(req.query, emailAvailabilitySchema)!;
 
     const isEmailAvailable =
-      await this.emailAvailabilityService!.isEmailAvailable(email);
-    new ResponseWrapper(res)
-      .status(HttpStatus.OK)
+      await this.emailAvailabilityService.isEmailAvailable(email);
+    return new ResponseWrapper(res)
+      .status(AUTH_MESSAGES.EMAIL_AVAILABLE.statusCode)
       .success(
-        { available: !!isEmailAvailable },
-        isEmailAvailable ? 'Email available' : 'Email already taken'
+        { exists: !isEmailAvailable },
+        isEmailAvailable
+          ? AUTH_MESSAGES.EMAIL_AVAILABLE.message
+          : AUTH_MESSAGES.EMAIL_TAKEN.message
       );
   }
 
+  @Trace('AuthController.resendOtp')
+  @MonitorGrpc('NotificationService', 'SendOtp')
   async resendOtp(req: Request, res: Response) {
     const { email, userId, username } = validateSchema(
       req.body,
       ResendOtpSchema
     )!;
 
-    const { success } = await this.notificationService.sendOtp({
+    await this.notificationService.sendOtp({
       email,
       userId: userId || '',
       username: username || 'User',
     });
 
-    const resWrap = new ResponseWrapper(res);
-
-    resWrap.status(HttpStatus.OK).success({}, success?.message);
+    new ResponseWrapper(res)
+      .status(AUTH_MESSAGES.RESEND_OTP.statusCode)
+      .success({}, AUTH_MESSAGES.RESEND_OTP.message);
   }
 
+  @Trace('AuthController.verifyUser')
+  @MonitorGrpc('AuthService', 'VerifyUser')
   async verifyUser(req: Request, res: Response) {
     const { email, code } = validateSchema(req.body, VerifyUserSchema)!;
 
-    const { success } = await this.notificationService.verifyOtp({
+    await this.notificationService.verifyOtp({
       email,
       otp: code,
     });
-    const resWrap = new ResponseWrapper(res);
 
-    // Next round trip to user service to mark user as verified
-    // And fetch user credentials
-    // NB: Here you can use Async messaging instead of Sync but
-    // for me I chose sync, so no need to make another login request after register
-    // reduce user effort, round trip and fetch the user credentials
+    // Initial verification via Notification Service successful, now confirm with User Service
     const { success: successResponse } =
       await this.userServiceClient.verifyUser({
         email,
       })!;
 
     // Update email into bloom filter
-    this.emailAvailabilityService!.addEmail(email);
+    this.emailAvailabilityService.addEmail(email);
 
+    const resWrap = new ResponseWrapper(res);
     attachCookies(
       resWrap,
       successResponse!.refreshToken,
@@ -327,17 +225,15 @@ export class AuthController {
     );
 
     return resWrap
-      .status(HttpStatus.OK)
-      .success({ token: successResponse!.accessToken }, 'Login successful');
+      .status(AUTH_MESSAGES.VERIFY_USER.statusCode)
+      .success(
+        { token: successResponse!.accessToken },
+        AUTH_MESSAGES.VERIFY_USER.message
+      );
   }
 
-  /**
-   * Login user with credentials
-   * @param req
-   * @param res
-   * @returns
-   */
-
+  @Trace('AuthController.loginUser')
+  @MonitorGrpc('AuthService', 'LoginUser')
   async loginUser(req: Request, res: Response) {
     const { email, password, rememberMe } = validateSchema(
       req.body,
@@ -353,12 +249,17 @@ export class AuthController {
     attachCookies(resWrap, success!.refreshToken, success!.accessToken);
 
     return resWrap
-      .status(HttpStatus.OK)
-      .success({ token: success!.accessToken }, 'Login successful');
+      .status(AUTH_MESSAGES.LOGIN_USER.statusCode)
+      .success(
+        { token: success!.accessToken },
+        AUTH_MESSAGES.LOGIN_USER.message
+      );
   }
 
+  @Trace('AuthController.logoutUser')
+  @MonitorGrpc('AuthService', 'LogoutUser')
   async logoutUser(req: Request, res: Response) {
-    const { userId } = validateSchema(req.body, LogoutUserSchema)!;
+    const { userId } = validateSchema(req.user, LogoutUserSchema)!;
 
     const serverResponse = await this.userServiceClient.logoutUser({
       userId,
@@ -368,23 +269,30 @@ export class AuthController {
     clearCookies(resWrap);
 
     return resWrap
-      .status(HttpStatus.OK)
-      .success(serverResponse, 'user logged out successfully');
+      .status(AUTH_MESSAGES.LOGOUT_USER.statusCode)
+      .success(serverResponse, AUTH_MESSAGES.LOGOUT_USER.message);
   }
 
+  @Trace('AuthController.refreshToken')
+  @MonitorGrpc('AuthService', 'RefreshToken')
   async refreshToken(req: Request, res: Response) {
     const { refreshToken } = validateSchema(
       { refreshToken: req.cookies[authRefreshToken] },
       refreshTokenSchema
     )!;
 
-    const { error, success } = await this.userServiceClient.refreshToken({
+    const { success } = await this.userServiceClient.refreshToken({
       refreshToken,
     });
     const resWrap = new ResponseWrapper(res);
 
+    attachCookies(resWrap, success!.refreshToken, success!.accessToken);
+
     return resWrap
-      .status(HttpStatus.OK)
-      .success({ token: success!.accessToken }, 'refresh successful');
+      .status(AUTH_MESSAGES.REFRESH_TOKEN.statusCode)
+      .success(
+        { token: success!.accessToken },
+        AUTH_MESSAGES.TOKEN_REFRESH_SUCCESS.message
+      );
   }
 }
