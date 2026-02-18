@@ -35,8 +35,8 @@ message InstructorCourseRatingStats {
     RatingsBreakDown breakdown  = 3;
 }
 
-message CourseEnrollmentTrend {
-    int32 date = 1;
+message EnrollmentTrend {
+    int32 month = 1;
     int32 enrollments = 2;
 }
 
@@ -46,12 +46,15 @@ message GetInstructorCourseEnrollmentSummeryRequest {
 }
 
 message InstructorCourseEnrollmentTrend {
-   repeated CourseEnrollmentTrend trend = 1;
+   repeated EnrollmentTrend trend = 1;
 }
 
+message EnrollmentTrendStats {
+   repeated EnrollmentTrend trend = 1;
+}
 
 message MonthlyCoursesEnrollmentStats {
-    repeated MonthlyCoursesEnrollment stats = 1;
+    repeated EnrollmentTrend trend = 1;
 }
 
 message GetInstructorCoursesStatsRequest {
@@ -103,6 +106,9 @@ message GetInstructorCourseEnrollmentTrendRequest {
     string from = 2;
     string to = 3;
 }
+message GetEnrollmentTrendRequest {
+    int32 year = 1;
+}
 message GetRevenueStatsRequest {
     string year = 1;
 }
@@ -147,6 +153,12 @@ message GetInstructorCoursesStatsResponse {
   }
 }
 
+message GetEnrollmentTrendResponse {
+  oneof result {
+    EnrollmentTrendStats success = 1;
+    course.common.Error error = 2;
+  }
+}
 message GetInstructorCourseEnrollmentTrendResponse {
   oneof result {
     InstructorCourseEnrollmentTrend success = 1;
