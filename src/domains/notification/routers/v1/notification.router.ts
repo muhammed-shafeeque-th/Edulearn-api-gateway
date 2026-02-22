@@ -2,11 +2,11 @@ import { asyncHandler } from '@/shared/utils/async-handler';
 import { cacheMiddleware } from '@/middlewares/cache.middleware';
 import { NotificationController } from '../../controllers/v1/notification.controller';
 import { Router } from 'express';
-import { authenticate } from '@/middlewares/auth.middleware';
+import { container, TYPES } from '@/services/di';
 
 const router = Router();
 
-const notificationController = new NotificationController();
+const notificationController =  container.get<NotificationController>(TYPES.NotificationController);
 
 //  ============================================================================
 //                               CART ROUTES
@@ -14,7 +14,6 @@ const notificationController = new NotificationController();
 
 router.get(
   '/',
-  authenticate,
   asyncHandler(
     notificationController.getNotifications.bind(notificationController)
   )
@@ -22,14 +21,12 @@ router.get(
 
 router.get(
   '/:notificationId',
-  authenticate,
   asyncHandler(
     notificationController.getNotification.bind(notificationController)
   )
 );
 router.delete(
   '/:notificationId',
-  authenticate,
   asyncHandler(
     notificationController.deleteNotification.bind(notificationController)
   )
@@ -37,13 +34,11 @@ router.delete(
 
 router.patch(
   '/:notificationId/read',
-  authenticate,
   asyncHandler(notificationController.markAsRead.bind(notificationController))
 );
 
 router.patch(
   '/all-read',
-  authenticate,
   asyncHandler(
     notificationController.markAllAsRead.bind(notificationController)
   )
