@@ -1,8 +1,6 @@
-import { UserService } from '../../../service-clients/user';
 import { Request, Response } from 'express';
 import validateSchema from '../../../../services/validate-schema';
 
-import { HttpStatus } from '@/shared/constants/http-status';
 import { ResponseWrapper } from '@/shared/utils/response-wrapper';
 import { NotificationService } from '@/domains/service-clients/notification';
 import { CourseService } from '@/domains/service-clients/course';
@@ -14,20 +12,33 @@ import { removeFromWishlistSchema } from '../../schemas/remove-from-wishlist.sch
 import {
   WishlistData,
   WishlistItemData,
-} from '@/domains/service-clients/user/proto/generated/user_service';
+} from '@/domains/service-clients/user/proto/generated/user/types/wishlist_types';
 import { toggleWishlistItemSchema } from '../../schemas/toggle-wishlist.schema';
-import { CourseData } from '@/domains/service-clients/course/proto/generated/course_service';
 import { attachMetadata } from '../../utils/attach-metadata';
 import { mapPaginationResponse } from '@/shared/utils/map-pagination';
+import {
+  CourseData,
+  CourseMetadata,
+} from '@/domains/service-clients/course/proto/generated/course/types/course';
+import { WISHLIST_MESSAGES } from '../../utils/response-message';
+import { CourseInfo } from '@/domains/course/types';
+import { WishlistResponseMapper } from '../../utils/mappers';
+import { CourseResponseMapper } from '@/domains/course/utils/mappers';
+import { WishlistService } from '@/domains/service-clients/wishlist';
+import { inject, injectable } from 'inversify';
+import { TYPES } from '@/services/di';
 
 @Observe({ logLevel: 'debug' })
+@injectable()
 export class WishlistController {
-  private userServiceClient: UserService;
-  private notificationService: NotificationService;
-  private courseServiceClient: CourseService;
-
-  constructor() {
-    this.userServiceClient = UserService.getInstance();
+  constructor(
+    @inject(TYPES.WishlistService)
+    private wishlistServiceClient: WishlistService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService,
+    @inject(TYPES.CourseService) private courseServiceClient: CourseService
+  ) {
+    this.wishlistServiceClient = WishlistService.getInstance();
     this.notificationService = NotificationService.getInstance();
     this.courseServiceClient = CourseService.getInstance();
   }
@@ -35,25 +46,27 @@ export class WishlistController {
   async getUserWishlist(req: Request, res: Response) {
     const { userId, pagination } = validateSchema(
       {
-        ...req.body,
         ...req.params,
         ...req.user,
       },
       getUserWishlistSchema
     )!;
 
-    const { success } = await this.userServiceClient.getUserWishlist(
+    const { success } = await this.wishlistServiceClient.getUserWishlist(
       {
         userId,
         pagination,
       },
-      { attachMetadata: attachMetadata(req) }
+      { metadata: attachMetadata(req) }
     );
-    const mappedWishlist = this.mapToWishlistResponse(success!.wishlist!);
+
+    const mappedWishlist = WishlistResponseMapper.toWishlist(
+      success!.wishlist!
+    );
 
     const paginationResponse = mapPaginationResponse(
       pagination,
-      mappedWishlist?.total
+      success?.pagination?.totalItems
     );
 
     if (
@@ -62,10 +75,10 @@ export class WishlistController {
       mappedWishlist.items.length === 0
     ) {
       return new ResponseWrapper(res)
-        .status(HttpStatus.OK)
+        .status(WISHLIST_MESSAGES.EMPTY_WISHLIST.statusCode)
         .success(
           mappedWishlist,
-          'User wishlist fetched successfully',
+          WISHLIST_MESSAGES.FETCH_USER_WISHLIST.message,
           paginationResponse
         );
     }
@@ -73,7 +86,7 @@ export class WishlistController {
     const courseIds = Array.from(
       new Set(mappedWishlist?.items?.map(c => c.courseId!))
     );
-    let courseMap: Record<string, any> = {};
+    let courseMap: Record<string, CourseInfo> = {};
 
     const { success: courseResponse } =
       await this.courseServiceClient.getCoursesByIds({
@@ -82,53 +95,50 @@ export class WishlistController {
 
     courseMap = courseResponse?.courses?.courses.reduce(
       (accMap: typeof courseMap, course) => {
-        accMap[course.id] = this.mapToWishlistItemCourseResponse(course);
+        accMap[course.id] = CourseResponseMapper.toCourseInfo(course);
         return accMap;
       },
       {}
     )!;
 
-    return new ResponseWrapper(res).status(HttpStatus.OK).success(
-      {
-        ...success?.wishlist,
-        items: success?.wishlist?.items.map(item => ({
-          ...item,
-          course: courseMap[item.courseId!],
-        })),
-      },
-      'User wishlist fetched successfully',
-      paginationResponse
-    );
-
-    // return new ResponseWrapper(res)
-    //   .status(HttpStatus.OK)
-    //   .success(
-    //     success?.transactions.map(this.mapToWishlistResponse),
-    //     'User wishlist fetched successfully'
-    //   );
+    return new ResponseWrapper(res)
+      .status(WISHLIST_MESSAGES.FETCH_USER_WISHLIST.statusCode)
+      .success(
+        {
+          ...success?.wishlist,
+          items: success?.wishlist?.items.map(item => ({
+            ...item,
+            course: courseMap[item.courseId!],
+          })),
+        },
+        WISHLIST_MESSAGES.FETCH_USER_WISHLIST.message,
+        paginationResponse
+      );
   }
+
   async getCurrentUserWishlist(req: Request, res: Response) {
     const { userId, pagination } = validateSchema(
       {
-        ...req.body,
         ...req.user,
       },
       getUserWishlistSchema
     )!;
 
-    const { success } = await this.userServiceClient.getUserWishlist(
+    const { success } = await this.wishlistServiceClient.getUserWishlist(
       {
         userId,
         pagination,
       },
-      { attachMetadata: attachMetadata(req) }
+      { metadata: attachMetadata(req) }
     );
 
-    const mappedWishlist = this.mapToWishlistResponse(success!.wishlist!);
+    const mappedWishlist = WishlistResponseMapper.toWishlist(
+      success!.wishlist!
+    );
 
     const paginationResponse = mapPaginationResponse(
       pagination,
-      mappedWishlist?.total
+      success?.pagination?.totalItems
     );
 
     if (
@@ -137,10 +147,10 @@ export class WishlistController {
       mappedWishlist.items.length === 0
     ) {
       return new ResponseWrapper(res)
-        .status(HttpStatus.OK)
+        .status(WISHLIST_MESSAGES.EMPTY_WISHLIST.statusCode)
         .success(
           mappedWishlist,
-          'User wishlist fetched successfully',
+          WISHLIST_MESSAGES.FETCH_USER_WISHLIST.message,
           paginationResponse
         );
     }
@@ -148,7 +158,7 @@ export class WishlistController {
     const courseIds = Array.from(
       new Set(mappedWishlist?.items?.map(c => c.courseId!))
     );
-    let courseMap: Record<string, any> = {};
+    let courseMap: Record<string, CourseInfo> = {};
 
     const { success: courseResponse } =
       await this.courseServiceClient.getCoursesByIds({
@@ -157,24 +167,26 @@ export class WishlistController {
 
     courseMap = courseResponse?.courses?.courses.reduce(
       (accMap: typeof courseMap, course) => {
-        accMap[course.id] = this.mapToWishlistItemCourseResponse(course);
+        accMap[course.id] = CourseResponseMapper.toCourseInfo(course);
         return accMap;
       },
       {}
     )!;
 
-    return new ResponseWrapper(res).status(HttpStatus.OK).success(
-      {
-        ...success?.wishlist,
-        items: success?.wishlist?.items.map(item => ({
-          ...item,
-          course: courseMap[item.courseId!],
-        })),
-      },
+    return new ResponseWrapper(res)
+      .status(WISHLIST_MESSAGES.FETCH_USER_WISHLIST.statusCode)
+      .success(
+        {
+          ...success?.wishlist,
+          items: success?.wishlist?.items.map(item => ({
+            ...item,
+            course: courseMap[item.courseId!],
+          })),
+        },
 
-      'User wishlist fetched successfully',
-      paginationResponse
-    );
+        WISHLIST_MESSAGES.FETCH_USER_WISHLIST.message,
+        paginationResponse
+      );
   }
 
   async toggleWishlistItem(req: Request, res: Response) {
@@ -187,37 +199,47 @@ export class WishlistController {
       toggleWishlistItemSchema
     )!;
 
-    const { item } = await this.userServiceClient.toggleWishlistItem(
+    const { item } = await this.wishlistServiceClient.toggleWishlistItem(
       validPayload,
       {
-        attachMetadata: attachMetadata(req),
+        metadata: attachMetadata(req),
       }
     );
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.CREATED)
-      .success(this.mapToWishlistItemResponse(item!), 'operation successful');
+      .status(WISHLIST_MESSAGES.TOGGLE_WISHLIST_ITEM.statusCode)
+      .success(
+        WishlistResponseMapper.toWishlistItem(item!),
+        WISHLIST_MESSAGES.TOGGLE_WISHLIST_ITEM.message
+      );
   }
 
   async removeFromWishlist(req: Request, res: Response) {
     const validPayload = validateSchema(
       {
-        ...req.body,
+        ...req.query,
         ...req.params,
         ...req.user,
       },
       removeFromWishlistSchema
     )!;
 
-    const { success } = await this.userServiceClient.removeFromWishlist(
+    // Actual call to backend service
+    const response = await this.wishlistServiceClient.removeFromWishlist(
       validPayload,
       {
-        attachMetadata: attachMetadata(req),
+        metadata: attachMetadata(req),
       }
     );
 
-    return new ResponseWrapper(res).status(HttpStatus.NO_CONTENT);
+    return new ResponseWrapper(res)
+      .status(WISHLIST_MESSAGES.REMOVE_FROM_WISHLIST.statusCode)
+      .success(
+        response.success,
+        WISHLIST_MESSAGES.REMOVE_FROM_WISHLIST.message
+      );
   }
+
   async addToWishlist(req: Request, res: Response) {
     const validPayload = validateSchema(
       {
@@ -228,46 +250,14 @@ export class WishlistController {
       addToWishlistSchema
     )!;
 
-    const { item } = await this.userServiceClient.addToWishlist(validPayload, {
-      attachMetadata: attachMetadata(req),
-    });
-
-    return new ResponseWrapper(res).status(HttpStatus.NO_CONTENT);
+    const { item } = await this.wishlistServiceClient.addToWishlist(
+      validPayload,
+      {
+        metadata: attachMetadata(req),
+      }
+    );
+    return new ResponseWrapper(res)
+      .status(WISHLIST_MESSAGES.ADD_TO_WISHLIST.statusCode)
+      .success(item, WISHLIST_MESSAGES.ADD_TO_WISHLIST.message);
   }
-
-  // Mapping Functions
-  private mapToWishlistResponse = (dto: WishlistData): Wishlist | undefined => {
-    if (!dto) return;
-    return {
-      id: dto.id,
-      total: dto.total,
-      items: dto.items.map(this.mapToWishlistItemResponse),
-      updatedAt: dto.updatedAt,
-      userId: dto.userId,
-      createdAt: dto.createdAt,
-    };
-  };
-  private mapToWishlistItemResponse = (dto: WishlistItemData): WishlistItem => {
-    return {
-      id: dto.id,
-      courseId: dto.courseId,
-      createdAt: dto.createdAt,
-    };
-  };
-  private mapToWishlistItemCourseResponse = (course: CourseData) => {
-    return {
-      thumbnail: course.thumbnail,
-      id: course.id,
-      title: course.title,
-      rating: course.rating,
-      enrollments: course.enrollments,
-      price: course.price,
-      instructor: {
-        id: course.instructor?.id,
-        avatar: course.instructor?.avatar,
-        name: course.instructor?.name,
-        email: course.instructor?.email,
-      },
-    };
-  };
 }
