@@ -1,65 +1,78 @@
 import path from 'path';
 import { GrpcClient } from '@/shared/utils/grpc/client';
 import { GrpcClientOptions } from '@/shared/utils/grpc/types';
+import { config } from '@/config';
+import { UserServiceClient } from './proto/generated/user_service';
 import {
-  AddToCartRequest,
-  AddToCartResponse,
-  AddToWishlistRequest,
-  AddToWishlistResponse,
   BlockUserRequest,
   BlockUserResponse,
   CheckUserByEmailRequest,
   CheckUserByEmailResponse,
-  GetAllUserEmailsRequest,
-  GetAllUserEmailsResponse,
-  GetAllUsersRequest,
-  GetAllUsersResponse,
   GetCurrentUserRequest,
   GetCurrentUserResponse,
+  GetUserEmailsRequest,
+  GetUserEmailsResponse,
   GetUserRequest,
   GetUserResponse,
-  GetUsersByIdsRequest,
-  GetUsersByIdsResponse,
-  ListCartRequest,
-  ListCartResponse,
-  ListWishlistRequest,
-  ListWishlistResponse,
-  RegisterInstructorRequest,
-  RegisterInstructorResponse,
-  RemoveFromCartRequest,
-  RemoveFromCartResponse,
-  RemoveFromWishlistRequest,
-  RemoveFromWishlistResponse,
-  ToggleCartItemRequest,
-  ToggleCartItemResponse,
-  ToggleWishlistItemRequest,
-  ToggleWishlistItemResponse,
+  ListUsersByIdsRequest,
+  ListUsersResponse,
+  ListUsersRequest,
   UnBlockUserRequest,
   UnBlockUserResponse,
   UpdateUserDetailsRequest,
   UpdateUserDetailsResponse,
-  UserServiceClient,
-} from './proto/generated/user_service';
-import { config } from '@/config';
+} from './proto/generated/user/types/user_types';
+import {
+  GetInstructorsRequest,
+  ListInstructorsResponse,
+  RegisterInstructorRequest,
+  RegisterInstructorResponse,
+} from './proto/generated/user/types/instructor_types';
+import {
+  ListInstructorsOfStudentRequest,
+  ListStudentsOfInstructorRequest,
+} from './proto/generated/user/types/instructor_student';
+import { Empty } from './proto/generated/user/common';
+import {
+  GetInstructorsGrowthTrendRequest,
+  GetInstructorsGrowthTrendResponse,
+  GetInstructorsStatsResponse,
+  GetUsersGrowthTrendRequest,
+  GetUsersGrowthTrendResponse,
+  GetUsersStatsResponse,
+} from './proto/generated/user/types/stats_types';
 
+import { injectable } from 'inversify';
+
+@injectable()
 export class UserService {
   private readonly client: GrpcClient<UserServiceClient>;
   private static instance: UserService;
 
-  private constructor() {
+  public constructor() {
     const [host = 'localhost', port = '50052'] =
       config.grpc.services.userServiceClient.split(':');
 
     this.client = new GrpcClient({
-      protoPath: path.join(__dirname, 'proto', 'user_service.proto'),
+      protoPath: path.join(
+        process.cwd(),
+        'proto',
+        'user',
+        'user_service.proto'
+      ),
       packageName: 'user_service',
       serviceName: 'UserService',
       host,
       port: parseInt(port),
+      loaderOptions: {
+        includeDirs: [path.join(process.cwd(), 'proto', 'user')],
+      },
     });
   }
 
-  // Singleton pattern
+  /**
+   * @deprecated Use DI container instead
+   */
   public static getInstance(): UserService {
     if (!UserService.instance) {
       UserService.instance = new UserService();
@@ -89,6 +102,18 @@ export class UserService {
     return response as RegisterInstructorResponse;
   }
 
+  async listInstructors(
+    request: GetInstructorsRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<ListInstructorsResponse> {
+    const response = await this.client.unaryCall(
+      'listInstructors',
+      request,
+      options
+    );
+    return response as ListInstructorsResponse;
+  }
+
   async checkUserEmailExists(
     request: CheckUserByEmailRequest,
     options: GrpcClientOptions = {}
@@ -101,16 +126,16 @@ export class UserService {
     return response as CheckUserByEmailResponse;
   }
 
-  async getAllUserEmails(
-    request: GetAllUserEmailsRequest,
+  async getUserEmails(
+    request: GetUserEmailsRequest,
     options: GrpcClientOptions = {}
-  ): Promise<GetAllUserEmailsResponse> {
+  ): Promise<GetUserEmailsResponse> {
     const response = await this.client.unaryCall(
-      'getAllUserEmails',
+      'getUserEmails',
       request,
       options
     );
-    return response as GetAllUserEmailsResponse;
+    return response as GetUserEmailsResponse;
   }
 
   async getUser(
@@ -164,111 +189,93 @@ export class UserService {
     return response as GetCurrentUserResponse;
   }
 
-  async getAllUsers(
-    request: GetAllUsersRequest,
+  async listUsers(
+    request: ListUsersRequest,
     options: GrpcClientOptions = {}
-  ): Promise<GetAllUsersResponse> {
+  ): Promise<ListUsersResponse> {
+    const response = await this.client.unaryCall('listUsers', request, options);
+    return response as ListUsersResponse;
+  }
+  async listUsersByIds(
+    request: ListUsersByIdsRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<ListUsersResponse> {
     const response = await this.client.unaryCall(
-      'getAllUsers',
+      'listUsersByIds',
       request,
       options
     );
-    return response as GetAllUsersResponse;
+    return response as ListUsersResponse;
   }
-  async getUsersByIds(
-    request: GetUsersByIdsRequest,
+
+  // Instructor User relation methods
+  async listInstructorsOfStudent(
+    request: ListInstructorsOfStudentRequest,
     options: GrpcClientOptions = {}
-  ): Promise<GetUsersByIdsResponse> {
+  ): Promise<ListInstructorsResponse> {
     const response = await this.client.unaryCall(
-      'getUsersByIds',
+      'listInstructorsOfStudent',
       request,
       options
     );
-    return response as GetUsersByIdsResponse;
+    return response as ListInstructorsResponse;
   }
-  async getUserWishlist(
-    request: ListWishlistRequest,
+  async listStudentsOfInstructor(
+    request: ListStudentsOfInstructorRequest,
     options: GrpcClientOptions = {}
-  ): Promise<ListWishlistResponse> {
+  ): Promise<ListUsersResponse> {
     const response = await this.client.unaryCall(
-      'listUserWishlist',
+      'listStudentsOfInstructor',
       request,
       options
     );
-    return response as ListWishlistResponse;
+    return response as ListUsersResponse;
   }
-  async addToWishlist(
-    request: AddToWishlistRequest,
+
+  // Stats
+  async getUsersStats(
+    request: Empty,
     options: GrpcClientOptions = {}
-  ): Promise<AddToWishlistResponse> {
+  ): Promise<GetUsersStatsResponse> {
     const response = await this.client.unaryCall(
-      'addToWishlist',
+      'getUsersStats',
       request,
       options
     );
-    return response as AddToWishlistResponse;
+    return response as GetUsersStatsResponse;
   }
-  async removeFromWishlist(
-    request: RemoveFromWishlistRequest,
+  async getInstructorsStats(
+    request: Empty,
     options: GrpcClientOptions = {}
-  ): Promise<RemoveFromWishlistResponse> {
+  ): Promise<GetInstructorsStatsResponse> {
     const response = await this.client.unaryCall(
-      'removeFromWishlist',
+      'getInstructorsStats',
       request,
       options
     );
-    return response as RemoveFromWishlistResponse;
+    return response as GetInstructorsStatsResponse;
   }
-  async getUserCart(
-    request: ListCartRequest,
+  async getInstructorsGrowthTrend(
+    request: GetInstructorsGrowthTrendRequest,
     options: GrpcClientOptions = {}
-  ): Promise<ListCartResponse> {
+  ): Promise<GetInstructorsGrowthTrendResponse> {
     const response = await this.client.unaryCall(
-      'listUserCart',
+      'getInstructorsGrowthTrend',
       request,
       options
     );
-    return response as ListCartResponse;
+    return response as GetInstructorsGrowthTrendResponse;
   }
-  async addToCart(
-    request: AddToCartRequest,
+  async getUsersGrowthTrend(
+    request: GetUsersGrowthTrendRequest,
     options: GrpcClientOptions = {}
-  ): Promise<AddToCartResponse> {
-    const response = await this.client.unaryCall('addToCart', request, options);
-    return response as AddToCartResponse;
-  }
-  async toggleCartItem(
-    request: ToggleCartItemRequest,
-    options: GrpcClientOptions = {}
-  ): Promise<ToggleCartItemResponse> {
+  ): Promise<GetUsersGrowthTrendResponse> {
     const response = await this.client.unaryCall(
-      'toggleCartItem',
+      'getUsersGrowthTrend',
       request,
       options
     );
-    return response as ToggleCartItemResponse;
-  }
-  async toggleWishlistItem(
-    request: ToggleWishlistItemRequest,
-    options: GrpcClientOptions = {}
-  ): Promise<ToggleWishlistItemResponse> {
-    const response = await this.client.unaryCall(
-      'toggleWishlistItem',
-      request,
-      options
-    );
-    return response as ToggleWishlistItemResponse;
-  }
-  async removeFromCart(
-    request: RemoveFromCartRequest,
-    options: GrpcClientOptions = {}
-  ): Promise<RemoveFromCartResponse> {
-    const response = await this.client.unaryCall(
-      'removeFromCart',
-      request,
-      options
-    );
-    return response as RemoveFromCartResponse;
+    return response as GetUsersGrowthTrendResponse;
   }
 
   close() {
