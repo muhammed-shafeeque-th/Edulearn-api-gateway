@@ -8,7 +8,7 @@ export const paginationSchema: ZodType<PaginationRequest> = z.object({
     .transform(str => Number(str)),
   page: z
     .string()
-    .default('0')
+    .default('1')
     .transform(str => Number(str)),
 }) as unknown as ZodType<PaginationRequest>;
 
