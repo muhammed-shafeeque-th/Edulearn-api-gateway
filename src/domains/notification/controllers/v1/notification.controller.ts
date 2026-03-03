@@ -14,13 +14,17 @@ import { NOTIFICATION_MESSAGES } from '../../utils/resposne-messages';
 import { Notification } from '../../types';
 import { deleteNotificationSchema } from '../../schemas/delete-notification.schema';
 import { clearNotificationsSchema } from '../../schemas/clear-notifications.schema';
+import { NotificationResponseMapper } from '../../utils/mappers';
+import { inject, injectable } from 'inversify';
+import { TYPES } from '@/services/di';
 
 @Observe({ logLevel: 'debug' })
+@injectable()
 export class NotificationController {
-  private notificationService: NotificationService;
-
-  constructor() {
-    this.notificationService = NotificationService.getInstance();
+  constructor(
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService
+  ) {
   }
 
   async getNotifications(req: Request, res: Response) {
@@ -34,10 +38,12 @@ export class NotificationController {
 
     const { success } = await this.notificationService.getAllNotifications(
       validPayload,
-      { attachMetadata: attachMetadata(req) }
+      { metadata: attachMetadata(req) }
     );
 
-    const notifications = success?.notifications.map(this.mapToNotification);
+    const notifications = success?.notifications.map(
+      NotificationResponseMapper.toNotification
+    );
 
     const paginationResponse = mapPaginationResponse(
       {
@@ -68,13 +74,13 @@ export class NotificationController {
 
     const { notification } = await this.notificationService.getNotification(
       validPayload,
-      { attachMetadata: attachMetadata(req) }
+      { metadata: attachMetadata(req) }
     );
 
     return new ResponseWrapper(res)
       .status(NOTIFICATION_MESSAGES.FETCH_NOTIFICATION.statusCode)
       .success(
-        this.mapToNotification(notification!),
+        NotificationResponseMapper.toNotification(notification!),
         NOTIFICATION_MESSAGES.FETCH_NOTIFICATION.message
       );
   }
@@ -89,7 +95,7 @@ export class NotificationController {
 
     const { success } = await this.notificationService.deleteNotification(
       validPayload,
-      { attachMetadata: attachMetadata(req) }
+      { metadata: attachMetadata(req) }
     );
 
     return new ResponseWrapper(res)
@@ -108,7 +114,7 @@ export class NotificationController {
 
     const { success } = await this.notificationService.clearUserNotifications(
       validPayload,
-      { attachMetadata: attachMetadata(req) }
+      { metadata: attachMetadata(req) }
     );
 
     return new ResponseWrapper(res)
@@ -130,7 +136,7 @@ export class NotificationController {
     const { success } = await this.notificationService.markAllAsRead(
       validPayload,
       {
-        attachMetadata: attachMetadata(req),
+        metadata: attachMetadata(req),
       }
     );
 
@@ -152,7 +158,7 @@ export class NotificationController {
     const { success } = await this.notificationService.markAsRead(
       validPayload,
       {
-        attachMetadata: attachMetadata(req),
+        metadata: attachMetadata(req),
       }
     );
 
@@ -160,25 +166,4 @@ export class NotificationController {
       .status(NOTIFICATION_MESSAGES.MARK_AS_READ.statusCode)
       .success({ success: true }, NOTIFICATION_MESSAGES.MARK_AS_READ.message);
   }
-
-  // Mapping Functions
-  private mapToNotification = (
-    dto: NotificationData
-  ): Notification | undefined => {
-    if (!dto) return;
-    return {
-      actionUrl: dto.actionUrl,
-      message: dto.body,
-      createdAt: dto.createdAt,
-      id: dto.id,
-      isRead: dto.isRead,
-      metadata: dto.metadata,
-      category: dto.category,
-      priority: dto.priority,
-      recipient: dto.recipient,
-      subject: dto.subject,
-      type: dto.type,
-      userId: dto.userId,
-    };
-  };
 }

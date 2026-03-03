@@ -1,4 +1,4 @@
-import { collectDefaultMetrics, Counter, Gauge, Histogram } from 'prom-client';
+import {  Counter, Gauge, Histogram } from 'prom-client';
 
 export const httpRequestDurationSeconds = new Histogram({
   name: 'http_request_duration_seconds',

@@ -95,6 +95,7 @@ service EnrollmentService {
   rpc GetInstructorCoursesEnrollmentSummery(course.stats.GetInstructorCoursesEnrollmentSummeryRequest) returns (course.stats.GetInstructorCoursesEnrollmentSummeryResponse);
   rpc GetInstructorCourseEnrollmentSummery(course.stats.GetInstructorCourseEnrollmentSummeryRequest) returns (course.stats.GetInstructorCourseEnrollmentSummeryResponse);
   rpc GetInstructorCourseEnrollmentTrend(course.stats.GetInstructorCourseEnrollmentTrendRequest) returns (course.stats.GetInstructorCourseEnrollmentTrendResponse);
+  rpc GetEnrollmentTrend(course.stats.GetEnrollmentTrendRequest) returns (course.stats.GetEnrollmentTrendResponse);
   rpc GetMonthlyCoursesEnrollmentStats(course.stats.GetMonthlyCoursesEnrollmentStatsRequest) returns (course.stats.GetMonthlyCoursesEnrollmentStatsResponse);
   rpc GetRevenueStats(course.stats.GetRevenueStatsRequest) returns (course.stats.GetRevenueStatsResponse);
 }

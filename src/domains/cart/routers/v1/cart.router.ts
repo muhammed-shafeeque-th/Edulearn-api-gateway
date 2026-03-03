@@ -2,11 +2,11 @@ import { asyncHandler } from '@/shared/utils/async-handler';
 import { cacheMiddleware } from '@/middlewares/cache.middleware';
 import { CartController } from '../../controllers/v1/cart.controller';
 import { Router } from 'express';
-import { authenticate } from '@/middlewares/auth.middleware';
+import { container, TYPES } from '@/services/di';
 
 const router = Router();
 
-const cartController = new CartController();
+const cartController = container.get<CartController>(TYPES.CartController);
 
 //  ============================================================================
 //                               CART ROUTES
@@ -14,27 +14,23 @@ const cartController = new CartController();
 
 router.get(
   '/me',
-  authenticate,
   asyncHandler(cartController.getCurrentUserCart.bind(cartController))
 );
 
 router.get(
   '/:userId',
-  authenticate,
   asyncHandler(cartController.getUserCart.bind(cartController))
 );
 
-router.post(
-  '/me',
-  authenticate,
-  asyncHandler(cartController.addToCart.bind(cartController))
-);
+router.post('/me', asyncHandler(cartController.addToCart.bind(cartController)));
 
 router.delete(
-  '/:cartId/:courseId',
-  authenticate,
+  '/',
   asyncHandler(cartController.removeFromCart.bind(cartController))
 );
+router.delete(
+  '/me',
+  asyncHandler(cartController.clearCart.bind(cartController))
+);
 
-
-export { router as cartRoutes };
+export { router as cartRoutesV1 };

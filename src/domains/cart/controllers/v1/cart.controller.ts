@@ -1,37 +1,33 @@
-import { UserService } from '../../../service-clients/user';
 import { Request, Response } from 'express';
 import validateSchema from '../../../../services/validate-schema';
 
-import { HttpStatus } from '@/shared/constants/http-status';
 import { ResponseWrapper } from '@/shared/utils/response-wrapper';
 import { NotificationService } from '@/domains/service-clients/notification';
-import {} from '@/shared/utils/metadata-manager';
 import { CourseService } from '@/domains/service-clients/course';
 import { Observe } from '@/services/observability/decorators';
 import { getUserCartSchema } from '../../schemas/get-user-cart.schema';
-import { Cart, CartItem } from '../../types';
 import { addToCartSchema } from '../../schemas/add-to-cart.schema';
 import { removeFromCartSchema } from '../../schemas/remove-from-cart.schema';
-import {
-  CartData,
-  CartItemData,
-} from '@/domains/service-clients/user/proto/generated/user_service';
-import { toggleCartItemSchema } from '../../schemas/add-to-cart.schema copy';
-import { CourseData } from '@/domains/service-clients/course/proto/generated/course_service';
+import { toggleCartItemSchema } from '../../schemas/toggle-cart.schema';
 import { attachMetadata } from '../../utils/attach-metadata';
 import { mapPaginationResponse } from '@/shared/utils/map-pagination';
+import { CartResponseMapper } from '../../utils/mappers';
+import { CourseResponseMapper } from '@/domains/course/utils/mappers';
+import { clearCartSchema } from '../../schemas/clear-cart.schema';
+import { CartService } from '@/domains/service-clients/cart';
+import { CART_MESSAGES } from '../../utils/resposne-messages';
+import { inject, injectable } from 'inversify';
+import { TYPES } from '@/services/di';
 
 @Observe({ logLevel: 'debug' })
+@injectable()
 export class CartController {
-  private userServiceClient: UserService;
-  private notificationService: NotificationService;
-  private courseServiceClient: CourseService;
-
-  constructor() {
-    this.userServiceClient = UserService.getInstance();
-    this.notificationService = NotificationService.getInstance();
-    this.courseServiceClient = CourseService.getInstance();
-  }
+  constructor(
+    @inject(TYPES.CartService) private cartServiceClient: CartService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService,
+    @inject(TYPES.CourseService) private courseServiceClient: CourseService
+  ) {}
 
   async getUserCart(req: Request, res: Response) {
     const { userId, pagination } = validateSchema(
@@ -43,26 +39,25 @@ export class CartController {
       getUserCartSchema
     )!;
 
-    const { success } = await this.userServiceClient.getUserCart(
+    const { success } = await this.cartServiceClient.getUserCart(
       {
         userId,
         pagination,
       },
-      { attachMetadata: attachMetadata(req) }
+      { metadata: attachMetadata(req) }
     );
 
-    const mappedCarts = this.mapToCartResponse(success!.cart!);
-
+    const mappedCarts = CartResponseMapper.toCart(success!.cart!);
     const paginationResponse = mapPaginationResponse(
       pagination,
-      mappedCarts?.total
+      success?.pagination?.totalItems
     );
     if (!mappedCarts || !mappedCarts.items || mappedCarts.items.length === 0) {
       return new ResponseWrapper(res)
-        .status(HttpStatus.OK)
+        .status(CART_MESSAGES.GET_USER_CART_SUCCESS.statusCode)
         .success(
           mappedCarts,
-          'User cart fetched successfully',
+          CART_MESSAGES.GET_USER_CART_SUCCESS.message,
           paginationResponse
         );
     }
@@ -80,30 +75,27 @@ export class CartController {
 
     courseMap = courseResponse?.courses?.courses.reduce(
       (accMap: typeof courseMap, course) => {
-        accMap[course.id] = this.mapToCartItemCourseResponse(course);
+        accMap[course.id] = CourseResponseMapper.toCourseInfo(course);
         return accMap;
       },
       {}
     )!;
 
-    return new ResponseWrapper(res).status(HttpStatus.OK).success(
-      {
-        ...success?.cart,
-        items: success?.cart?.items.map(item => ({
-          ...item,
-          course: courseMap[item.courseId!],
-        })),
-      },
-
-      'User cart fetched successfully',
-      paginationResponse
-    );
-
-    // return new ResponseWrapper(res).status(HttpStatus.OK).success(
-    //   // success?.cart?.items.map(this.mapToCartResponse),
-    //   'User cart fetched successfully'
-    // );
+    return new ResponseWrapper(res)
+      .status(CART_MESSAGES.GET_USER_CART_SUCCESS.statusCode)
+      .success(
+        {
+          ...success?.cart,
+          items: success?.cart?.items.map(item => ({
+            ...item,
+            course: courseMap[item.courseId!],
+          })),
+        },
+        CART_MESSAGES.GET_USER_CART_SUCCESS.message,
+        paginationResponse
+      );
   }
+
   async getCurrentUserCart(req: Request, res: Response) {
     const { userId, pagination } = validateSchema(
       {
@@ -114,26 +106,26 @@ export class CartController {
       getUserCartSchema
     )!;
 
-    const { success } = await this.userServiceClient.getUserCart(
+    const { success } = await this.cartServiceClient.getUserCart(
       {
         userId,
         pagination,
       },
-      { attachMetadata: attachMetadata(req) }
+      { metadata: attachMetadata(req) }
     );
-    const mappedCarts = this.mapToCartResponse(success!.cart!);
+    const mappedCarts = CartResponseMapper.toCart(success!.cart!);
 
     const paginationResponse = mapPaginationResponse(
       pagination,
-      mappedCarts?.total
+      success?.pagination?.totalItems
     );
 
     if (!mappedCarts || !mappedCarts.items || mappedCarts.items.length === 0) {
       return new ResponseWrapper(res)
-        .status(HttpStatus.OK)
+        .status(CART_MESSAGES.GET_USER_CART_SUCCESS.statusCode)
         .success(
           mappedCarts,
-          'User cart fetched successfully',
+          CART_MESSAGES.GET_USER_CART_SUCCESS.message,
           paginationResponse
         );
     }
@@ -150,44 +142,50 @@ export class CartController {
 
     courseMap = courseResponse?.courses?.courses.reduce(
       (accMap: typeof courseMap, course) => {
-        accMap[course.id] = this.mapToCartItemCourseResponse(course);
+        accMap[course.id] = CourseResponseMapper.toCourseInfo(course);
         return accMap;
       },
       {}
     )!;
 
-    return new ResponseWrapper(res).status(HttpStatus.OK).success(
-      {
-        ...success?.cart,
-        items: success?.cart?.items.map(item => ({
-          ...item,
-          course: courseMap[item.courseId!],
-        })),
-      },
-      'User cart fetched successfully',
-      paginationResponse
-    );
+    return new ResponseWrapper(res)
+      .status(CART_MESSAGES.GET_USER_CART_SUCCESS.statusCode)
+      .success(
+        {
+          ...success?.cart,
+          items: success?.cart?.items.map(item => ({
+            ...item,
+            course: courseMap[item.courseId!],
+          })),
+        },
+        CART_MESSAGES.GET_USER_CART_SUCCESS.message,
+        paginationResponse
+      );
   }
 
   async removeFromCart(req: Request, res: Response) {
     const validPayload = validateSchema(
       {
-        ...req.body,
+        ...req.query,
         ...req.params,
         ...req.user,
       },
       removeFromCartSchema
     )!;
 
-    const { success } = await this.userServiceClient.removeFromCart(
+    const { success } = await this.cartServiceClient.removeFromCart(
       validPayload,
       {
-        attachMetadata: attachMetadata(req),
+        metadata: attachMetadata(req),
       }
     );
 
-    return new ResponseWrapper(res).status(HttpStatus.NO_CONTENT);
+    // NO_CONTENT status, commonly does not include a message or payload, but we include our message for consistency.
+    return new ResponseWrapper(res)
+      .status(CART_MESSAGES.REMOVE_FROM_CART_SUCCESS.statusCode)
+      .success(success, CART_MESSAGES.REMOVE_FROM_CART_SUCCESS.message);
   }
+
   async addToCart(req: Request, res: Response) {
     const validPayload = validateSchema(
       {
@@ -198,14 +196,36 @@ export class CartController {
       addToCartSchema
     )!;
 
-    const { item } = await this.userServiceClient.addToCart(validPayload, {
-      attachMetadata: attachMetadata(req),
+    const { item } = await this.cartServiceClient.addToCart(validPayload, {
+      metadata: attachMetadata(req),
     });
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.CREATED)
-      .success(this.mapToCartItemResponse(item!), 'Item added to cart');
+      .status(CART_MESSAGES.ADD_TO_CART_SUCCESS.statusCode)
+      .success(
+        CartResponseMapper.toCartItem(item!),
+        CART_MESSAGES.ADD_TO_CART_SUCCESS.message
+      );
   }
+  async clearCart(req: Request, res: Response) {
+    const validPayload = validateSchema(
+      {
+        ...req.body,
+        ...req.params,
+        ...req.user,
+      },
+      clearCartSchema
+    )!;
+
+    await this.cartServiceClient.clearCart(validPayload, {
+      metadata: attachMetadata(req),
+    });
+
+    return new ResponseWrapper(res)
+      .status(CART_MESSAGES.REMOVE_FROM_CART_SUCCESS.statusCode)
+      .success({}, CART_MESSAGES.REMOVE_FROM_CART_SUCCESS.message);
+  }
+
   async toggleCartItem(req: Request, res: Response) {
     const validPayload = validateSchema(
       {
@@ -216,48 +236,15 @@ export class CartController {
       toggleCartItemSchema
     )!;
 
-    const { item } = await this.userServiceClient.toggleCartItem(validPayload, {
-      attachMetadata: attachMetadata(req),
+    const { item } = await this.cartServiceClient.toggleCartItem(validPayload, {
+      metadata: attachMetadata(req),
     });
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.CREATED)
-      .success(this.mapToCartItemResponse(item!), 'operation successful');
+      .status(CART_MESSAGES.TOGGLE_CART_ITEM_SUCCESS.statusCode)
+      .success(
+        CartResponseMapper.toCartItem(item!),
+        CART_MESSAGES.TOGGLE_CART_ITEM_SUCCESS.message
+      );
   }
-
-  // Mapping Functions
-  private mapToCartResponse = (dto: CartData): Cart | undefined => {
-    if (!dto) return;
-    return {
-      id: dto.id,
-      total: dto.total,
-      items: dto.items.map(this.mapToCartItemResponse),
-      updatedAt: dto.updatedAt,
-      userId: dto.userId,
-      createdAt: dto.createdAt,
-    };
-  };
-  private mapToCartItemResponse = (dto: CartItemData): CartItem => {
-    return {
-      id: dto.id,
-      courseId: dto.courseId,
-      createdAt: dto.createdAt,
-    };
-  };
-  private mapToCartItemCourseResponse = (course: CourseData) => {
-    return {
-      thumbnail: course.thumbnail,
-      id: course.id,
-      title: course.title,
-      rating: course.rating,
-      enrollments: course.enrollments,
-      price: course.price,
-      instructor: {
-        id: course.instructor?.id,
-        avatar: course.instructor?.avatar,
-        name: course.instructor?.name,
-        email: course.instructor?.email,
-      },
-    };
-  };
 }

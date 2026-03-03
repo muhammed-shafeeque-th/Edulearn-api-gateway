@@ -5,12 +5,10 @@ import { Request } from 'express';
 export const attachMetadata = (req: Request): Metadata => {
   const metadata = new Metadata();
 
-  // Copy over auth headers
   if (req.headers.authorization) {
     metadata.set('authorization', req.headers.authorization);
   }
 
-  // Trace ID for observability (fallback to request id if available)
   if (req.headers['x-request-id']) {
     metadata.set('x-request-id', String(req.headers['x-request-id']));
   }
@@ -22,12 +20,12 @@ export const attachMetadata = (req: Request): Metadata => {
     );
   }
 
-  // User info (if your auth middleware attaches req.user)
+  // User info 
   if (req.user) {
+    metadata.set("x-user-id", req.user.userId)
     metadata.set('x-user', JSON.stringify(req.user));
   }
 
-  // Any custom headers you want to propagate
   if (req.headers['x-correlation-id']) {
     metadata.set('x-correlation-id', String(req.headers['x-correlation-id']));
   }

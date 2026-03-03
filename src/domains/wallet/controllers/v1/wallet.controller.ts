@@ -18,18 +18,16 @@ import { UserWallet, WalletTransaction } from '../../types';
 import { mapPaginationResponse } from '@/shared/utils/map-pagination';
 import { WalletResponseMapper } from '../../utils/mappers';
 import { WalletService } from '@/domains/service-clients/wallet';
+import { inject, injectable } from 'inversify';
+import { TYPES } from '@/services/di';
 
 @Observe({ logLevel: 'debug' })
+@injectable()
 export class WalletController {
-  private walletServiceClient: WalletService;
-  private notificationService: NotificationService;
-  private courseServiceClient: CourseService;
-
-  constructor() {
-    this.walletServiceClient = WalletService.getInstance();
-    this.notificationService = NotificationService.getInstance();
-    this.courseServiceClient = CourseService.getInstance();
-  }
+  constructor(
+    @inject(TYPES.WalletService)
+    private walletServiceClient: WalletService
+  ) {}
 
   async getWalletTransactions(req: Request, res: Response) {
     const validPayload = validateSchema(

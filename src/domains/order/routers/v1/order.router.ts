@@ -2,35 +2,37 @@ import { asyncHandler } from '@/shared/utils/async-handler';
 import { cacheMiddleware } from '@/middlewares/cache.middleware';
 import { OrderController } from '../../controllers/v1/order.controller';
 import { Router } from 'express';
-import { authenticate } from '@/middlewares/auth.middleware';
+import { container, TYPES } from '@/services/di';
 
 const router = Router();
 
-const orderController = new OrderController();
+const orderController =  container.get<OrderController>(TYPES.OrderController);
 
 //  ============================================================================
-//                               CART ROUTES
+//                               ORDER ROUTES
 //  ============================================================================
 
 router.get(
   '/',
-  authenticate,
   asyncHandler(orderController.getOrdersByUser.bind(orderController))
 );
 
 router.get(
   '/:orderId',
-  authenticate,
   asyncHandler(orderController.getOrder.bind(orderController))
 );
-
+router.patch(
+  '/:orderId/reset',
+  asyncHandler(orderController.resetOrder.bind(orderController))
+);
+router.get(
+  '/:orderId/status',
+  asyncHandler(orderController.getOrderStatus.bind(orderController))
+);
 
 router.post(
   '/',
-  authenticate,
   asyncHandler(orderController.placeOrder.bind(orderController))
 );
-
-
 
 export { router as orderRoutesV1 };

@@ -2,199 +2,303 @@ import { UserService } from '../../../service-clients/user';
 import { Request, Response } from 'express';
 import validateSchema from '../../../../services/validate-schema';
 
-import { HttpStatus } from '@/shared/constants/http-status';
 import { ResponseWrapper } from '@/shared/utils/response-wrapper';
 import { NotificationService } from '@/domains/service-clients/notification';
-import { MetadataManager } from '@/shared/utils/metadata-manager';
 import { CourseService } from '@/domains/service-clients/course';
-import { createCourseSchema } from '../../validators/course/create-course.schema';
-import { updateCourseSchema } from '../../validators/course/update-current-course.schema';
-import {
-  ContentMetaData,
-  CourseData,
-  EnrollmentData,
-  LessonData,
-  ProgressData,
-  QuizData,
-  ReviewData,
-  SectionData,
-} from '@/domains/service-clients/course/proto/generated/course_service';
-import { getLessonSchema } from '../../validators/lesson/get-lesson.schema';
-import { deleteSectionSchema } from '../../validators/section/delete-section.schema';
-import { updateSectionSchema } from '../../validators/section/update-section.schema';
-import { getCourseByInstructorSchema } from '../../validators/course/get-course-by-instructor.schema';
-import { getCourseSchema } from '../../validators/course/get-course.schema';
-import { getCoursesSchema } from '../../validators/course/get-courses.schema';
-import { getEnrolledCoursesSchema } from '../../validators/course/get-enrolled-courses.schema';
-import { getSectionSchema } from '../../validators/section/get-section.schema';
-import { getSectionsByCourseSchema } from '../../validators/section/get-section-by-courseId.schema';
-import { createLessonSchema } from '../../validators/lesson/create-lesson.schema';
-import { deleteLessonSchema } from '../../validators/lesson/delete-lesson.schema';
-import { updateLessonSchema } from '../../validators/lesson/update-lesson.schema';
-import { getLessonsBySectionSchema } from '../../validators/lesson/get-lessons-by-section.schema';
-import { getQuizzesByCourseSchema } from '../../validators/quiz/get-quiz-by-courseId.schema';
-import { getQuizSchema } from '../../validators/quiz/get-quiz.schema';
-import { createQuizSchema } from '../../validators/quiz/create-quiz.schema';
-import { deleteQuizSchema } from '../../validators/quiz/delete-quiz.schema';
-import { updateQuizSchema } from '../../validators/quiz/update-quiz.schema';
-import { createSectionSchema } from '../../validators/section/create-section.schema';
-import { Observe } from '@/services/observability/decorators';
-import { getCourseBySlugSchema } from '../../validators/course/get-course-by-slug.schema';
+import { createCourseSchema } from '../../schemas/course/create-course.schema';
+import { updateCourseSchema } from '../../schemas/course/update-current-course.schema';
+import { getLessonSchema } from '../../schemas/lesson/get-lesson.schema';
+import { deleteSectionSchema } from '../../schemas/section/delete-section.schema';
+import { updateSectionSchema } from '../../schemas/section/update-section.schema';
+import { getCourseByInstructorSchema } from '../../schemas/course/get-course-by-instructor.schema';
+import { getCourseSchema } from '../../schemas/course/get-course.schema';
+import { getCoursesSchema } from '../../schemas/course/get-courses.schema';
+import { getEnrolledCoursesSchema } from '../../schemas/course/get-enrolled-courses.schema';
+import { getSectionSchema } from '../../schemas/section/get-section.schema';
+import { getSectionsByCourseSchema } from '../../schemas/section/get-section-by-courseId.schema';
+import { createLessonSchema } from '../../schemas/lesson/create-lesson.schema';
+import { deleteLessonSchema } from '../../schemas/lesson/delete-lesson.schema';
+import { updateLessonSchema } from '../../schemas/lesson/update-lesson.schema';
+import { getLessonsBySectionSchema } from '../../schemas/lesson/get-lessons-by-section.schema';
+import { getQuizzesByCourseSchema } from '../../schemas/quiz/get-quiz-by-courseId.schema';
+import { getQuizSchema } from '../../schemas/quiz/get-quiz.schema';
+import { createQuizSchema } from '../../schemas/quiz/create-quiz.schema';
+import { deleteQuizSchema } from '../../schemas/quiz/delete-quiz.schema';
+import { updateQuizSchema } from '../../schemas/quiz/update-quiz.schema';
+import { createSectionSchema } from '../../schemas/section/create-section.schema';
+import { Trace, MonitorGrpc } from '@/shared/utils/decorators';
+import { getCourseBySlugSchema } from '../../schemas/course/get-course-by-slug.schema';
+import { attachMetadata } from '../../utils/attach-metadata';
+import { mapPaginationResponse } from '@/shared/utils/map-pagination';
+import { COURSE_MESSAGES } from '../../utils/resposne-messages';
+import { getReviewsByCourseSchema } from '../../schemas/get-reviews-by-course.schema';
+import { deleteCourseSchema } from '../../schemas/course/delete-course.schema';
+import { publishCourseSchema } from '../../schemas/course/publish-course.schema';
+import { CourseResponseMapper } from '../../utils/mappers';
+import { EnrollmentService } from '@/domains/service-clients/enrollment';
+import { CourseStats } from '@/domains/service-clients/course/proto/generated/course/types/stats';
+import { getInstructorCourseStatsSchema } from '../../schemas/course/get-instructor-course-stats.schema';
+import { WalletService } from '@/domains/service-clients/wallet';
+import { unPublishCourseSchema } from '../../schemas/course/unpublish-course.schema';
+import { getCourseSummerySchema } from '../../schemas/course/get-course-summery.schema copy';
+import { injectable, inject } from 'inversify';
+import { LoggingService } from '@/services/observability/logging/logging.service';
+import { TracingService } from '@/services/observability/tracing/trace.service';
+import { MetricsService } from '@/services/observability/metrics/metrics.service';
+import { TYPES } from '@/services/di';
 
-@Observe({ logLevel: 'debug' })
+@injectable()
 export class CourseController {
-  private userServiceClient: UserService;
-  private notificationService: NotificationService;
-  private courseServiceClient: CourseService;
+  constructor(
+    @inject(TYPES.UserService) private userServiceClient: UserService,
+    @inject(TYPES.EnrollmentService)
+    private enrollmentService: EnrollmentService,
+    @inject(TYPES.WalletService) private walletService: WalletService,
+    @inject(TYPES.CourseService) private courseServiceClient: CourseService,
+    @inject(TYPES.LoggingService) private logger: LoggingService,
+    @inject(TYPES.TracingService) private tracer: TracingService,
+    @inject(TYPES.MetricsService) private monitor: MetricsService
+  ) {}
 
-  constructor() {
-    this.userServiceClient = UserService.getInstance();
-    this.notificationService = NotificationService.getInstance();
-    this.courseServiceClient = CourseService.getInstance();
-  }
-
+  @Trace('CourseController.createCourse')
+  @MonitorGrpc('CourseService', 'createCourse')
   async createCourse(req: Request, res: Response) {
-    // console.log(JSON.stringify(req.body, null, 2));
-
-    const {
-      instructorId,
-      category,
-      durationValue,
-      durationUnit,
-      language,
-      level,
-      subCategory,
-      subtitle,
-      subtitleLanguage,
-      title,
-      topics,
-      instructor,
-    } = validateSchema(
-      { ...req.body, instructorId: req.user?.userId!, instructor: req.user },
+    const validPayload = validateSchema(
+      {
+        ...req.body,
+        instructorId: req.user?.userId!,
+        instructor: {
+          id: req.user?.userId,
+          name: req.user?.username,
+          avatar: req.user?.avatar || '',
+          email: req.user?.email,
+        },
+      },
       createCourseSchema
     )!;
 
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
     const { course } = await this.courseServiceClient.createCourse(
-      {
-        category,
-        durationUnit,
-        durationValue,
-        instructorId,
-        language,
-        level,
-        subCategory,
-        subTitle: subtitle,
-        subtitleLanguage,
-        title,
-        topics,
-        instructor,
-      },
-      { metadata: metadata.metadata }
+      validPayload,
+      { metadata: attachMetadata(req) }
     );
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.CREATED)
+      .status(COURSE_MESSAGES.COURSE_CREATED.statusCode)
       .success(
-        this.mapCourseToResponse(course!),
-        'Course has been successfully created'
+        CourseResponseMapper.toCourse(course!),
+        COURSE_MESSAGES.COURSE_CREATED.message
       );
   }
 
+  @Trace('CourseController.updateCourse')
+  @MonitorGrpc('CourseService', 'updateCourse')
   async updateCourse(req: Request, res: Response) {
     const validPayload = validateSchema(
-      { ...req.body, ...req.params, instructorId: req.user?.userId },
+      {
+        ...req.body,
+        ...req.params,
+        instructorId: req.user?.userId,
+        ...req.user,
+      },
       updateCourseSchema
     )!;
-
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
 
     const { course } = await this.courseServiceClient.updateCourse(
       validPayload,
       {
-        metadata: metadata.metadata,
+        metadata: attachMetadata(req),
       }
     );
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.OK)
+      .status(COURSE_MESSAGES.COURSE_UPDATED.statusCode)
       .success(
-        this.mapCourseToResponse(course!),
-        'Course updated successfully'
+        CourseResponseMapper.toCourse(course!),
+        COURSE_MESSAGES.COURSE_UPDATED.message
       );
   }
 
+  @Trace('CourseController.getCourse')
+  @MonitorGrpc('CourseService', 'getCourse')
   async getCourse(req: Request, res: Response) {
     const validPayload = validateSchema(
       { ...req.body, ...req.params },
       getCourseSchema
     )!;
 
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
     const { course } = await this.courseServiceClient.getCourse(validPayload, {
-      metadata: metadata.metadata,
+      metadata: attachMetadata(req),
     });
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.OK)
+      .status(COURSE_MESSAGES.COURSE_FETCHED.statusCode)
       .success(
-        this.mapCourseToResponse(course!),
-        'Course fetched successfully'
+        CourseResponseMapper.toCourse(course!),
+        COURSE_MESSAGES.COURSE_FETCHED.message
       );
   }
+
+  @Trace('CourseController.getCourseAnalytics')
+  async getCourseAnalytics(req: Request, res: Response) {
+    interface CourseAnalytics {
+      courseId: string;
+      totalStudents?: number;
+      completionRate?: number;
+      averageProgress?: number;
+      monthlyRevenue?: number;
+      engagementRate?: number;
+      revenueThisMonth?: number;
+      revenueTotal?: number;
+      ratingsBreakdown?: Record<1 | 2 | 3 | 4 | 5, number>;
+      enrollmentTrend?: {
+        date?: string;
+        enrollments?: number;
+      }[];
+    }
+
+    const { courseId, instructorId } = validateSchema(
+      { instructorId: req.user?.userId, ...req.params },
+      getCourseSummerySchema
+    )!;
+
+    const from = req.query.from as string;
+    const to = req.query.to as string;
+    const year =
+      (req.query.year as string) || new Date().getFullYear().toString();
+
+    const [
+      { success: ratingsStats },
+      { success: revenueSummery },
+      { success: courseEnrollmentSummary },
+      { success: courseEnrollmentTrend },
+    ] = await Promise.all([
+      this.courseServiceClient.getInstructorCourseRatingStats(
+        { courseId, instructorId },
+        { metadata: attachMetadata(req) }
+      ),
+      this.walletService.getInstructorRevenueSummery(
+        { instructorId },
+        { metadata: attachMetadata(req) }
+      ),
+      this.enrollmentService.getInstructorCourseEnrollmentSummery(
+        { courseId, instructorId },
+        { metadata: attachMetadata(req) }
+      ),
+      this.enrollmentService.getInstructorCourseEnrollmentTrend(
+        {
+          courseId,
+          instructorId,
+          from,
+          to,
+        },
+        { metadata: attachMetadata(req) }
+      ),
+    ]);
+
+    const analytics: CourseAnalytics = {
+      courseId,
+      totalStudents: courseEnrollmentSummary?.totalStudents ?? 0,
+      completionRate: courseEnrollmentSummary?.completionRate ?? 0,
+      averageProgress: courseEnrollmentSummary?.avgProgress ?? 0,
+      monthlyRevenue: revenueSummery?.thisMonthEarnings,
+      engagementRate: 0,
+      revenueThisMonth: revenueSummery?.thisMonthEarnings,
+      revenueTotal: revenueSummery?.totalEarnings,
+      ratingsBreakdown: ratingsStats?.breakdown ?? {
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 0,
+        5: 0,
+      },
+      enrollmentTrend:
+        courseEnrollmentTrend?.trend?.map(trend => ({
+          month: trend.month,
+          enrollments: trend.enrollments ?? 0,
+        })) ?? [],
+    };
+
+    return new ResponseWrapper(res)
+      .status(COURSE_MESSAGES.COURSE_FETCHED.statusCode)
+      .success<CourseAnalytics>(
+        analytics,
+        COURSE_MESSAGES.COURSE_FETCHED.message
+      );
+  }
+
+  @Trace('CourseController.getCourseBySlug')
+  @MonitorGrpc('CourseService', 'getCoursesBySlug')
   async getCourseBySlug(req: Request, res: Response) {
     const validPayload = validateSchema(
       { ...req.body, ...req.params },
       getCourseBySlugSchema
     )!;
 
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
     const { course } = await this.courseServiceClient.getCoursesBySlug(
       validPayload,
       {
-        metadata: metadata.metadata,
+        metadata: attachMetadata(req),
       }
     );
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.OK)
+      .status(COURSE_MESSAGES.COURSE_FETCHED.statusCode)
       .success(
-        this.mapCourseToResponse(course!),
-        'Course fetched successfully'
+        CourseResponseMapper.toCourse(course!),
+        COURSE_MESSAGES.COURSE_FETCHED.message
       );
   }
-
-  async getCoursesByInstructor(req: Request, res: Response) {
+  @Trace('CourseController.getCoursesStats')
+  @MonitorGrpc('CourseService', 'getCoursesStats')
+  async getCoursesStats(req: Request, res: Response) {
     const validPayload = validateSchema(
+      { instructorId: req.user?.userId, ...req.params },
+      getInstructorCourseStatsSchema
+    )!;
+
+    const { success, error } =
+      await this.courseServiceClient.getInstructorCoursesStats(validPayload, {
+        metadata: attachMetadata(req),
+      });
+
+    const stats = success
+      ? {
+          totalCourses: success.totalCourses ?? 0,
+          totalStudents: success.totalStudents ?? 0,
+          averageRating: success.averageRating ?? 0,
+          totalRevenue: success.averageRevenue ?? 0,
+        }
+      : {
+          totalCourses: 0,
+          totalStudents: 0,
+          averageRating: 0,
+          totalRevenue: 0,
+        };
+
+    return new ResponseWrapper(res)
+      .status(COURSE_MESSAGES.COURSE_FETCHED.statusCode)
+      .success(stats, COURSE_MESSAGES.COURSE_FETCHED.message);
+  }
+
+  @Trace('CourseController.getCoursesByInstructor')
+  @MonitorGrpc('CourseService', 'getCoursesByInstructor')
+  async getCoursesByInstructor(req: Request, res: Response) {
+    const { instructorId, pagination } = validateSchema(
       { ...req.body, ...req.params },
       getCourseByInstructorSchema
     )!;
 
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
     const { courses } = await this.courseServiceClient.getCoursesByInstructor(
-      validPayload,
+      { instructorId, pagination },
       {
-        metadata: metadata.metadata,
+        metadata: attachMetadata(req),
       }
     );
-    const mappedCourses = courses?.courses.map(this.mapCourseToResponse);
+    const mappedCourses = courses?.courses.map(
+      CourseResponseMapper.toCourseMeta
+    );
 
-    // // Batch fetch users to reduce N requests -> naive implementation: parallel fetch with dedupe
-    // const mappedCourses = courses?.courses.map(this.mapCourseToResponse);
+    // const mappedCourses = courses?.courses.map(CourseResponseMapper.toCourseResponse);
     // const instructorIds = Array.from(
     //   new Set(mappedCourses?.map(c => c.instructorId!))
     // );
@@ -221,892 +325,524 @@ export class CourseController {
     //   );
     // }
 
-    const instructorIds = Array.from(
-      new Set(mappedCourses?.map(c => c.instructorId!))
-    );
-    let usersMap: Record<string, any> = {};
+    // // const instructorIds = Array.from(
+    // //   new Set(mappedCourses?.map(c => c.instructorId!))
+    // // );
+    // // let usersMap: Record<string, any> = {};
 
-    const { success } = await this.userServiceClient.getUsersByIds({
-      userIds: instructorIds,
-    });
+    // // const { success } = await this.userServiceClient.getUsersByIds({
+    // //   userIds: instructorIds,
+    // // });
 
-    usersMap = success?.users.reduce((userMap: typeof usersMap, user) => {
-      userMap[user.userId] = {
-        avatar: user.avatar,
-        id: user.userId,
-        name: `${user.firstName} ${user.lastName}`,
-      };
-      return userMap;
-    }, {})!;
+    // // usersMap = success?.users.reduce((userMap: typeof usersMap, user) => {
+    // //   userMap[user.userId] = {
+    // //     avatar: user.avatar,
+    // //     id: user.userId,
+    // //     name: `${user.firstName} ${user.lastName}`,
+    // //   };
+    // //   return userMap;
+    // // }, {})!;
 
-    return new ResponseWrapper(res).status(HttpStatus.OK).success(
-      {
-        courses: mappedCourses?.map(course => ({
-          ...course,
-          instructor: usersMap[course.instructorId!],
-        })),
+    // return new ResponseWrapper(res).status(HttpStatus.OK).success(
+    //   {
+    //     courses: mappedCourses?.map(course => ({
+    //       ...course,
+    //       instructor: usersMap[course.instructorId!],
+    //     })),
 
-        total: courses?.total,
-      },
-      'Courses by Instructor fetched successfully'
-    );
+    //     total: courses?.total,
+    //   },
+    //   'Courses by Instructor fetched successfully'
+    // );
+
+    return new ResponseWrapper(res)
+      .status(COURSE_MESSAGES.COURSES_BY_INSTRUCTOR.statusCode)
+      .success(
+        mappedCourses,
+        COURSE_MESSAGES.COURSES_BY_INSTRUCTOR.message,
+        mapPaginationResponse(pagination!, courses?.total)
+      );
   }
 
+  @Trace('CourseController.deleteCourse')
+  @MonitorGrpc('CourseService', 'deleteCourse')
   async deleteCourse(req: Request, res: Response) {
     const validPayload = validateSchema(
-      { ...req.body, ...req.params },
-      updateCourseSchema
+      {
+        ...(req.user?.role === 'admin'
+          ? { isAdmin: true }
+          : { userId: req.user?.userId, isAdmin: false }),
+        ...req.params,
+      },
+      deleteCourseSchema
     )!;
-
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
 
     const serverResponse = await this.courseServiceClient.deleteCourse(
       validPayload,
       {
-        metadata: metadata.metadata,
+        metadata: attachMetadata(req),
       }
     );
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.NO_CONTENT)
-      .success({ deleted: true }, 'Course has been deleted successfully');
+      .status(COURSE_MESSAGES.COURSE_DELETED.statusCode)
+      .success({ deleted: true }, COURSE_MESSAGES.COURSE_DELETED.message);
   }
 
-  async getCourses(req: Request, res: Response) {
+  @Trace('CourseController.publishCourse')
+  @MonitorGrpc('CourseService', 'publishCourse')
+  async publishCourse(req: Request, res: Response) {
     const validPayload = validateSchema(
-      { ...req.body, ...req.params },
-      getCoursesSchema
+      {
+        ...(req.user?.role === 'admin'
+          ? { isAdmin: true }
+          : { userId: req.user?.userId, isAdmin: false }),
+        ...req.params,
+      },
+      publishCourseSchema
     )!;
 
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
-    const { courses } = await this.courseServiceClient.getAllCourse(
+    const { course } = await this.courseServiceClient.publishCourse(
       validPayload,
       {
-        metadata: metadata.metadata,
+        metadata: attachMetadata(req),
       }
     );
 
-    return new ResponseWrapper(res).status(HttpStatus.OK).success(
-      {
-        courses: courses?.courses.map(this.mapCourseToResponse),
-        total: courses?.total,
-      },
-      'Courses has been fetched successfully'
-    );
+    return new ResponseWrapper(res)
+      .status(COURSE_MESSAGES.COURSE_UPDATED.statusCode)
+      .success(course, COURSE_MESSAGES.COURSE_UPDATED.message);
   }
+
+  @Trace('CourseController.unPublishCourse')
+  @MonitorGrpc('CourseService', 'unPublishCourse')
+  async unPublishCourse(req: Request, res: Response) {
+    const validPayload = validateSchema(
+      {
+        ...(req.user?.role === 'admin'
+          ? { isAdmin: true }
+          : { userId: req.user?.userId, isAdmin: false }),
+        ...req.params,
+      },
+      unPublishCourseSchema
+    )!;
+
+    const { course } = await this.courseServiceClient.unPublishCourse(
+      validPayload,
+      {
+        metadata: attachMetadata(req),
+      }
+    );
+
+    return new ResponseWrapper(res)
+      .status(COURSE_MESSAGES.COURSE_UPDATED.statusCode)
+      .success(course, COURSE_MESSAGES.COURSE_UPDATED.message);
+  }
+
+  @Trace('CourseController.getCourses')
+  @MonitorGrpc('CourseService', 'listCourses')
+  async getCourses(req: Request, res: Response) {
+    const validPayload = validateSchema(
+      {
+        params: {
+          pagination: req.query,
+          filters: req.query,
+        },
+      },
+      getCoursesSchema
+    )!;
+
+    const { courses } = await this.courseServiceClient.listCourses(
+      validPayload,
+      {
+        metadata: attachMetadata(req),
+      }
+    );
+
+    return new ResponseWrapper(res)
+      .status(COURSE_MESSAGES.COURSES_FETCHED.statusCode)
+      .success(
+        courses?.courses.map(CourseResponseMapper.toCourseMeta),
+        COURSE_MESSAGES.COURSES_FETCHED.message,
+        mapPaginationResponse(validPayload.params?.pagination!, courses?.total)
+      );
+  }
+
+  @Trace('CourseController.getEnrolledCourses')
+  @MonitorGrpc('CourseService', 'getEnrolledCourses')
   async getEnrolledCourses(req: Request, res: Response) {
     const validPayload = validateSchema(
       { ...req.body, ...req.params },
       getEnrolledCoursesSchema
     )!;
 
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
     const { courses } = await this.courseServiceClient.getEnrolledCourses(
       validPayload,
       {
-        metadata: metadata.metadata,
+        metadata: attachMetadata(req),
       }
     );
 
-    return new ResponseWrapper(res).status(HttpStatus.OK).success(
-      {
-        courses: courses?.courses.map(this.mapCourseToResponse),
-        total: courses?.total,
-      },
-      'Fetched all enrolled courses'
-    );
+    return new ResponseWrapper(res)
+      .status(COURSE_MESSAGES.ENROLLED_COURSES_FETCHED.statusCode)
+      .success(
+        courses?.courses.map(CourseResponseMapper.toCourseMeta),
+        COURSE_MESSAGES.ENROLLED_COURSES_FETCHED.message,
+        mapPaginationResponse(validPayload.pagination!, courses?.total)
+      );
   }
 
+  @Trace('CourseController.getSection')
+  @MonitorGrpc('CourseService', 'getSection')
   async getSection(req: Request, res: Response) {
     const validPayload = validateSchema(
       { ...req.body, ...req.params },
       getSectionSchema
     )!;
 
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
     const { section } = await this.courseServiceClient.getSection(
       validPayload,
       {
-        metadata: metadata.metadata,
+        metadata: attachMetadata(req),
       }
     );
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.OK)
+      .status(COURSE_MESSAGES.SECTION_FETCHED.statusCode)
       .success(
-        this.mapSectionToResponse(section!),
-        'Fetched section successfully'
+        CourseResponseMapper.toSection(section!),
+        COURSE_MESSAGES.SECTION_FETCHED.message
       );
   }
 
+  @Trace('CourseController.createSection')
+  @MonitorGrpc('CourseService', 'createSection')
   async createSection(req: Request, res: Response) {
     const validPayload = validateSchema(
-      { ...req.body, ...req.params },
+      { ...req.body, ...req.params, ...req.user },
       createSectionSchema
     )!;
-
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
 
     const { section } = await this.courseServiceClient.createSection(
       validPayload,
       {
-        metadata: metadata.metadata,
+        metadata: attachMetadata(req),
       }
     );
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.CREATED)
+      .status(COURSE_MESSAGES.SECTION_CREATED.statusCode)
       .success(
-        this.mapSectionToResponse(section!),
-        'section created successfully'
+        CourseResponseMapper.toSection(section!),
+        COURSE_MESSAGES.SECTION_CREATED.message
       );
   }
+
+  @Trace('CourseController.deleteSection')
+  @MonitorGrpc('CourseService', 'deleteSection')
   async deleteSection(req: Request, res: Response) {
     const validPayload = validateSchema(
-      { ...req.body, ...req.params },
+      { ...req.body, ...req.params, ...req.user },
       deleteSectionSchema
     )!;
-
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
 
     const { success } = await this.courseServiceClient.deleteSection(
       validPayload,
       {
-        metadata: metadata.metadata,
+        metadata: attachMetadata(req),
       }
     );
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.NO_CONTENT)
-      .success({ deleted: true }, 'Section has been deleted successfully');
+      .status(COURSE_MESSAGES.SECTION_DELETED.statusCode)
+      .success({ deleted: true }, COURSE_MESSAGES.SECTION_DELETED.message);
   }
 
+  @Trace('CourseController.updateSection')
+  @MonitorGrpc('CourseService', 'updateSection')
   async updateSection(req: Request, res: Response) {
     const validPayload = validateSchema(
-      { ...req.body, ...req.params },
+      { ...req.body, ...req.params, ...req.user },
       updateSectionSchema
     )!;
-
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
 
     const { section } = await this.courseServiceClient.updateSection(
       validPayload,
       {
-        metadata: metadata.metadata,
+        metadata: attachMetadata(req),
       }
     );
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.OK)
+      .status(COURSE_MESSAGES.SECTION_UPDATED.statusCode)
       .success(
-        this.mapSectionToResponse(section!),
-        'section has updated successfully'
+        CourseResponseMapper.toSection(section!),
+        COURSE_MESSAGES.SECTION_UPDATED.message
       );
   }
 
+  @Trace('CourseController.getSectionsByCourse')
+  @MonitorGrpc('CourseService', 'getSectionsByCourse')
   async getSectionsByCourse(req: Request, res: Response) {
     const validPayload = validateSchema(
       { ...req.body, ...req.params },
       getSectionsByCourseSchema
     )!;
 
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
     const { sections } = await this.courseServiceClient.getSectionsByCourse(
       validPayload,
       {
-        metadata: metadata.metadata,
+        metadata: attachMetadata(req),
       }
     );
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.OK)
+      .status(COURSE_MESSAGES.SECTIONS_FETCHED.statusCode)
       .success(
-        { sections: sections?.sections.map(this.mapSectionToResponse) },
-        'Fetched sections successfully'
+        { sections: sections?.sections.map(CourseResponseMapper.toSection) },
+        COURSE_MESSAGES.SECTIONS_FETCHED.message
       );
   }
 
+  @Trace('CourseController.getLesson')
+  @MonitorGrpc('CourseService', 'getLesson')
   async getLesson(req: Request, res: Response) {
     const validPayload = validateSchema(
       { ...req.body, ...req.params },
       getLessonSchema
     )!;
 
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
     const { lesson } = await this.courseServiceClient.getLesson(validPayload, {
-      metadata: metadata.metadata,
+      metadata: attachMetadata(req),
     });
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.OK)
+      .status(COURSE_MESSAGES.LESSON_FETCHED.statusCode)
       .success(
-        this.mapLessonToResponse(lesson!),
-        'Fetched lesson successfully'
+        CourseResponseMapper.toLesson(lesson!),
+        COURSE_MESSAGES.LESSON_FETCHED.message
       );
   }
+
+  @Trace('CourseController.createLesson')
+  @MonitorGrpc('CourseService', 'createLesson')
   async createLesson(req: Request, res: Response) {
     const validPayload = validateSchema(
-      { ...req.body, ...req.params },
+      { ...req.body, ...req.params, ...req.user },
       createLessonSchema
     )!;
-
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
 
     const { lesson } = await this.courseServiceClient.createLesson(
       validPayload,
       {
-        metadata: metadata.metadata,
+        metadata: attachMetadata(req),
       }
     );
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.OK)
+      .status(COURSE_MESSAGES.LESSON_CREATED.statusCode)
       .success(
-        this.mapLessonToResponse(lesson!),
-        'Created lesson successfully'
+        CourseResponseMapper.toLesson(lesson!),
+        COURSE_MESSAGES.LESSON_CREATED.message
       );
   }
+
+  @Trace('CourseController.deleteLesson')
+  @MonitorGrpc('CourseService', 'deleteLesson')
   async deleteLesson(req: Request, res: Response) {
     const validPayload = validateSchema(
-      { ...req.body, ...req.params },
+      { ...req.body, ...req.params, ...req.user },
       deleteLessonSchema
     )!;
-
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
 
     const serverResponse = await this.courseServiceClient.deleteLesson(
       validPayload,
       {
-        metadata: metadata.metadata,
+        metadata: attachMetadata(req),
       }
     );
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.NO_CONTENT)
-      .success({ deleted: true }, 'Lesson has been deleted successfully');
+      .status(COURSE_MESSAGES.LESSON_DELETED.statusCode)
+      .success({ deleted: true }, COURSE_MESSAGES.LESSON_DELETED.message);
   }
+
+  @Trace('CourseController.updateLesson')
+  @MonitorGrpc('CourseService', 'updateLesson')
   async updateLesson(req: Request, res: Response) {
     const validPayload = validateSchema(
-      { ...req.body, ...req.params },
+      { ...req.body, ...req.params, ...req.user },
       updateLessonSchema
     )!;
-
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
 
     const { lesson } = await this.courseServiceClient.updateLesson(
       validPayload,
       {
-        metadata: metadata.metadata,
+        metadata: attachMetadata(req),
       }
     );
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.OK)
+      .status(COURSE_MESSAGES.LESSON_UPDATED.statusCode)
       .success(
-        this.mapLessonToResponse(lesson!),
-        'Lesson has been updated successfully'
+        CourseResponseMapper.toLesson(lesson!),
+        COURSE_MESSAGES.LESSON_UPDATED.message
       );
   }
 
+  @Trace('CourseController.getLessonsBySection')
+  @MonitorGrpc('CourseService', 'getLessonsBySection')
   async getLessonsBySection(req: Request, res: Response) {
     const validPayload = validateSchema(
       { ...req.body, ...req.params },
       getLessonsBySectionSchema
     )!;
 
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
     const { lessons } = await this.courseServiceClient.getLessonsBySection(
       validPayload,
       {
-        metadata: metadata.metadata,
+        metadata: attachMetadata(req),
       }
     );
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.OK)
+      .status(COURSE_MESSAGES.LESSONS_FETCHED.statusCode)
       .success(
-        { lessons: lessons?.lessons.map(this.mapLessonToResponse) },
-        'Fetched lessons successfully'
+        { lessons: lessons?.lessons.map(CourseResponseMapper.toLesson) },
+        COURSE_MESSAGES.LESSONS_FETCHED.message
       );
   }
 
+  @Trace('CourseController.getQuizzesByCourse')
+  @MonitorGrpc('CourseService', 'getQuizzesByCourse')
   async getQuizzesByCourse(req: Request, res: Response) {
     const validPayload = validateSchema(
       { ...req.body, ...req.params },
       getQuizzesByCourseSchema
     )!;
 
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
     const { quizzes } = await this.courseServiceClient.getQuizzesByCourse(
       validPayload,
       {
-        metadata: metadata.metadata,
+        metadata: attachMetadata(req),
       }
     );
 
+    // Provided previous message seems off, fallback to generic quizzes fetched
     return new ResponseWrapper(res)
-      .status(HttpStatus.OK)
+      .status(COURSE_MESSAGES.QUIZZES_FETCHED.statusCode)
       .success(
-        { quizzes: quizzes?.quizzes.map(this.mapQuizToResponse) },
-        'Use has been blocker successfully'
+        { quizzes: quizzes?.quizzes.map(CourseResponseMapper.toQuiz) },
+        COURSE_MESSAGES.QUIZZES_FETCHED.message
       );
   }
+
+  @Trace('CourseController.getQuiz')
+  @MonitorGrpc('CourseService', 'getQuiz')
   async getQuiz(req: Request, res: Response) {
     const validPayload = validateSchema(
       { ...req.body, ...req.params },
       getQuizSchema
     )!;
 
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
     const { quiz } = await this.courseServiceClient.getQuiz(validPayload, {
-      metadata: metadata.metadata,
+      metadata: attachMetadata(req),
     });
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.OK)
-      .success(this.mapQuizToResponse(quiz!), 'Fetched quiz successfully');
+      .status(COURSE_MESSAGES.QUIZ_FETCHED.statusCode)
+      .success(
+        CourseResponseMapper.toQuiz(quiz!),
+        COURSE_MESSAGES.QUIZ_FETCHED.message
+      );
   }
+
+  @Trace('CourseController.createQuiz')
+  @MonitorGrpc('CourseService', 'createQuiz')
   async createQuiz(req: Request, res: Response) {
     const validPayload = validateSchema(
-      { ...req.body, ...req.params },
+      { ...req.body, ...req.params, ...req.user },
       createQuizSchema
     )!;
 
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
     const { quiz } = await this.courseServiceClient.createQuiz(validPayload, {
-      metadata: metadata.metadata,
+      metadata: attachMetadata(req),
     });
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.CREATED)
-      .success(this.mapQuizToResponse(quiz!), 'Quiz created successfully');
+      .status(COURSE_MESSAGES.QUIZ_CREATED.statusCode)
+      .success(
+        CourseResponseMapper.toQuiz(quiz!),
+        COURSE_MESSAGES.QUIZ_CREATED.message
+      );
   }
 
+  @Trace('CourseController.deleteQuiz')
+  @MonitorGrpc('CourseService', 'deleteQuiz')
   async deleteQuiz(req: Request, res: Response) {
     const validPayload = validateSchema(
-      { ...req.body, ...req.params },
+      { ...req.body, ...req.params, ...req.user },
       deleteQuizSchema
     )!;
-
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
 
     const serverResponse = await this.courseServiceClient.deleteQuiz(
       validPayload,
       {
-        metadata: metadata.metadata,
+        metadata: attachMetadata(req),
       }
     );
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.NO_CONTENT)
-      .success({ deleted: true }, 'Quiz has been deleted successfully');
+      .status(COURSE_MESSAGES.QUIZ_DELETED.statusCode)
+      .success({ deleted: true }, COURSE_MESSAGES.QUIZ_DELETED.message);
   }
+
+  @Trace('CourseController.updateQuiz')
+  @MonitorGrpc('CourseService', 'updateQuiz')
   async updateQuiz(req: Request, res: Response) {
     const validPayload = validateSchema(
-      { ...req.body, ...req.params },
+      { ...req.body, ...req.params, ...req.user },
       updateQuizSchema
     )!;
 
-    // create metadata object to pass req headers
-    const metadata = new MetadataManager();
-    metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
     const { quiz } = await this.courseServiceClient.updateQuiz(validPayload, {
-      metadata: metadata.metadata,
+      metadata: attachMetadata(req),
     });
 
     return new ResponseWrapper(res)
-      .status(HttpStatus.OK)
+      .status(COURSE_MESSAGES.QUIZ_UPDATED.statusCode)
       .success(
-        this.mapQuizToResponse(quiz!),
-        'Quiz has been deleted successfully'
+        CourseResponseMapper.toQuiz(quiz!),
+        COURSE_MESSAGES.QUIZ_UPDATED.message
       );
   }
 
-  // async getReviewsByCourse(req: Request, res: Response) {
-  //   const validPayload = validateSchema(
-  //     { ...req.body, ...req.params },
-  //     updateCourseSchema
-  //   )!;
+  // ------------------ REVIEWS ---------------------------
 
-  //   // create metadata object to pass req headers
-  //   const metadata = new MetadataManager();
-  //   metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
-  //   const serverResponse = await this.courseServiceClient.getReviewsByCourse(
-  //     validPayload,
-  //     {
-  //       metadata: metadata.metadata,
-  //     }
-  //   );
-
-  //   const resWrap = new ResponseWrapper(res);
-
-  //   return resWrap
-  //     .status(HttpStatus.OK)
-  //     .success({ updated: true }, 'Use has been blocker successfully');
-  // }
-  // async getReview(req: Request, res: Response) {
-  //   const validPayload = validateSchema(
-  //     { ...req.body, ...req.params },
-  //     updateCourseSchema
-  //   )!;
-
-  //   // create metadata object to pass req headers
-  //   const metadata = new MetadataManager();
-  //   metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
-  //   const serverResponse = await this.courseServiceClient.getReview(
-  //     validPayload,
-  //     {
-  //       metadata: metadata.metadata,
-  //     }
-  //   );
-
-  //   const resWrap = new ResponseWrapper(res);
-
-  //   return resWrap
-  //     .status(HttpStatus.OK)
-  //     .success({ updated: true }, 'Use has been blocker successfully');
-  // }
-  // async createReview(req: Request, res: Response) {
-  //   const validPayload = validateSchema(
-  //     { ...req.body, ...req.params },
-  //     updateCourseSchema
-  //   )!;
-
-  //   // create metadata object to pass req headers
-  //   const metadata = new MetadataManager();
-  //   metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
-  //   const serverResponse = await this.courseServiceClient.createReview(
-  //     validPayload,
-  //     {
-  //       metadata: metadata.metadata,
-  //     }
-  //   );
-
-  //   const resWrap = new ResponseWrapper(res);
-
-  //   return resWrap
-  //     .status(HttpStatus.OK)
-  //     .success({ updated: true }, 'Use has been blocker successfully');
-  // }
-  // async deleteReview(req: Request, res: Response) {
-  //   const validPayload = validateSchema(
-  //     { ...req.body, ...req.params },
-  //     updateCourseSchema
-  //   )!;
-
-  //   // create metadata object to pass req headers
-  //   const metadata = new MetadataManager();
-  //   metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
-  //   const serverResponse = await this.courseServiceClient.deleteReview(
-  //     validPayload,
-  //     {
-  //       metadata: metadata.metadata,
-  //     }
-  //   );
-
-  //   const resWrap = new ResponseWrapper(res);
-
-  //   return resWrap
-  //     .status(HttpStatus.OK)
-  //     .success({ updated: true }, 'Use has been blocker successfully');
-  // }
-  // async updateReview(req: Request, res: Response) {
-  //   const validPayload = validateSchema(
-  //     { ...req.body, ...req.params },
-  //     updateCourseSchema
-  //   )!;
-
-  //   // create metadata object to pass req headers
-  //   const metadata = new MetadataManager();
-  //   metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
-  //   const serverResponse = await this.courseServiceClient.updateReview(
-  //     validPayload,
-  //     {
-  //       metadata: metadata.metadata,
-  //     }
-  //   );
-
-  //   const resWrap = new ResponseWrapper(res);
-
-  //   return resWrap
-  //     .status(HttpStatus.OK)
-  //     .success({ updated: true }, 'Use has been blocker successfully');
-  // }
-  // async getEnrollment(req: Request, res: Response) {
-  //   const validPayload = validateSchema(
-  //     { ...req.body, ...req.params },
-  //     updateCourseSchema
-  //   )!;
-
-  //   // create metadata object to pass req headers
-  //   const metadata = new MetadataManager();
-  //   metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
-  //   const serverResponse = await this.courseServiceClient.getEnrollment(
-  //     validPayload,
-  //     {
-  //       metadata: metadata.metadata,
-  //     }
-  //   );
-
-  //   const resWrap = new ResponseWrapper(res);
-
-  //   return resWrap
-  //     .status(HttpStatus.OK)
-  //     .success({ updated: true }, 'Use has been blocker successfully');
-  // }
-  // async createEnrollment(req: Request, res: Response) {
-  //   const validPayload = validateSchema(
-  //     { ...req.body, ...req.params },
-  //     updateCourseSchema
-  //   )!;
-
-  //   // create metadata object to pass req headers
-  //   const metadata = new MetadataManager();
-  //   metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
-  //   const serverResponse = await this.courseServiceClient.createEnrollment(
-  //     validPayload,
-  //     {
-  //       metadata: metadata.metadata,
-  //     }
-  //   );
-
-  //   const resWrap = new ResponseWrapper(res);
-
-  //   return resWrap
-  //     .status(HttpStatus.OK)
-  //     .success({ updated: true }, 'Use has been blocker successfully');
-  // }
-  // async deleteEnrollment(req: Request, res: Response) {
-  //   const validPayload = validateSchema(
-  //     { ...req.body, ...req.params },
-  //     updateCourseSchema
-  //   )!;
-
-  //   // create metadata object to pass req headers
-  //   const metadata = new MetadataManager();
-  //   metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
-  //   const serverResponse = await this.courseServiceClient.deleteEnrollment(
-  //     validPayload,
-  //     {
-  //       metadata: metadata.metadata,
-  //     }
-  //   );
-
-  //   const resWrap = new ResponseWrapper(res);
-
-  //   return resWrap
-  //     .status(HttpStatus.OK)
-  //     .success({ updated: true }, 'Use has been blocker successfully');
-  // }
-  // async updateEnrollment(req: Request, res: Response) {
-  //   const validPayload = validateSchema(
-  //     { ...req.body, ...req.params },
-  //     updateCourseSchema
-  //   )!;
-
-  //   // create metadata object to pass req headers
-  //   const metadata = new MetadataManager();
-  //   metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
-  //   const serverResponse = await this.courseServiceClient.updateEnrollment(
-  //     validPayload,
-  //     {
-  //       metadata: metadata.metadata,
-  //     }
-  //   );
-
-  //   const resWrap = new ResponseWrapper(res);
-
-  //   return resWrap
-  //     .status(HttpStatus.OK)
-  //     .success({ updated: true }, 'Use has been blocker successfully');
-  // }
-  // async getProgress(req: Request, res: Response) {
-  //   const validPayload = validateSchema(
-  //     { ...req.body, ...req.params },
-  //     updateCourseSchema
-  //   )!;
-
-  //   // create metadata object to pass req headers
-  //   const metadata = new MetadataManager();
-  //   metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
-  //   const serverResponse = await this.courseServiceClient.getProgress(
-  //     validPayload,
-  //     {
-  //       metadata: metadata.metadata,
-  //     }
-  //   );
-
-  //   const resWrap = new ResponseWrapper(res);
-
-  //   return resWrap
-  //     .status(HttpStatus.OK)
-  //     .success({ updated: true }, 'Use has been blocker successfully');
-  // }
-  // async updateProgress(req: Request, res: Response) {
-  //   const validPayload = validateSchema(
-  //     { ...req.body, ...req.params },
-  //     updateCourseSchema
-  //   )!;
-
-  //   // create metadata object to pass req headers
-  //   const metadata = new MetadataManager();
-  //   metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
-  //   const serverResponse = await this.courseServiceClient.updateProgress(
-  //     validPayload,
-  //     {
-  //       metadata: metadata.metadata,
-  //     }
-  //   );
-
-  //   const resWrap = new ResponseWrapper(res);
-
-  //   return resWrap
-  //     .status(HttpStatus.OK)
-  //     .success({ updated: true }, 'Use has been blocker successfully');
-  // }
-  // async createProgress(req: Request, res: Response) {
-  //   const validPayload = validateSchema(
-  //     { ...req.body, ...req.params },
-  //     updateCourseSchema
-  //   )!;
-
-  //   // create metadata object to pass req headers
-  //   const metadata = new MetadataManager();
-  //   metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
-  //   const serverResponse = await this.courseServiceClient.createProgress(
-  //     validPayload,
-  //     {
-  //       metadata: metadata.metadata,
-  //     }
-  //   );
-
-  //   const resWrap = new ResponseWrapper(res);
-
-  //   return resWrap
-  //     .status(HttpStatus.OK)
-  //     .success({ updated: true }, 'Use has been blocker successfully');
-  // }
-  // async deleteProgress(req: Request, res: Response) {
-  //   const validPayload = validateSchema(
-  //     { ...req.body, ...req.params },
-  //     updateCourseSchema
-  //   )!;
-
-  //   // create metadata object to pass req headers
-  //   const metadata = new MetadataManager();
-  //   metadata.set({ 'x-user': req.user }); // send user data in `x-user` header
-
-  //   const serverResponse = await this.courseServiceClient.deleteProgress(
-  //     validPayload,
-  //     {
-  //       metadata: metadata.metadata,
-  //     }
-  //   );
-
-  //   const resWrap = new ResponseWrapper(res);
-
-  //   return resWrap
-  //     .status(HttpStatus.OK)
-  //     .success({ updated: true }, 'Use has been blocker successfully');
-  // }
-
-  // Mapping Functions
-  private mapCourseToResponse = (dto: CourseData): CourseData => {
-    return {
-      id: dto.id,
-      title: dto.title,
-      description: dto.description,
-      learningOutcomes: dto.learningOutcomes,
-      requirements: dto.learningOutcomes,
-      topics: dto.topics,
-      category: dto.category,
-      subCategory: dto.subCategory,
-      durationUnit: dto.durationUnit,
-      durationValue: dto.durationValue,
-      subTitle: dto.subTitle,
-      currency: dto.currency,
-      discountPrice: dto.discountPrice,
-      price: dto.price,
-      language: dto.language,
-      subtitleLanguage: dto.subtitleLanguage,
-      targetAudience: dto.targetAudience,
-      thumbnail: dto.thumbnail,
-      trailer: dto.trailer,
-      level: dto.level,
-      instructor: dto.instructor && {
-        avatar: dto.instructor.avatar,
-        id: dto.instructor.id,
-        name: dto.instructor.name,
-        email: dto.instructor.email,
+  @Trace('CourseController.getReviewsByCourse')
+  @MonitorGrpc('EnrollmentService', 'getReviewsByCourse')
+  async getReviewsByCourse(req: Request, res: Response) {
+    const validPayload = validateSchema(
+      {
+        pagination: req.query,
+        ...req.params,
       },
-      instructorId: dto.instructorId,
-      sections: dto.sections.map(this.mapSectionToResponse),
-      createdAt: dto.createdAt,
-      updatedAt: dto.updatedAt,
-      deletedAt: dto.deletedAt ? dto.deletedAt : undefined,
-    };
-  };
+      getReviewsByCourseSchema
+    )!;
 
-  private mapSectionToResponse = (dto: SectionData): SectionData => {
-    return {
-      id: dto.id,
-      courseId: dto.courseId,
-      title: dto.title,
-      description: dto.description,
-      isPublished: dto.isPublished,
-      order: dto.order,
-      quiz: this.mapQuizToResponse(dto.quiz),
-      lessons: dto.lessons.map(this.mapLessonToResponse),
-      createdAt: dto.createdAt,
-      updatedAt: dto.updatedAt,
-      deletedAt: dto.deletedAt ? dto.deletedAt : undefined,
-    };
-  };
+    const { reviews } = await this.enrollmentService.getReviewsByCourse(
+      validPayload,
+      {
+        metadata: attachMetadata(req),
+      }
+    );
 
-  private mapLessonToResponse = (dto: LessonData): LessonData => {
-    return {
-      id: dto.id,
-      sectionId: dto.sectionId,
-      title: dto.title,
-      contentUrl: dto.contentUrl,
-      description: dto.description,
-      estimatedDuration: dto.estimatedDuration,
-      isPreview: dto.isPreview,
-      isPublished: dto.isPublished,
-      order: dto.order,
-      metadata: Object.fromEntries(
-        Object.entries(dto.metadata!).filter(
-          ([key, value]) => !key.toString().startsWith('_')
-        )
-      ) as unknown as ContentMetaData,
-      contentType: dto.contentType,
-      createdAt: dto.createdAt,
-      updatedAt: dto.updatedAt,
-      deletedAt: dto.deletedAt ? dto.deletedAt : undefined,
-    };
-  };
-
-  private mapQuizToResponse = (dto?: QuizData): QuizData | undefined => {
-    if (!dto) return;
-    return {
-      id: dto.id,
-      courseId: dto.courseId,
-      sectionId: dto.sectionId,
-      title: dto.title,
-      description: dto.description,
-      timeLimit: dto.timeLimit,
-      passingScore: dto.passingScore,
-      questions:
-        dto.questions?.map(q => ({
-          id: q.id,
-          question: q.question,
-          required: q.required,
-          type: q.type,
-          timeLimit: q.timeLimit,
-          points: q.points,
-          options: q.options,
-          correctAnswer: q.correctAnswer?.toString(),
-          explanation: q.explanation ?? '',
-        })) ?? [],
-      createdAt: dto.createdAt,
-      updatedAt: dto.updatedAt,
-      deletedAt: dto.deletedAt ? dto.deletedAt : '',
-    };
-  };
-
-  private mapEnrollmentToResponse = (dto: EnrollmentData): EnrollmentData => {
-    return {
-      id: dto.id,
-      userId: dto.userId,
-      courseId: dto.courseId,
-      progress: dto.progress,
-      completedAt: dto.completedAt,
-      status: dto.status.toString(),
-      enrolledAt: dto.enrolledAt,
-      createdAt: dto.createdAt,
-      updatedAt: dto.updatedAt,
-      deletedAt: dto.deletedAt ? dto.deletedAt : '',
-    };
-  };
-
-  private mapProgressToResponse = (dto: ProgressData): ProgressData => {
-    return {
-      id: dto.id,
-      enrollmentId: dto.enrollmentId,
-      lessonId: dto.lessonId,
-      completed: dto.completed,
-      completedAt: dto.completedAt ? dto.completedAt : '',
-      createdAt: dto.createdAt,
-      updatedAt: dto.updatedAt,
-      deletedAt: dto.deletedAt ? dto.deletedAt : '',
-    };
-  };
-
-  private mapReviewToResponse = (dto: ReviewData): ReviewData => {
-    return {
-      id: dto.id,
-      userId: dto.userId,
-      courseId: dto.courseId,
-      rating: dto.rating,
-      comment: dto.comment,
-      createdAt: dto.createdAt,
-      updatedAt: dto.updatedAt,
-    };
-  };
+    return new ResponseWrapper(res)
+      .status(COURSE_MESSAGES.COURSES_FETCHED.statusCode)
+      .success(
+        reviews?.reviews.map(CourseResponseMapper.toReview),
+        COURSE_MESSAGES.COURSES_FETCHED.message,
+        mapPaginationResponse(validPayload.pagination!, reviews?.total)
+      );
+  }
 }

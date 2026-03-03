@@ -19,6 +19,9 @@ export interface MetricLabels {
   [key: string]: string | number;
 }
 
+import { injectable } from 'inversify';
+
+@injectable()
 export class MetricsService {
   private static instance: MetricsService;
   private readonly registry: Registry;
@@ -29,6 +32,7 @@ export class MetricsService {
     collectDefaultMetrics({ register: this.registry });
   }
 
+  
   public static getInstance(): MetricsService {
     if (!MetricsService.instance) {
       MetricsService.instance = new MetricsService();
