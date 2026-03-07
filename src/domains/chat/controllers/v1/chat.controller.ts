@@ -5,205 +5,305 @@ import validateSchema from '../../../../services/validate-schema';
 import { ResponseWrapper } from '@/shared/utils/response-wrapper';
 import { NotificationService } from '@/domains/service-clients/notification';
 import { Observe } from '@/services/observability/decorators';
-import { createConversationSchema } from '../../schemas/create-conversation.schema';
-import { Conversation, Message } from '../../types';
+import { createChatSchema } from '../../schemas/chats/create-chat.schema';
+import { Chat, Message } from '../../types';
 import { attachMetadata } from '../../utils/attach-metadata';
-import { mapPaginationResponse } from '@/shared/utils/map-pagination';
-import { ChatService } from '@/domains/service-clients/chat';
-import { getConversationSchema } from '../../schemas/get-conversation.schema';
-import { pinConversationSchema } from '../../schemas/pin-conversation.schema';
-import { unPinConversationSchema } from '../../schemas/unpin-conversation.schema';
-import { deleteConversationSchema } from '../../schemas/delete-conversation.schema';
-import { unArchiveConversationSchema } from '../../schemas/unarchive-conversation.schema';
-import { archiveConversationSchema } from '../../schemas/archive-conversation.schema';
-import { sendMessagesSchema } from '../../schemas/send-message.schema';
-import { editMessagesSchema } from '../../schemas/edit-message.schema';
-import { markMessageReadSchema } from '../../schemas/mark-message-read.schema';
-import { deleteMessagesSchema } from '../../schemas/delete-message.schema';
-import { removeReactionSchema } from '../../schemas/remove-reaction.schema';
-import { addReactionSchema } from '../../schemas/add-reaction.schema';
-import { getConversationsSchema } from '../../schemas/get-conversations.schema';
 import {
-  ConversationResponse,
+  mapPaginationResponse,
+  PaginationLike,
+} from '@/shared/utils/map-pagination';
+import { ChatService } from '@/domains/service-clients/chat';
+import { getChatSchema } from '../../schemas/chats/get-chat.schema';
+import { pinChatSchema } from '../../schemas/chats/pin-chat.schema';
+import { unPinChatSchema } from '../../schemas/chats/unpin-chat.schema';
+import { deleteChatSchema } from '../../schemas/chats/delete-chat.schema';
+import { unArchiveChatSchema } from '../../schemas/chats/unarchive-chat.schema';
+import { archiveChatSchema } from '../../schemas/chats/archive-chat.schema';
+import { sendMessagesSchema } from '../../schemas/chats/send-message.schema';
+import { editMessagesSchema } from '../../schemas/chats/edit-message.schema';
+import { markMessageReadSchema } from '../../schemas/chats/mark-message-read.schema';
+import { deleteMessagesSchema } from '../../schemas/chats/delete-message.schema';
+import { removeReactionSchema } from '../../schemas/chats/remove-reaction.schema';
+import { addReactionSchema } from '../../schemas/chats/add-reaction.schema';
+import { getInstructorChatsSchema } from '../../schemas/chats/get-instructor-chats.schema';
+import {
+  ChatResponse,
+  ChatsListResponse,
+  ChatsResponse,
   MessageResponse,
 } from '@/domains/service-clients/chat/proto/generated/chat_service';
 import { CHAT_MESSAGES } from '../../utils/resposne-messages';
-import { getMessagesSchema } from '../../schemas/get-messages.schema';
+import { getMessagesSchema } from '../../schemas/chats/get-messages.schema';
+import { ChatResponseMapper } from '../../utils/chat.mappers';
+import { UserResponseMapper } from '@/domains/user/utils/mappers';
+import { UserInfo } from '@/domains/user/types';
+import { getStudentChatsSchema } from '../../schemas/chats/get-student-chats.schema';
+import { USER_ROLE } from '@/shared/types/user-types';
+import { TYPES } from '@/services/di';
+import { inject, injectable } from 'inversify';
 
 @Observe({ logLevel: 'debug' })
+@injectable()
 export class ChatController {
-  private userServiceClient: UserService;
-  private notificationService: NotificationService;
-  private chatServiceClient: ChatService;
+  constructor(
+    @inject(TYPES.UserService) private userServiceClient: UserService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService,
+    @inject(TYPES.ChatService) private chatServiceClient: ChatService
+  ) {}
 
-  constructor() {
-    this.userServiceClient = UserService.getInstance();
-    this.notificationService = NotificationService.getInstance();
-    this.chatServiceClient = ChatService.getInstance();
-  }
-
-  async createConversation(req: Request, res: Response) {
+  async createOrGetChat(req: Request, res: Response) {
     const validPayload = validateSchema(
       {
         ...req.body,
         ...req.params,
         ...req.user,
       },
-      createConversationSchema
+      createChatSchema
     )!;
 
-    const result = await this.chatServiceClient.createConversation(
-      validPayload,
-      { attachMetadata: attachMetadata(req) }
-    );
+    const otherUserId = this.getOtherUserId(validPayload, req);
+
+    const [{ chat }, userRes] = await Promise.all([
+      this.chatServiceClient.createOrGetChat(validPayload, {
+        metadata: attachMetadata(req),
+      }),
+      this.userServiceClient
+        .getUser({ userId: otherUserId }, { metadata: attachMetadata(req) })
+        .catch(() => null),
+    ]);
+
+    const user = userRes?.user
+      ? UserResponseMapper.toUserInfo(userRes.user)
+      : undefined;
 
     return new ResponseWrapper(res)
       .status(CHAT_MESSAGES.CREATE_CONVERSATION_SUCCESS.statusCode)
       .success(
-        this.mapToConversation(result.conversation!),
+        ChatResponseMapper.toChat(chat!, user),
         CHAT_MESSAGES.CREATE_CONVERSATION_SUCCESS.message
       );
   }
 
-  async getConversation(req: Request, res: Response) {
+  async getChat(req: Request, res: Response) {
     const validPayload = validateSchema(
       {
         ...req.body,
         ...req.params,
         ...req.user,
       },
-      getConversationSchema
+      getChatSchema
     )!;
 
-    const result = await this.chatServiceClient.getConversation(validPayload, {
-      attachMetadata: attachMetadata(req),
+    const { chat } = await this.chatServiceClient.getChat(validPayload, {
+      metadata: attachMetadata(req),
     });
+    const mappedChat = ChatResponseMapper.toChat(chat!);
+
+    const otherUserId = this.getOtherUserId(mappedChat, req);
+
+    const { user } = await this.userServiceClient.getUser({
+      userId: otherUserId,
+    });
+
+    const userInfo = UserResponseMapper.toUserInfo(user!);
+
+    const chatWithUser: Chat = {
+      ...mappedChat,
+      otherUser: userInfo,
+    };
 
     return new ResponseWrapper(res)
       .status(CHAT_MESSAGES.GET_CONVERSATION_SUCCESS.statusCode)
-      .success(
-        this.mapToConversation(result.conversation!),
-        CHAT_MESSAGES.GET_CONVERSATION_SUCCESS.message
-      );
+      .success(chatWithUser, CHAT_MESSAGES.GET_CONVERSATION_SUCCESS.message);
   }
 
-  async getUserConversations(req: Request, res: Response) {
-    const validPayload = validateSchema(
-      {
-        pagination: req.query,
-        ...req.params,
-        ...req.user,
+  async getChats(req: Request, res: Response) {
+    const userRole = req.query?.role as USER_ROLE | undefined;
+    const isInstructor =
+      userRole === 'instructor' && req.user?.role === 'instructor';
+
+    let chats: ChatsResponse | undefined;
+    let pagination: PaginationLike;
+
+    if (isInstructor) {
+      const validPayload = validateSchema(
+        {
+          pagination: req.query,
+          instructorId: req.user?.userId,
+        },
+        getInstructorChatsSchema
+      )!;
+
+      const { chats: chatsRes } =
+        await this.chatServiceClient.listInstructorChats(validPayload, {
+          metadata: attachMetadata(req),
+        });
+
+      chats = chatsRes;
+      pagination = validPayload.pagination!;
+    } else {
+      const validPayload = validateSchema(
+        {
+          pagination: req.query,
+          studentId: req.user?.userId,
+        },
+        getStudentChatsSchema
+      )!;
+
+      const { chats: chatsRes } = await this.chatServiceClient.listStudentChats(
+        validPayload,
+        {
+          metadata: attachMetadata(req),
+        }
+      );
+
+      chats = chatsRes;
+      pagination = validPayload.pagination!;
+    }
+
+    const mappedChats = chats?.chats.map(c => ChatResponseMapper.toChat(c));
+
+    const paginationResponse = mapPaginationResponse(pagination!, chats?.total);
+    if (!mappedChats || mappedChats.length === 0) {
+      return new ResponseWrapper(res)
+        .status(CHAT_MESSAGES.GET_USER_CONVERSATIONS_SUCCESS.statusCode)
+        .success(
+          [],
+          CHAT_MESSAGES.GET_USER_CONVERSATIONS_SUCCESS.message,
+          paginationResponse
+        );
+    }
+
+    const userIds = Array.from(
+      new Set(mappedChats?.map(c => this.getOtherUserId(c, req)))
+    );
+
+    // Batch fetching of user with list of userIds
+    const { users: usersResponse } =
+      await this.userServiceClient.listUsersByIds({
+        userIds,
+      });
+
+    const userMap = usersResponse?.users?.reduce(
+      (accMap, user) => {
+        accMap[user.id] = UserResponseMapper.toUserInfo(user);
+        return accMap;
       },
-      getConversationsSchema
+      {} as Record<string, UserInfo>
     )!;
 
-    const result = await this.chatServiceClient.listUserConversations(
-      validPayload,
-      {
-        attachMetadata: attachMetadata(req),
-      }
-    );
-    const paginationResponse = mapPaginationResponse(
-      validPayload.pagination!,
-      result?.total
-    );
+    const chatsWithUser = mappedChats.map<Chat>(chat => {
+      const otherUserId = this.getOtherUserId(chat, req);
+      return {
+        ...chat,
+        otherUser: userMap[otherUserId],
+      };
+    });
 
     return new ResponseWrapper(res)
       .status(CHAT_MESSAGES.GET_USER_CONVERSATIONS_SUCCESS.statusCode)
-      .success(
-        result.conversations.map(this.mapToConversation),
-        CHAT_MESSAGES.GET_USER_CONVERSATIONS_SUCCESS.message,
-        paginationResponse
-      );
+      .success<
+        Chat[]
+      >(chatsWithUser, CHAT_MESSAGES.GET_USER_CONVERSATIONS_SUCCESS.message, paginationResponse);
   }
 
-  async pinConversation(req: Request, res: Response) {
+  async pinChat(req: Request, res: Response) {
     const validPayload = validateSchema(
       {
         ...req.body,
         ...req.params,
         ...req.user,
       },
-      pinConversationSchema
+      pinChatSchema
     )!;
 
-    await this.chatServiceClient.pinConversation(validPayload, {
-      attachMetadata: attachMetadata(req),
+    const { chat } = await this.chatServiceClient.pinChat(validPayload, {
+      metadata: attachMetadata(req),
     });
 
     return new ResponseWrapper(res)
       .status(CHAT_MESSAGES.PIN_CONVERSATION_SUCCESS.statusCode)
-      .success(null, CHAT_MESSAGES.PIN_CONVERSATION_SUCCESS.message);
+      .success(
+        ChatResponseMapper.toChat(chat!),
+        CHAT_MESSAGES.PIN_CONVERSATION_SUCCESS.message
+      );
   }
 
-  async unPinConversation(req: Request, res: Response) {
+  async unPinChat(req: Request, res: Response) {
     const validPayload = validateSchema(
       {
         ...req.body,
         ...req.params,
         ...req.user,
       },
-      unPinConversationSchema
+      unPinChatSchema
     )!;
 
-    await this.chatServiceClient.unPinConversation(validPayload, {
-      attachMetadata: attachMetadata(req),
+    const { chat } = await this.chatServiceClient.unPinChat(validPayload, {
+      metadata: attachMetadata(req),
     });
 
     return new ResponseWrapper(res)
       .status(CHAT_MESSAGES.UNPIN_CONVERSATION_SUCCESS.statusCode)
-      .success(null, CHAT_MESSAGES.UNPIN_CONVERSATION_SUCCESS.message);
+      .success(
+        ChatResponseMapper.toChat(chat!),
+        CHAT_MESSAGES.UNPIN_CONVERSATION_SUCCESS.message
+      );
   }
 
-  async deleteConversation(req: Request, res: Response) {
+  async deleteChat(req: Request, res: Response) {
     const validPayload = validateSchema(
       {
         ...req.params,
         ...req.user,
       },
-      deleteConversationSchema
+      deleteChatSchema
     )!;
 
-    await this.chatServiceClient.deleteConversation(validPayload, {
-      attachMetadata: attachMetadata(req),
+    await this.chatServiceClient.deleteChat(validPayload, {
+      metadata: attachMetadata(req),
     });
 
     return new ResponseWrapper(res)
       .status(CHAT_MESSAGES.DELETE_CONVERSATION_SUCCESS.statusCode)
-      .success(null, CHAT_MESSAGES.DELETE_CONVERSATION_SUCCESS.message);
+      .success({}, CHAT_MESSAGES.DELETE_CONVERSATION_SUCCESS.message);
   }
 
-  async archiveConversation(req: Request, res: Response) {
+  async archiveChat(req: Request, res: Response) {
     const validPayload = validateSchema(
       {
         ...req.body,
         ...req.params,
         ...req.user,
       },
-      archiveConversationSchema
+      archiveChatSchema
     )!;
 
-    await this.chatServiceClient.archiveConversation(validPayload, {
-      attachMetadata: attachMetadata(req),
+    const { chat } = await this.chatServiceClient.archiveChat(validPayload, {
+      metadata: attachMetadata(req),
     });
 
     return new ResponseWrapper(res)
       .status(CHAT_MESSAGES.ARCHIVE_CONVERSATION_SUCCESS.statusCode)
-      .success(null, CHAT_MESSAGES.ARCHIVE_CONVERSATION_SUCCESS.message);
+      .success(
+        ChatResponseMapper.toChat(chat!),
+        CHAT_MESSAGES.ARCHIVE_CONVERSATION_SUCCESS.message
+      );
   }
 
-  async unArchiveConversation(req: Request, res: Response) {
+  async unArchiveChat(req: Request, res: Response) {
     const validPayload = validateSchema(
       {
         ...req.body,
         ...req.params,
         ...req.user,
       },
-      unArchiveConversationSchema
+      unArchiveChatSchema
     )!;
 
-    await this.chatServiceClient.unArchiveConversation(validPayload, {
-      attachMetadata: attachMetadata(req),
+    await this.chatServiceClient.unArchiveChat(validPayload, {
+      metadata: attachMetadata(req),
     });
 
     return new ResponseWrapper(res)
@@ -221,17 +321,26 @@ export class ChatController {
       getMessagesSchema
     )!;
 
-    const result = await this.chatServiceClient.getMessages(validPayload, {
-      attachMetadata: attachMetadata(req),
-    });
+    const { messages } = await this.chatServiceClient.getMessages(
+      validPayload,
+      {
+        metadata: attachMetadata(req),
+      }
+    );
+
+    const paginationResponse = mapPaginationResponse(
+      validPayload.pagination!,
+      messages?.total
+    );
 
     return new ResponseWrapper(res)
       .status(CHAT_MESSAGES.GET_MESSAGES_SUCCESS.statusCode)
       .success(
-        Array.isArray(result?.messages)
-          ? result.messages.map(this.mapToMessage)
+        Array.isArray(messages?.messages)
+          ? messages?.messages.map(ChatResponseMapper.toMessage)
           : [],
-        CHAT_MESSAGES.GET_MESSAGES_SUCCESS.message
+        CHAT_MESSAGES.GET_MESSAGES_SUCCESS.message,
+        paginationResponse
       );
   }
 
@@ -240,19 +349,21 @@ export class ChatController {
       {
         ...req.body,
         ...req.params,
+        idempotencyKey:
+          req.headers['idempotency-key'] ?? req.headers['x-request-id'],
         senderId: req.user?.userId,
       },
       sendMessagesSchema
     )!;
 
-    const result = await this.chatServiceClient.sendMessage(validPayload, {
-      attachMetadata: attachMetadata(req),
+    const { message } = await this.chatServiceClient.sendMessage(validPayload, {
+      metadata: attachMetadata(req),
     });
 
     return new ResponseWrapper(res)
       .status(CHAT_MESSAGES.SEND_MESSAGE_SUCCESS.statusCode)
       .success(
-        this.mapToMessage(result.message!),
+        ChatResponseMapper.toMessage(message!),
         CHAT_MESSAGES.SEND_MESSAGE_SUCCESS.message
       );
   }
@@ -267,14 +378,14 @@ export class ChatController {
       editMessagesSchema
     )!;
 
-    const result = await this.chatServiceClient.editMessage(validPayload, {
-      attachMetadata: attachMetadata(req),
+    const { message } = await this.chatServiceClient.editMessage(validPayload, {
+      metadata: attachMetadata(req),
     });
 
     return new ResponseWrapper(res)
       .status(CHAT_MESSAGES.EDIT_MESSAGE_SUCCESS.statusCode)
       .success(
-        this.mapToMessage(result.messages!),
+        ChatResponseMapper.toMessage(message!),
         CHAT_MESSAGES.EDIT_MESSAGE_SUCCESS.message
       );
   }
@@ -289,13 +400,16 @@ export class ChatController {
       markMessageReadSchema
     )!;
 
-    await this.chatServiceClient.markMessagesRead(validPayload, {
-      attachMetadata: attachMetadata(req),
-    });
+    const { chat } = await this.chatServiceClient.markMessagesRead(
+      validPayload,
+      {
+        metadata: attachMetadata(req),
+      }
+    );
 
     return new ResponseWrapper(res)
       .status(CHAT_MESSAGES.MARK_MESSAGES_READ_SUCCESS.statusCode)
-      .success(null, CHAT_MESSAGES.MARK_MESSAGES_READ_SUCCESS.message);
+      .success(chat, CHAT_MESSAGES.MARK_MESSAGES_READ_SUCCESS.message);
   }
 
   async deleteMessage(req: Request, res: Response) {
@@ -309,12 +423,12 @@ export class ChatController {
     )!;
 
     await this.chatServiceClient.deleteMessage(validPayload, {
-      attachMetadata: attachMetadata(req),
+      metadata: attachMetadata(req),
     });
 
     return new ResponseWrapper(res)
       .status(CHAT_MESSAGES.DELETE_MESSAGE_SUCCESS.statusCode)
-      .success(null, CHAT_MESSAGES.DELETE_MESSAGE_SUCCESS.message);
+      .success({}, CHAT_MESSAGES.DELETE_MESSAGE_SUCCESS.message);
   }
 
   async removeReaction(req: Request, res: Response) {
@@ -326,13 +440,19 @@ export class ChatController {
       removeReactionSchema
     )!;
 
-    const result = await this.chatServiceClient.removeReaction(validPayload, {
-      attachMetadata: attachMetadata(req),
-    });
+    const { message } = await this.chatServiceClient.removeReaction(
+      validPayload,
+      {
+        metadata: attachMetadata(req),
+      }
+    );
 
     return new ResponseWrapper(res)
       .status(CHAT_MESSAGES.REMOVE_REACTION_SUCCESS.statusCode)
-      .success({}, CHAT_MESSAGES.REMOVE_REACTION_SUCCESS.message);
+      .success(
+        ChatResponseMapper.toMessage(message!),
+        CHAT_MESSAGES.REMOVE_REACTION_SUCCESS.message
+      );
   }
 
   async reactMessage(req: Request, res: Response) {
@@ -345,52 +465,26 @@ export class ChatController {
       addReactionSchema
     )!;
 
-    const result = await this.chatServiceClient.addReaction(validPayload, {
-      attachMetadata: attachMetadata(req),
+    const { message } = await this.chatServiceClient.addReaction(validPayload, {
+      metadata: attachMetadata(req),
     });
 
     return new ResponseWrapper(res)
       .status(CHAT_MESSAGES.ADD_REACTION_SUCCESS.statusCode)
       .success(
-        this.mapToMessage(result),
+        ChatResponseMapper.toMessage(message!),
         CHAT_MESSAGES.ADD_REACTION_SUCCESS.message
       );
   }
 
-  // Mapping Functions
-  private mapToConversation = <T extends ConversationResponse>(
-    conversation: T
-  ): Conversation => {
-    return {
-      createdAt: conversation.createdAt,
-      id: conversation.id,
-      isArchived: conversation.isArchived,
-      isMuted: conversation.isMuted,
-      isPinned: conversation.isPinned,
-      mutedUntil: conversation.mutedUntil,
-      participants: conversation.participants,
-      studentId: conversation.studentId,
-      type: conversation.type,
-      updatedAt: conversation.updatedAt,
-    };
-  };
-
-  private mapToMessage = <T extends MessageResponse>(message: T): Message => {
-    return {
-      content: message.content,
-      conversationId: message.conversationId,
-      createdAt: message.createdAt,
-      id: message.id,
-      reactions: message.reactions,
-      senderId: message.senderId,
-      status: message.status,
-      updatedAt: message.updatedAt,
-      fileName: message.fileName,
-      fileSize: message.fileSize,
-      fileUrl: message.fileUrl,
-      receiverId: message.receiverId,
-      replayTo: message.replayTo,
-      type: message.type,
-    };
+  private getOtherUserId = <
+    T extends { studentId: string; instructorId: string },
+  >(
+    chatType: T,
+    req: any
+  ): string => {
+    return req.user?.userId === chatType.studentId
+      ? chatType.instructorId
+      : chatType.studentId;
   };
 }

@@ -41,6 +41,8 @@ service UserService {
   // Stats
   rpc GetUsersStats(Empty) returns (GetUsersStatsResponse);
   rpc GetInstructorsStats(Empty) returns (GetInstructorsStatsResponse);
+  rpc GetInstructorsGrowthTrend(GetInstructorsGrowthTrendRequest) returns (GetInstructorsGrowthTrendResponse);
+  rpc GetUsersGrowthTrend(GetUsersGrowthTrendRequest) returns (GetUsersGrowthTrendResponse);
 
 
 }
