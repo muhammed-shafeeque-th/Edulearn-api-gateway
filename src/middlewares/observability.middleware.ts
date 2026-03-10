@@ -12,15 +12,14 @@ import { SemanticAttributes } from '@opentelemetry/semantic-conventions';
 import { LoggingService } from 'services/observability/logging/logging.service';
 import { TracingService } from 'services/observability/tracing/trace.service';
 import { MetricsService } from '@/services/observability/metrics/metrics.service';
+import { container, TYPES } from '@/services/di';
 
-// Set W3C Propagator globally only once at the start of app
 const propagator: TextMapPropagator = new W3CTraceContextPropagator();
 propagation.setGlobalPropagator(propagator);
 
-// Tracer instance (singleton recommended)
-const logger = LoggingService.getInstance();
-const tracer = TracingService.getInstance();
-const monitoring = MetricsService.getInstance();
+const logger = container.get<LoggingService>(TYPES.LoggingService);
+const tracer = container.get<TracingService>(TYPES.TracingService);
+const monitoring = container.get<MetricsService>(TYPES.MetricsService);
 
 export function observabilityMiddleware(
   req: Request,
@@ -55,7 +54,7 @@ export function observabilityMiddleware(
 
   // Activate context for the current span
   context.with(trace.setSpan(incomingContext, span), () => {
-    logger.info(`Incoming HTTP request: ${req.method} ${req.path}`, {
+    logger.debug(`Incoming HTTP request: ${req.method} ${req.path}`, {
       method: req.method,
       url: req.originalUrl,
       userId: req.user?.userId ?? '',
@@ -74,15 +73,13 @@ export function observabilityMiddleware(
       span.setAttribute('http.response.duration_ms', duration);
       tracer.endSpan(span);
 
-      // Update metrics to measure request duration and request counter
-      end(res.statusCode);
+      end?.(res.statusCode);
       monitoring.incrementHttpRequestCounter(
         req.method,
         req.route?.path || req.path,
         res.statusCode
       );
 
-      // Update status if response indicates error
       if (res.statusCode >= 400) {
         monitoring.incrementHttpErrorCounter(
           req.method,
@@ -95,8 +92,7 @@ export function observabilityMiddleware(
         });
       }
 
-      // Log response info
-      logger.info(
+      logger.debug(
         `Outgoing HTTP response: ${req.method} ${req.path} - ${res.statusCode}`,
         {
           method: req.method,
