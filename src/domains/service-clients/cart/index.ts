@@ -20,7 +20,7 @@ export class CartService {
   private readonly client: GrpcClient<CartServiceClient>;
   private static instance: CartService;
 
-  private constructor() {
+  public constructor() {
     const [host = 'localhost', port = '50052'] =
       config.grpc.services.userServiceClient.split(':');
 
@@ -41,7 +41,9 @@ export class CartService {
     });
   }
 
-  // Singleton pattern
+  /**
+   * @deprecated Use DI container instead
+   */
   public static getInstance(): CartService {
     if (!CartService.instance) {
       CartService.instance = new CartService();
@@ -108,8 +110,6 @@ export class CartService {
     );
     return response as RemoveFromCartResponse;
   }
-
-
 
   close() {
     this.client.close();
