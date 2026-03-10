@@ -56,13 +56,29 @@ import {
   GetCertificateRequest,
   GetCertificatesByUserRequest,
 } from '../course/proto/generated/course/types/certificate';
-import { GetInstructorCourseEnrollmentSummeryRequest, GetInstructorCourseEnrollmentSummeryResponse, GetInstructorCourseEnrollmentTrendRequest, GetInstructorCourseEnrollmentTrendResponse, GetInstructorCoursesEnrollmentSummeryRequest, GetInstructorCoursesEnrollmentSummeryResponse, GetMonthlyCoursesEnrollmentStatsRequest, GetMonthlyCoursesEnrollmentStatsResponse, GetRevenueStatsRequest, GetRevenueStatsResponse } from '../course/proto/generated/course/types/stats';
+import {
+  GetEnrollmentTrendRequest,
+  GetEnrollmentTrendResponse,
+  GetInstructorCourseEnrollmentSummeryRequest,
+  GetInstructorCourseEnrollmentSummeryResponse,
+  GetInstructorCourseEnrollmentTrendRequest,
+  GetInstructorCourseEnrollmentTrendResponse,
+  GetInstructorCoursesEnrollmentSummeryRequest,
+  GetInstructorCoursesEnrollmentSummeryResponse,
+  GetMonthlyCoursesEnrollmentStatsRequest,
+  GetMonthlyCoursesEnrollmentStatsResponse,
+  GetRevenueStatsRequest,
+  GetRevenueStatsResponse,
+} from '../course/proto/generated/course/types/stats';
 
+import { injectable } from 'inversify';
+
+@injectable()
 export class EnrollmentService {
   private readonly client: GrpcClient<EnrollmentServiceClient>;
   private static instance: EnrollmentService;
 
-  private constructor() {
+  public constructor() {
     const [host = 'localhost', port = '50052'] =
       config.grpc.services.courseService.split(':');
 
@@ -98,7 +114,6 @@ export class EnrollmentService {
     }
     return EnrollmentService.instance;
   }
-
 
   // async createEnrollment(
   //   request: CreateEnrollmentRequest,
@@ -379,7 +394,6 @@ export class EnrollmentService {
     return response as CertificateResponse;
   }
 
-
   // Stats
   async getInstructorCoursesEnrollmentSummery(
     request: GetInstructorCoursesEnrollmentSummeryRequest,
@@ -416,7 +430,18 @@ export class EnrollmentService {
     );
     return response as GetInstructorCourseEnrollmentTrendResponse;
   }
-  
+  async getEnrollmentTrend(
+    request: GetEnrollmentTrendRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<GetEnrollmentTrendResponse> {
+    const response = await this.client.unaryCall(
+      'getEnrollmentTrend',
+      request,
+      options
+    );
+    return response as GetEnrollmentTrendResponse;
+  }
+
   async getRevenueStats(
     request: GetRevenueStatsRequest,
     options: GrpcClientOptions = {}
@@ -428,7 +453,7 @@ export class EnrollmentService {
     );
     return response as GetRevenueStatsResponse;
   }
-  
+
   async getMonthlyCoursesEnrollmentStats(
     request: GetMonthlyCoursesEnrollmentStatsRequest,
     options: GrpcClientOptions = {}
