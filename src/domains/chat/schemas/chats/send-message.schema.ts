@@ -3,7 +3,6 @@ import { z, ZodType } from 'zod';
 
 export const sendMessagesSchema: ZodType<SendMessageRequest> = z.object({
   chatId: z.string().uuid(),
-  /** user sending message */
   senderId: z.string().uuid(),
   idempotencyKey: z.string(),
   content: z.string(),
