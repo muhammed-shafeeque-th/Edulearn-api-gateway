@@ -30,7 +30,7 @@ export class MediaController {
   }
   @Trace('CourseController.generateAvatarUpdateSignature')
   async generateAvatarUpdateSignature(req: Request, res: Response) {
-    this.logger.info(`Processing  method 'generateAvatarUpdateSignature'`);
+    this.logger.debug(`Processing  method 'generateAvatarUpdateSignature'`);
 
     const { uploadType, userId } = validateSchema(
       { ...req.body, userId: req.user?.userId },
@@ -39,7 +39,7 @@ export class MediaController {
 
     const response = this.mediaService.getSignedUploadUrl(uploadType, userId);
 
-    this.logger.info('getSignedUploadUrl execution has completed ');
+    this.logger.debug('getSignedUploadUrl execution has completed ');
 
     return new ResponseWrapper(res)
       .status(MEDIA_MESSAGES.GENERATED_AVATAR_UPLOAD_URL.statusCode)
@@ -48,7 +48,7 @@ export class MediaController {
 
   @Trace('CourseController.generateCourseUploadSignature')
   async generateCourseUploadSignature(req: Request, res: Response) {
-    this.logger.info(`Processing  method 'generateCourseUploadSignature'`);
+    this.logger.debug(`Processing  method 'generateCourseUploadSignature'`);
 
     const validPayload = validateSchema(
       { ...req.body, userId: req.user?.userId },
@@ -58,7 +58,7 @@ export class MediaController {
     const response =
       await this.storageService.generatePresignedUploadUrl(validPayload);
 
-    this.logger.info('generateCourseUploadSignature execution has completed ');
+    this.logger.debug('generateCourseUploadSignature execution has completed ');
 
     return new ResponseWrapper(res)
       .status(MEDIA_MESSAGES.GENERATED_COURSE_UPLOAD_URL.statusCode)
@@ -67,7 +67,7 @@ export class MediaController {
 
   @Trace('CourseController.generateCourseUploadSecureSignature')
   async generateCourseUploadSecureSignature(req: Request, res: Response) {
-    this.logger.info(
+    this.logger.debug(
       `Processing  method 'generateCourseUploadSecureSignature'`
     );
 
@@ -79,7 +79,7 @@ export class MediaController {
     const response =
       await this.storageService.generateSecurePresignedUploadUrl(validPayload);
 
-    this.logger.info(
+    this.logger.debug(
       'generateCourseUploadSecureSignature execution has completed '
     );
 
@@ -93,7 +93,7 @@ export class MediaController {
 
   @Trace('CourseController.generateSignedCourseUrl')
   async generateSignedCourseUrl(req: Request, res: Response) {
-    this.logger.info(`Processing  method 'generateSignedCourseUrl'`);
+    this.logger.debug(`Processing  method 'generateSignedCourseUrl'`);
 
     const { key } = validateSchema(
       { ...req.body, userId: req.user?.userId },
@@ -102,7 +102,7 @@ export class MediaController {
 
     const response = await this.storageService.getSignedSecureCourseUrl(key);
 
-    this.logger.info('generateSignedCourseUrl execution has completed ');
+    this.logger.debug('generateSignedCourseUrl execution has completed ');
 
     return new ResponseWrapper(res)
       .status(MEDIA_MESSAGES.GENERATED_SIGNED_COURSE_URL.statusCode)
@@ -111,7 +111,7 @@ export class MediaController {
 
   @Trace('CourseController.multipartSignInit')
   async multipartSignInit(req: Request, res: Response) {
-    this.logger.info(`Processing  method 'getSignedUploadUrl'`);
+    this.logger.debug(`Processing  method 'getSignedUploadUrl'`);
 
     const { uploadType, userId } = validateSchema(
       { ...req.body, userId: req.user?.userId },
@@ -130,7 +130,7 @@ export class MediaController {
 
     const response = this.mediaService.getSignedUploadUrl(uploadType, userId);
 
-    this.logger.info('getSignedUploadUrl execution has completed ');
+    this.logger.debug('getSignedUploadUrl execution has completed ');
 
     return new ResponseWrapper(res)
       .status(MEDIA_MESSAGES.MULTIPART_SIGN_INIT.statusCode)
@@ -139,7 +139,7 @@ export class MediaController {
 
   @Trace('CourseController.multipartSignComplete')
   async multipartSignComplete(req: Request, res: Response) {
-    this.logger.info(`Processing  method 'getSignedUploadUrl'`);
+    this.logger.debug(`Processing  method 'getSignedUploadUrl'`);
 
     const { uploadType, userId } = validateSchema(
       { ...req.body, userId: req.user?.userId },
@@ -152,7 +152,7 @@ export class MediaController {
 
     const response = this.mediaService.getSignedUploadUrl(uploadType, userId);
 
-    this.logger.info('getSignedUploadUrl execution has completed ');
+    this.logger.debug('getSignedUploadUrl execution has completed ');
 
     return new ResponseWrapper(res)
       .status(MEDIA_MESSAGES.MULTIPART_SIGN_COMPLETE.statusCode)
@@ -161,7 +161,7 @@ export class MediaController {
 
   @Trace('CourseController.multipartSignGetParts')
   async multipartSignGetParts(req: Request, res: Response) {
-    this.logger.info(`Processing  method 'getSignedUploadUrl'`);
+    this.logger.debug(`Processing  method 'getSignedUploadUrl'`);
 
     const { uploadType, userId } = validateSchema(
       { ...req.body, userId: req.user?.userId },
@@ -174,7 +174,7 @@ export class MediaController {
 
     const response = this.mediaService.getSignedUploadUrl(uploadType, userId);
 
-    this.logger.info('getSignedUploadUrl execution has completed ');
+    this.logger.debug('getSignedUploadUrl execution has completed ');
 
     return new ResponseWrapper(res)
       .status(MEDIA_MESSAGES.MULTIPART_SIGN_PARTS.statusCode)
@@ -183,7 +183,7 @@ export class MediaController {
 
   @Trace('CourseController.multipartSignAbort')
   async multipartSignAbort(req: Request, res: Response) {
-    this.logger.info(`Processing  method 'getSignedUploadUrl'`);
+    this.logger.debug(`Processing  method 'getSignedUploadUrl'`);
 
     const { uploadType, userId } = validateSchema(
       { ...req.body, userId: req.user?.userId },
@@ -196,7 +196,7 @@ export class MediaController {
 
     const response = this.mediaService.getSignedUploadUrl(uploadType, userId);
 
-    this.logger.info('getSignedUploadUrl execution has completed ');
+    this.logger.debug('getSignedUploadUrl execution has completed ');
 
     return new ResponseWrapper(res)
       .status(MEDIA_MESSAGES.MULTIPART_SIGN_ABORT.statusCode)
