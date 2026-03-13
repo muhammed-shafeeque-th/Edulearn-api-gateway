@@ -21,11 +21,14 @@ import {
 import { config } from 'config';
 import { ForgotPasswordResponse } from '../auth/proto/generated/auth_service';
 
+import { injectable } from 'inversify';
+
+@injectable()
 export class NotificationService {
   private readonly client: GrpcClient<NotificationServiceClient>;
   private static instance: NotificationService;
 
-  private constructor() {
+  public constructor() {
     const [host = 'localhost', port = '50054'] =
       config.grpc.services.notificationService.split(':');
 
@@ -43,7 +46,9 @@ export class NotificationService {
     });
   }
 
-  // Singleton pattern
+  /**
+   * @deprecated Use DI container instead
+   */
   public static getInstance(): NotificationService {
     if (!NotificationService.instance) {
       NotificationService.instance = new NotificationService();
