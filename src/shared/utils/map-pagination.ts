@@ -1,7 +1,9 @@
 import { Pagination } from '../types';
 
+export type PaginationLike = { pageSize: number; page: number };
+
 export function mapPaginationResponse<
-  T extends { pageSize: number; page: number },
+  T extends PaginationLike,
 >(pagination: T, totalItems?: number): Pagination {
   const total =
     typeof totalItems === 'number' &&
