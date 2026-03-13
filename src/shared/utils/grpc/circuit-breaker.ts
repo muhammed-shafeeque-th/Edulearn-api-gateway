@@ -12,7 +12,7 @@ export interface CircuitBreakerConfig {
 
 export const defaultCircuitBreakerConfig: CircuitBreakerConfig &
   CircuitBreaker.Options = {
-  timeout: 10000,
+  timeout: 30000,
   errorThresholdPercentage: 50,
   resetTimeout: 3000,
   volumeThreshold: Number.MAX_SAFE_INTEGER,
@@ -27,10 +27,10 @@ export class CircuitBreakerWrapper {
   ) {
     this.breaker = new CircuitBreaker(fn, config);
 
-    this.breaker.on('open', () => logger.info('Circuit breaker opened'));
-    this.breaker.on('halfOpen', () => logger.info('Circuit breaker half '));
-    this.breaker.on('close', () => logger.info('Circuit breaker closed'));
-    this.breaker.on('failure', () => logger.info('Circuit breaker failure'));
+    this.breaker.on('open', () => logger.debug('Circuit breaker opened'));
+    this.breaker.on('halfOpen', () => logger.debug('Circuit breaker half '));
+    this.breaker.on('close', () => logger.debug('Circuit breaker closed'));
+    this.breaker.on('failure', () => logger.debug('Circuit breaker failure'));
   }
 
   async execute<T>(...args: any[]): Promise<T> {
