@@ -6,7 +6,6 @@ import {
 } from '@/domains/service-clients/user/proto/generated/user/types/user_types';
 import { paginationSchema } from './pagination.schema';
 
-// -- CREATE ZOD ENUMS THAT MIRROR GRPC ENUMS FOR MAPPING --
 const sortOrderSchema = z
   .string()
   .optional()
@@ -39,11 +38,9 @@ const userStatusSchema = z
     }
   });
 
-// --- ZOD SCHEMAS ---
-
 const sortOptionSchema = z
   .object({
-    sortBy: z.string().min(1, { message: 'Sort field is required' }),
+    sortBy: z.string().optional(),
     sortOrder: sortOrderSchema,
   })
   .transform(sort => ({
@@ -54,12 +51,11 @@ const sortOptionSchema = z
 const userFilterSchema = z
   .object({
     status: userStatusSchema,
-    email: z.string().email().optional(),
+    email: z.string().optional(),
     role: z.string().optional(),
     search: z.string().optional(),
   })
   .partial();
-
 
 export const getUsersRequestSchema: ZodType<ListUsersRequest> = z
   .object({
@@ -81,6 +77,5 @@ export const getUsersRequestSchema: ZodType<ListUsersRequest> = z
     sort: data.sort,
   })) as unknown as ZodType<ListUsersRequest>;
 
-// --- Aliasing for compatibility with previous type/usage ---
 export const getUsersSchema = getUsersRequestSchema;
 export type GetUsersSchemaType = z.infer<typeof getUsersRequestSchema>;
