@@ -28,11 +28,14 @@ import {
 } from './proto/generated/auth_service';
 import { config } from 'config';
 
+import { injectable } from 'inversify';
+
+@injectable()
 export class AuthService {
   private readonly client: GrpcClient<AuthServiceClient>;
   private static instance: AuthService;
 
-  private constructor() {
+  public constructor() {
     const [host = 'localhost', port = '50051'] =
       config.grpc.services.authService.split(':');
 
@@ -50,7 +53,7 @@ export class AuthService {
     });
   }
 
-  // Singleton pattern
+  // Singleton pattern (Deprecated)
   public static getInstance(): AuthService {
     if (!AuthService.instance) {
       AuthService.instance = new AuthService();
@@ -166,24 +169,29 @@ export class AuthService {
   //   return response as BlockUserResponse;
   // }
 
-
-
   // Admin  Auth
   async adminLogin(
     request: AdminLoginRequest,
     options: GrpcClientOptions = {}
   ): Promise<AdminLoginResponse> {
-    const response = await this.client.unaryCall('adminLogin', request, options);
+    const response = await this.client.unaryCall(
+      'adminLogin',
+      request,
+      options
+    );
     return response as AdminLoginResponse;
   }
   async adminRefresh(
     request: AdminRefreshRequest,
     options: GrpcClientOptions = {}
   ): Promise<AdminRefreshResponse> {
-    const response = await this.client.unaryCall('adminRefresh', request, options);
+    const response = await this.client.unaryCall(
+      'adminRefresh',
+      request,
+      options
+    );
     return response as AdminRefreshResponse;
   }
-
 
   // async unBlockUser(
   //   request: UnBlockUserRequest,
