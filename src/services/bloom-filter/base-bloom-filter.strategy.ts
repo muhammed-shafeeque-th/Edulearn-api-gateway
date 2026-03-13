@@ -35,7 +35,7 @@ export abstract class BaseBloomFilterStrategy implements IBloomFilterStrategy {
       const serializedFilter = await this.redis.get<any>(this.config.redisKey);
       if (serializedFilter) {
         this.bloomFilter = BloomFilter.fromJSON(serializedFilter);
-        this.logger.info(
+        this.logger.debug(
           `Bloom filter loaded from cache for ${this.getFilterType()}`,
           {
             ctx: this.constructor.name,
@@ -75,7 +75,7 @@ export abstract class BaseBloomFilterStrategy implements IBloomFilterStrategy {
         .inc();
       const existsInDb = await this.checkInDatabase(item);
 
-      this.logger.info(
+      this.logger.debug(
         `After bloom filter query from db for ${this.getFilterType()}`,
         {
           ctx: this.constructor.name,
@@ -108,7 +108,7 @@ export abstract class BaseBloomFilterStrategy implements IBloomFilterStrategy {
         .labels({ result: 'added', type: this.getFilterType() })
         .inc();
 
-      this.logger.info(
+      this.logger.debug(
         `Added ${this.getFilterType()} to bloom filter: ${item}`,
         {
           ctx: this.constructor.name,

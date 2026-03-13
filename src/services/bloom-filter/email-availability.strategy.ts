@@ -16,7 +16,7 @@ export class EmailAvailabilityStrategy extends BaseBloomFilterStrategy {
 
   protected async seedFromDatabase(): Promise<void> {
     try {
-      this.logger.info('Seeding email bloom filter from database...', {
+      this.logger.debug('Seeding email bloom filter from database...', {
         ctx: EmailAvailabilityStrategy.name,
       });
 
@@ -35,7 +35,7 @@ export class EmailAvailabilityStrategy extends BaseBloomFilterStrategy {
         ? success.emails
         : [success.emails];
 
-      this.logger.info(`Seeding ${emails.length} emails to bloom filter`, {
+      this.logger.debug(`Seeding ${emails.length} emails to bloom filter`, {
         ctx: EmailAvailabilityStrategy.name,
       });
 
@@ -47,7 +47,7 @@ export class EmailAvailabilityStrategy extends BaseBloomFilterStrategy {
 
       await this.persistFilter();
 
-      this.logger.info('Email bloom filter seeded successfully', {
+      this.logger.debug('Email bloom filter seeded successfully', {
         ctx: EmailAvailabilityStrategy.name,
         count: emails.length,
       });
