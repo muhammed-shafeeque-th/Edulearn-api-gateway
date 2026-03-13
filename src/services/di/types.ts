@@ -1,4 +1,3 @@
-
 export const TYPES = {
   // Core Services
   LoggingService: Symbol.for('LoggingService'),
@@ -17,7 +16,7 @@ export const TYPES = {
   WishlistService: Symbol.for('WishlistService'),
   CourseService: Symbol.for('CourseService'),
   NotificationService: Symbol.for('NotificationService'),
-  
+
   // Infrastructure Services
   RedisService: Symbol.for('RedisService'),
   TokenService: Symbol.for('TokenService'),
@@ -30,6 +29,7 @@ export const TYPES = {
   CourseController: Symbol.for('CourseController'),
   EnrollmentController: Symbol.for('EnrollmentController'),
   ChatController: Symbol.for('ChatController'),
+  DiscussionController: Symbol.for('DiscussionController'),
   WalletController: Symbol.for('WalletController'),
   CartController: Symbol.for('CartController'),
   WishlistController: Symbol.for('WishlistController'),
