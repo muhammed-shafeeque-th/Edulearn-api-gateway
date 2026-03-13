@@ -1,7 +1,7 @@
 import { config } from '@/config';
 import { logger, shutdownLogger } from './setup';
 import { context, trace } from '@opentelemetry/api';
-
+import { injectable } from 'inversify';
 
 export interface LogContext {
   traceId?: string;
@@ -15,6 +15,7 @@ export interface LogContext {
 }
 
 
+@injectable()
 export class LoggingService {
   private readonly serviceName: string;
   private readonly boundContext: LogContext;
@@ -24,14 +25,11 @@ export class LoggingService {
     this.boundContext = { ...defaultContext };
   }
 
-
   public static getLogger(context: LogContext = {}): LoggingService {
     return new LoggingService(context);
   }
 
-  /**
-   * @deprecated Prefer `getLogger()` with explicit context. Provided for backward compatibility.
-   */
+ 
   public static getInstance(context: LogContext = {}): LoggingService {
     if (!LoggingService.singleton) {
       LoggingService.singleton = new LoggingService(context);
@@ -40,7 +38,6 @@ export class LoggingService {
   }
   private static singleton: LoggingService;
 
-  
   private composeLog(
     level: 'info' | 'warn' | 'error' | 'debug',
     message: string,
@@ -97,7 +94,7 @@ export class LoggingService {
     for (const line of stackLines) {
       if (
         line &&
-        !line.includes('logging.service.ts') &&
+        !line.includes('logging.service') &&
         (line.startsWith('at ') || line.match(/\(([^)]+)\)/))
       ) {
         // Extract file path and line number
