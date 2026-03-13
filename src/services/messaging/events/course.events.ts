@@ -1,8 +1,8 @@
-import { KafkaProducerService } from "../kafka/producer.service";
+import { IKafkaProducerService } from "../kafka/producer.service";
 import { CourseUploadedPayload, EventMetadata } from "../types/event.type";
 
 export class CourseEvents {
-  constructor(private producer: KafkaProducerService) {}
+  constructor(private producer: IKafkaProducerService) {}
 
   async publishCourseMaterialUploadedEvent(
     payload: CourseUploadedPayload,
