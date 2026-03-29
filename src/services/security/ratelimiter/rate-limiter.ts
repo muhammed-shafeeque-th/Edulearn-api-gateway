@@ -1,10 +1,12 @@
-import { RateLimiterRedis } from 'rate-limiter-flexible';
-import { RedisService } from '../../services/redis';
+import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
+import { RedisService } from '../../redis';
 
 export interface RateLimiterConfig {
   keyPrefix?: string;
   points?: number;
   duration?: number;
+  /** Seconds to block a key after it exceeds the point limit */
+  blockDuration?: number;
 }
 
 export const defaultRateLimiterConfig: RateLimiterConfig = {
@@ -23,12 +25,12 @@ export class RateLimiter {
       keyPrefix: limiterConfig.keyPrefix!,
       points: limiterConfig.points!,
       duration: limiterConfig.duration!,
+      blockDuration: limiterConfig.blockDuration,
     });
   }
 
-  async consume(key: string): Promise<void> {
-    await this.limiter.consume(key).catch(e => {
-      console.error('Error in Rate limiter :(', e);
+  async consume(key: string): Promise<RateLimiterRes> {
+    return this.limiter.consume(key).catch((e: unknown) => {
       throw e;
     });
   }
