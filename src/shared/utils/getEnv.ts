@@ -1,5 +1,5 @@
 import  dotenv from "dotenv"
-import { EnvNotFoundError } from "./errors/env-not-found-error";
+import { EnvNotFoundError } from "../errors/env-not-found-error";
 dotenv.config();
 
 
