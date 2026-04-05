@@ -46,7 +46,7 @@ export function observabilityMiddleware(
         'http.request.id': req.headers['x-request-id'] as string,
         // User specific attributes
         'endUser.id': req.user?.userId as string,
-        'endUser.role': req.user?.role as string,
+        'endUser.role': req.user?.roles as string[],
       },
     },
     incomingContext === ROOT_CONTEXT ? undefined : incomingContext
