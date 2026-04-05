@@ -37,7 +37,7 @@ import { WishlistController } from '@/domains/user/v1/controllers/wishlist.contr
 import { ChatController } from '@/domains/chat/v1/controllers/chat.controller';
 import { DiscussionController } from '@/domains/chat/v1/controllers/discussion.controller';
 import { MediaController } from '@/domains/media/v1/controllers';
-import { AccountAccessService } from '../account-blocklist.service';
+import { AccountAccessService } from '../account-access.service';
 import { AdminController } from '@/domains/admin/v1/controllers';
 import { CartController } from '@/domains/user/v1/controllers/cart.controller';
 import { NotificationController } from '@/domains/notification/v1/controllers';
