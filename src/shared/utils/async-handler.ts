@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { LoggingService } from '@/services/observability/logging/logging.service';
-import { MetricsService } from '@/services/observability/monitoring/monitoring.service';
+import { MetricsService } from '@/services/observability/metrics/metrics.service';
 
 type AsyncHandler = (
   req: Request,
@@ -11,17 +11,20 @@ type AsyncHandler = (
 const logger = LoggingService.getInstance();
 const monitoring = MetricsService.getInstance();
 
+/**
+ * Generic async handler for Express route handlers.
+ * Catches and propagates errors, logs details, and records metrics.
+ */
 export const asyncHandler = (handler: AsyncHandler) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     const startTime = Date.now();
     const requestId = (req.headers['x-request-id'] as string) || 'unknown';
 
     try {
-      // Log request start
-      logger.debug(`Request started: ${req.method} ${req.path}`, {
+      logger.debug(`Request started: ${req.method} ${req.originalUrl}`, {
         requestId,
         method: req.method,
-        path: req.path,
+        path: req.originalUrl,
         userId: req.user?.userId,
         ip: req.ip,
       });
@@ -30,33 +33,33 @@ export const asyncHandler = (handler: AsyncHandler) => {
 
       const duration = Date.now() - startTime;
 
-      // Log successful completion
-      logger.debug(`Request completed: ${req.method} ${req.path}`, {
+      logger.debug(`Request completed: ${req.method} ${req.originalUrl}`, {
         requestId,
         method: req.method,
-        path: req.path,
+        path: req.originalUrl,
         duration,
         statusCode: res.statusCode,
       });
 
-      // Record metrics
-      monitoring.measureHttpRequestDuration(req.method, req.path, duration);
+      monitoring.measureHttpRequestDuration(
+        req.method,
+        req.originalUrl,
+        duration
+      );
 
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
 
-      // Log error with context
-      logger.error(`Request failed: ${req.method} ${req.path}`, {
+      logger.error(`Request failed: ${req.method} ${req.originalUrl}`, {
         requestId,
         method: req.method,
-        path: req.path,
-        duration: duration + "ms",
+        path: req.originalUrl,
+        duration: `${duration}ms`,
         error:
           error instanceof Error
             ? {
                 message: error.message,
-                // stack: error.stack,
                 name: error.name,
               }
             : error,
@@ -66,68 +69,9 @@ export const asyncHandler = (handler: AsyncHandler) => {
       });
 
       // Record error metrics
-      // monitoring.incrementErrorCounter(req.method, req.path, error instanceof Error ? error.name : 'UnknownError');
-
-      // Pass error to Express error handler
-      next(error);
-    }
-  };
-};
-
-// Specialized async handler for database operations
-export const dbAsyncHandler = (handler: AsyncHandler) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    const startTime = Date.now();
-    const requestId = (req.headers['x-request-id'] as string) || 'unknown';
-
-    try {
-      logger.debug(`Database operation started: ${req.method} ${req.path}`, {
-        requestId,
-        method: req.method,
-        path: req.path,
-      });
-
-      const result = await handler(req, res, next);
-
-      const duration = Date.now() - startTime;
-
-      logger.debug(`Database operation completed: ${req.method} ${req.path}`, {
-        requestId,
-        method: req.method,
-        path: req.path,
-        duration,
-      });
-
-      // Record database operation metrics
-      monitoring.recordDatabaseOperationDuration(
+      monitoring.incrementHttpErrorCounter(
         req.method,
-        req.path,
-        duration
-      );
-
-      return result;
-    } catch (error) {
-      const duration = Date.now() - startTime;
-
-      logger.error(`Database operation failed: ${req.method} ${req.path}`, {
-        requestId,
-        method: req.method,
-        path: req.path,
-        duration,
-        error:
-          error instanceof Error
-            ? {
-                message: error.message,
-                stack: error.stack,
-                name: error.name,
-              }
-            : error,
-      });
-
-      // Record database error metrics
-      monitoring.incrementDatabaseErrorCounter(
-        req.method,
-        req.path,
+        req.originalUrl,
         error instanceof Error ? error.name : 'UnknownError'
       );
 
@@ -136,41 +80,143 @@ export const dbAsyncHandler = (handler: AsyncHandler) => {
   };
 };
 
-// Specialized async handler for external API calls
+/**
+ * Specialized async handler for external API calls.
+ * Logs request/response, propagates errors, and records metrics.
+ */
 export const apiAsyncHandler = (handler: AsyncHandler) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     const startTime = Date.now();
     const requestId = (req.headers['x-request-id'] as string) || 'unknown';
 
     try {
-      logger.debug(`External API call started: ${req.method} ${req.path}`, {
-        requestId,
-        method: req.method,
-        path: req.path,
-      });
+      logger.debug(
+        `External API call started: ${req.method} ${req.originalUrl}`,
+        {
+          requestId,
+          method: req.method,
+          path: req.originalUrl,
+        }
+      );
 
       const result = await handler(req, res, next);
 
       const duration = Date.now() - startTime;
 
-      logger.debug(`External API call completed: ${req.method} ${req.path}`, {
-        requestId,
-        method: req.method,
-        path: req.path,
-        duration,
-      });
+      logger.debug(
+        `External API call completed: ${req.method} ${req.originalUrl}`,
+        {
+          requestId,
+          method: req.method,
+          path: req.originalUrl,
+          duration,
+        }
+      );
 
-      // Record external API metrics
-      monitoring.recordExternalApiDuration(req.method, req.path, duration);
+      // Record external API metrics, fallback to http metric if unavailable
+      if (typeof monitoring.measureHttpRequestDuration === 'function') {
+        monitoring.measureHttpRequestDuration(
+          req.method,
+          req.originalUrl,
+          duration
+        );
+      }
 
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
 
-      logger.error(`External API call failed: ${req.method} ${req.path}`, {
-        requestId,
-        method: req.method,
-        path: req.path,
+      logger.error(
+        `External API call failed: ${req.method} ${req.originalUrl}`,
+        {
+          requestId,
+          method: req.method,
+          path: req.originalUrl,
+          duration,
+          error:
+            error instanceof Error
+              ? {
+                  message: error.message,
+                  stack: error.stack,
+                  name: error.name,
+                }
+              : error,
+        }
+      );
+
+      // Use generic error metric fallback
+      if (typeof monitoring.incrementHttpErrorCounter === 'function') {
+        monitoring.incrementHttpErrorCounter(
+          req.method,
+          req.originalUrl,
+          error instanceof Error ? error.name : 'UnknownError'
+        );
+      }
+
+      next(error);
+    }
+  };
+};
+
+/**
+ * Generic async handler for handling gRPC calls with best practices.
+ *
+ * - Logs the start, completion, and failure of gRPC requests.
+ * - Records duration and error metrics.
+ *
+ * @param handler     - Async function for gRPC logic: (...args) => Promise<any>
+ * @param options     - Optional object, may include a custom methodName or context extractor function.
+ * @returns           - A wrapped function that handles error propagation and observability.
+ */
+export function asyncGrpcCall<TArgs extends any[], TResult>(
+  handler: (...args: TArgs) => Promise<TResult>,
+  options?: {
+    methodName?: string;
+    extractMeta?: (...args: TArgs) => Record<string, any>;
+  }
+): (...args: TArgs) => Promise<TResult> {
+  // Method name extraction: prefer explicit, fallback to handler.name, or use <anonymous>
+  const methodName =
+    options?.methodName ||
+    handler.name ||
+    '<anonymous gRPC method>';
+
+  return async (...args: TArgs): Promise<TResult> => {
+    const startTime = Date.now();
+
+    // Flexible metadata extraction
+    let meta: Record<string, any> = {};
+    if (typeof options?.extractMeta === 'function') {
+      try {
+        meta = options.extractMeta(...args) || {};
+      } catch (e) {
+        logger.warn(`[gRPC] Metadata extraction failed: ${methodName}`, { error: e });
+        meta = {};
+      }
+    }
+
+    try {
+      logger.debug(`[gRPC] Call started: ${methodName}`, meta);
+
+      const result = await handler(...args);
+
+      const duration = Date.now() - startTime;
+
+      logger.debug(`[gRPC] Call completed: ${methodName}`, {
+        ...meta,
+        duration,
+      });
+
+      if (typeof monitoring?.measureGRPCRequestDuration === 'function') {
+        monitoring.measureGRPCRequestDuration(methodName, duration);
+      }
+
+      return result;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+
+      logger.error(`[gRPC] Call failed: ${methodName}`, {
+        ...meta,
         duration,
         error:
           error instanceof Error
@@ -182,14 +228,14 @@ export const apiAsyncHandler = (handler: AsyncHandler) => {
             : error,
       });
 
-      // Record external API error metrics
-      monitoring.incrementExternalApiErrorCounter(
-        req.method,
-        req.path,
-        error instanceof Error ? error.name : 'UnknownError'
-      );
+      if (typeof monitoring?.incrementGrpcErrorCounter === 'function') {
+        monitoring.incrementGrpcErrorCounter(
+          methodName,
+          error instanceof Error ? error.name : 'UnknownError'
+        );
+      }
 
-      next(error);
+      throw error;
     }
   };
-};
+}
