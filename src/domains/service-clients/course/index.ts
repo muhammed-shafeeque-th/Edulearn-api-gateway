@@ -24,7 +24,7 @@ import {
   DeleteLessonRequest,
   DeleteLessonResponse,
   GetLessonRequest,
-  GetLessonsBySectionRequest,
+  GetLessonsByModuleRequest,
   LessonResponse,
   LessonsResponse,
   UpdateLessonRequest,
@@ -40,15 +40,15 @@ import {
   CreateQuizRequest,
 } from './proto/generated/course/types/quiz';
 import {
-  GetSectionRequest,
-  DeleteSectionRequest,
-  DeleteSectionResponse,
-  GetSectionsByCourseRequest,
-  SectionResponse,
-  SectionsResponse,
-  UpdateSectionRequest,
-  CreateSectionRequest,
-} from './proto/generated/course/types/section';
+  GetModuleRequest,
+  DeleteModuleRequest,
+  DeleteModuleResponse,
+  GetModulesByCourseRequest,
+  ModuleResponse,
+  ModulesResponse,
+  UpdateModuleRequest,
+  CreateModuleRequest,
+} from './proto/generated/course/types/module';
 import { CourseServiceClient } from './proto/generated/course_service';
 import {
   GetCoursesStatsResponse,
@@ -58,6 +58,18 @@ import {
   GetInstructorCoursesStatsResponse,
 } from './proto/generated/course/types/stats';
 import { Empty } from './proto/generated/course/common';
+import {
+  CategoryResponse,
+  CategoriesResponse,
+  DeleteCategoryResponse,
+  CreateCategoryRequest,
+  UpdateCategoryRequest,
+  DeleteCategoryRequest,
+  GetAllCategoriesRequest,
+  ToggleCategoryStatusRequest,
+  GetCategoriesStatsRequest,
+  GetCategoriesStatsResponse,
+} from './proto/generated/course/types/category';
 
 import { injectable } from 'inversify';
 
@@ -230,60 +242,60 @@ export class CourseService {
     return response as GetCoursesByIdsResponse;
   }
 
-  async createSection(
-    request: CreateSectionRequest,
+  async createModule(
+    request: CreateModuleRequest,
     options: GrpcClientOptions = {}
-  ): Promise<SectionResponse> {
+  ): Promise<ModuleResponse> {
     const response = await this.client.unaryCall(
-      'createSection',
+      'createModule',
       request,
       options
     );
-    return response as SectionResponse;
+    return response as ModuleResponse;
   }
-  async getSection(
-    request: GetSectionRequest,
+  async getModule(
+    request: GetModuleRequest,
     options: GrpcClientOptions = {}
-  ): Promise<SectionResponse> {
+  ): Promise<ModuleResponse> {
     const response = await this.client.unaryCall(
-      'getSection',
+      'getModule',
       request,
       options
     );
-    return response as SectionResponse;
+    return response as ModuleResponse;
   }
-  async updateSection(
-    request: UpdateSectionRequest,
+  async updateModule(
+    request: UpdateModuleRequest,
     options: GrpcClientOptions = {}
-  ): Promise<SectionResponse> {
+  ): Promise<ModuleResponse> {
     const response = await this.client.unaryCall(
-      'updateSection',
+      'updateModule',
       request,
       options
     );
-    return response as SectionResponse;
+    return response as ModuleResponse;
   }
-  async deleteSection(
-    request: DeleteSectionRequest,
+  async deleteModule(
+    request: DeleteModuleRequest,
     options: GrpcClientOptions = {}
-  ): Promise<DeleteSectionResponse> {
+  ): Promise<DeleteModuleResponse> {
     const response = await this.client.unaryCall(
-      'deleteSection',
+      'deleteModule',
       request,
       options
     );
-    return response as DeleteSectionResponse;
+    return response as DeleteModuleResponse;
   }
-  async getSectionsByCourse(
-    request: GetSectionsByCourseRequest,
+  async getModulesByCourse(
+    request: GetModulesByCourseRequest,
     options: GrpcClientOptions = {}
-  ): Promise<SectionsResponse> {
+  ): Promise<ModulesResponse> {
     const response = await this.client.unaryCall(
-      'getSectionsByCourse',
+      'getModulesByCourse',
       request,
       options
     );
-    return response as SectionsResponse;
+    return response as ModulesResponse;
   }
 
   async createLesson(
@@ -297,12 +309,12 @@ export class CourseService {
     );
     return response as LessonResponse;
   }
-  async getLessonsBySection(
-    request: GetLessonsBySectionRequest,
+  async getLessonsByModule(
+    request: GetLessonsByModuleRequest,
     options: GrpcClientOptions = {}
   ): Promise<LessonsResponse> {
     const response = await this.client.unaryCall(
-      'getLessonsBySection',
+      'getLessonsByModule',
       request,
       options
     );
@@ -424,6 +436,82 @@ export class CourseService {
       options
     );
     return response as GetInstructorCourseRatingStatsResponse;
+  }
+
+  // ===========================================================================
+  //                           CATEGORY METHODS
+  // ===========================================================================
+
+  async getAllCategories(
+    request: GetAllCategoriesRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<CategoriesResponse> {
+    const response = await this.client.unaryCall(
+      'getAllCategories',
+      request,
+      options
+    );
+    return response as CategoriesResponse;
+  }
+
+  async createCategory(
+    request: CreateCategoryRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<CategoryResponse> {
+    const response = await this.client.unaryCall(
+      'createCategory',
+      request,
+      options
+    );
+    return response as CategoryResponse;
+  }
+
+  async updateCategory(
+    request: UpdateCategoryRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<CategoryResponse> {
+    const response = await this.client.unaryCall(
+      'updateCategory',
+      request,
+      options
+    );
+    return response as CategoryResponse;
+  }
+
+  async deleteCategory(
+    request: DeleteCategoryRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<DeleteCategoryResponse> {
+    const response = await this.client.unaryCall(
+      'deleteCategory',
+      request,
+      options
+    );
+    return response as DeleteCategoryResponse;
+  }
+  
+  async getCategoriesStats(
+    request: GetCategoriesStatsRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<GetCategoriesStatsResponse> {
+    const response = await this.client.unaryCall(
+      'getCategoriesStats',
+      request,
+      options
+    );
+    return response as GetCategoriesStatsResponse;
+  }
+
+  async toggleCategoryStatus(
+    request: ToggleCategoryStatusRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<CategoryResponse> {
+    const response = await this.client.unaryCall(
+      'toggleCategoryStatus',
+      request,
+      options
+    );
+    return response as CategoryResponse;
   }
 
   close() {
