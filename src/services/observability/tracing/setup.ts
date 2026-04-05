@@ -51,7 +51,7 @@ export function initializeTracer() {
       [ATTR_SERVICE_VERSION]: process.env.npm_package_version || 'unknown',
       [SemanticResourceAttributes.HOST_NAME]: os.hostname(),
       [SemanticResourceAttributes.OS_TYPE]: os.type(),
-      [SemanticResourceAttributes.OS_VERSION]: os.release(),
+      [SemanticResourceAttributes.OS_VERSION]: os.version(),
       [SemanticResourceAttributes.PROCESS_PID]: process.pid,
     }),
     sampler: sampler,
@@ -71,7 +71,7 @@ export function initializeTracer() {
       .shutdown()
       .then(() => console.info('Tracer shut down.'))
       .catch(err => console.error('Error shutting down tracer', err));
-    process.exit(0); // Exit process after shutdown
+    process.exit(0);
   };
 
   process.on('SIGTERM', shutdownTracer);
