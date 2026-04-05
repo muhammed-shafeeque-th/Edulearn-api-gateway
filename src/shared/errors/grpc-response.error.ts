@@ -3,7 +3,7 @@ import {
   Error,
   ErrorDetail,
 } from '@/domains/service-clients/user/proto/generated/user/common';
-import { ErrorStatusCodes } from './error-status-codes';
+import { ErrorStatusCodes } from './codes/error-status-codes';
 
 export class GrpcResponseError extends BaseError {
   public statusCode: ErrorStatusCodes;

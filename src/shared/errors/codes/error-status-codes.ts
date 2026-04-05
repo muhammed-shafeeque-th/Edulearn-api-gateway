@@ -21,6 +21,8 @@ export enum ErrorStatusCodes {
   USER_BLOCKED = 403, // Forbidden
   WALLET_OPERATION_FAILED = 500, // Internal Server Error
   INSTRUCTOR_ROLE_REQUIRED = 403, // Forbidden
+  INSTRUCTOR_ACCESS_DENIED = 403,
+  ACCOUNT_BLOCKED = 403,
   PRECONDITION_FAILED =  412, // 
   TOO_MANY_REQUESTS = 429, // Rate limit 
   CLIENT_CLOSED_REQUEST = 499,

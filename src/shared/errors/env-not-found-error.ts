@@ -1,6 +1,6 @@
 import { BaseError } from './base-error';
-import { ErrorCodes } from './error-codes';
-import { ErrorStatusCodes } from './error-status-codes';
+import { ErrorCodes } from './codes/error-codes';
+import { ErrorStatusCodes } from './codes/error-status-codes';
 
 export class EnvNotFoundError extends BaseError {
   public errorCode: ErrorCodes.ENV_LOAD_ERROR;

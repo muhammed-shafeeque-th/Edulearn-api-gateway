@@ -2,9 +2,8 @@ export abstract class BaseError extends Error {
   abstract statusCode: number;
   abstract errorCode: any;
 
-  constructor(message?: string) {
+  constructor(message?: string, public readonly reason?: string) {
     super(message);
-
 
     Object.setPrototypeOf(this, new.target.prototype);
 
@@ -35,10 +34,10 @@ export abstract class BaseError extends Error {
   }
   toErrorModel() {
     return {
-      errorCode: this.errorCode,
+      code: this.errorCode,
+      reason: this.reason,
       message: this.message,
       details: this.serializeErrors(),
     };
   }
-
 }
