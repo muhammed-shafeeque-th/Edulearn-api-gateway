@@ -41,3 +41,13 @@ export interface TokenPair {
   accessToken: string;
   refreshToken: string;
 }
+
+export interface ITokenOptions {
+  expires?: Date;
+  maxAge?: number;
+  httpOnly: boolean;
+  sameSite: 'lax' | 'strict' | 'none' | undefined;
+  secure?: boolean;
+  path?: string;
+  domain?: string;
+}
