@@ -1,11 +1,11 @@
 import { config } from '@/config';
 import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import { AuthenticationError } from '@/shared/utils/errors/unauthenticate.error';
-import { AuthorizationError } from '@/shared/utils/errors/unauthorize.error';
-import { Permissions, USER_ROLE } from '@/shared/types';
-import { AccountBlockedError } from '@/shared/utils/errors/account-blocked.error';
-import { InstructorAccessDeniedError } from '@/shared/utils/errors/instructor-access-denied.error';
+import { AuthenticationError } from '@/shared/errors/unauthenticate.error';
+import { AuthorizationError } from '@/shared/errors/unauthorize.error';
+import { Permissions } from '@/shared/types';
+import { AccountBlockedError } from '@/shared/errors/account-blocked.error';
+import { InstructorAccessDeniedError } from '@/shared/errors/instructor-access-denied.error';
 
 type JWTPayload = {
   username: string;
@@ -18,7 +18,8 @@ type JWTPayload = {
 
 import { TokenService } from '@/services/auth-token/token.service';
 import { container, TYPES } from '@/services/di';
-import { AccountAccessService } from '@/services/account-blocklist.service';
+import { AccountAccessService } from '@/services/account-access.service';
+import { USER_ROLE } from '@/domains/auth/v1/types';
 
 interface AuthGuardOptions {
   roles?: USER_ROLE[];
