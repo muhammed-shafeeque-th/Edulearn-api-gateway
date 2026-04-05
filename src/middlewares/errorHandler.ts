@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { MulterError } from 'multer';
-import { BaseError } from './errors/base-error';
-import { clearCookies } from '@/domains/auth/utils/manage-cookies';
+import { BaseError } from '../shared/errors/base-error';
+import { clearCookies } from '@/domains/auth/v1/utils/manage-cookies';
 
 const ResponseStatus = {
   success: 'success',
@@ -12,7 +12,9 @@ export interface ErrorResponse {
   success: boolean;
   message: string;
   error: {
-    errorCode: string;
+    code: string;
+    reason?: string;
+
     details: Array<{
       message: string;
       field?: string;
@@ -40,7 +42,7 @@ export const errorHandler = async (
       success: false,
       message: 'File upload error',
       error: {
-        errorCode: `MULTER_${error.code.toUpperCase()}`,
+        code: `MULTER_${error.code.toUpperCase()}`,
         details: [
           {
             message:
@@ -68,7 +70,7 @@ export const errorHandler = async (
       success: false,
       message: 'Internal server error',
       error: {
-        errorCode: 'INTERNAL_SERVER_ERROR',
+        code: 'INTERNAL_SERVER_ERROR',
         details: [
           {
             message:
@@ -88,7 +90,7 @@ export const errorHandler = async (
       success: false,
       message: 'Internal server error',
       error: {
-        errorCode: 'UNKNOWN_ERROR',
+        code: 'UNKNOWN_ERROR',
         details: [{ message: 'An unknown error occurred' }],
       },
       timestamp: new Date().toISOString(),
@@ -103,11 +105,11 @@ export const errorHandler = async (
 
   if (
     req.path.startsWith('/api/v1/auth') &&
-    (errorResponse.error.errorCode?.includes('AUTHENTICATION_ERROR') ||
+    (errorResponse.error.code?.includes('AUTHENTICATION_ERROR') ||
       statusCode === 401 ||
-      errorResponse.error.errorCode?.includes('AUTHENTICATION'))
+      errorResponse.error.code?.includes('AUTHENTICATION'))
   ) {
-    
+
     // Clear cookies if refresh fails
     clearCookies(res);
   }
