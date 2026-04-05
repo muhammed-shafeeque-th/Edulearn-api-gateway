@@ -1,41 +1,46 @@
 import { config } from '@/config';
 import { LoggingService } from '@/services/observability/logging/logging.service';
 import Redis, { Cluster } from 'ioredis';
+import { injectable } from 'inversify';
 
+@injectable()
 export class RedisService {
   private static instance: RedisService;
-  private _client: Redis;
+  private _client: Redis | Cluster;
   private logger = LoggingService.getInstance();
   public isConnected = false;
 
   private constructor() {
-    // if (config.redis.cluster === 'true') {
-    //   this._client = new Cluster([
-    //     {
-    //       host: config.redis.host,
-    //       port: Number(config.redis.port),
-    //     },
-    //   ]);
-    // } else {}
-    this._client = new Redis(
-      parseInt(config.redis.port, 10),
-      config.redis.host,
-      {
-        ...(config.redis.password && { password: config.redis.password }),
-        db: parseInt(config.redis.db || '0'),
-        keyPrefix: config.redis.keyPrefix,
-        connectTimeout: parseInt(config.redis.connectTimeout || '10000'),
-        lazyConnect: Boolean(config.redis.lazyConnect || true),
-        maxRetriesPerRequest: parseInt(
-          config.redis.maxRetriesPerRequest || '3'
-        ),
-        enableOfflineQueue: false,
+    if (config.redis.cluster === 'true') {
+      this._client = new Redis.Cluster(
+        [
+          {
+            host: config.redis.host,
+            port: parseInt(config.redis.port || '6379'),
+          },
+        ],
+        {
+          redisOptions: {
+            password: config.redis.password,
+            tls: config.redis.tls === 'true' ? {} : undefined,
+          },
+          scaleReads: 'slave',
+        }
+      );
+    } else {
+      this._client = new Redis({
+        host: config.redis.host,
+        port: parseInt(config.redis.port || '6379'),
+        password: config.redis.password,
+        lazyConnect: config.redis.lazyConnect,
+        // maxRetriesPerRequest: config.redis.maxRetriesPerRequest,
+        tls: config.redis.tls === 'true' ? {} : undefined,
         retryStrategy: (retries: number) => {
           if (retries > 5) return null;
           return Math.max(retries * 100, 3000);
         },
-      }
-    );
+      });
+    }
 
     this._client.on('error', error => {
       this.logger.error('Redis Client Error', {
@@ -45,13 +50,15 @@ export class RedisService {
     });
 
     this._client.on('connect', () => {
-      this.logger.info('Redis _client connected successfully', {
+      this.isConnected = true;
+      this.logger.info('Redis client connected successfully', {
         ctx: RedisService.name,
       });
     });
 
     this._client.on('end', () => {
-      this.logger.info('Redis _client disconnected', {
+      this.isConnected = false;
+      this.logger.info('Redis client disconnected', {
         ctx: RedisService.name,
       });
     });
@@ -66,11 +73,11 @@ export class RedisService {
 
   public async invalidateTag(tag: string) {
     const keys = await this._client.smembers(`tag:${tag}`);
-  
+
     if (keys.length) {
       await this._client.del(...keys);
     }
-  
+
     await this._client.del(`tag:${tag}`);
   }
 
@@ -81,7 +88,7 @@ export class RedisService {
     fn: () => Promise<T>
   ): Promise<T> {
     const lockKey = `lock:${key}`;
-  
+
     const locked = await this._client.set(
       lockKey,
       '1',
@@ -89,25 +96,24 @@ export class RedisService {
       'EX' as any,
       10 as any
     );
-  
+
     if (!locked) {
       await new Promise(r => setTimeout(r, 100));
       return this.get<T>(key) as Promise<T>;
     }
-  
+
     try {
       return await fn();
     } finally {
-      await this.client.del(lockKey);
+      await this._client.del(lockKey);
     }
   }
 
   async tag(key: string, tags: string[]) {
     for (const tag of tags) {
-      await this.client.sadd(`tag:${tag}`, key);
+      await this._client.sadd(`tag:${tag}`, key);
     }
   }
-  
 
   public get client() {
     return this._client;
@@ -120,36 +126,32 @@ export class RedisService {
     fetcher: () => Promise<T>
   ): Promise<T> {
     const cache = await this._client.get(key);
-  
+
     if (cache) {
       const parsed = JSON.parse(cache);
-  
+
       const age = Date.now() - parsed.ts;
-  
+
       // Fresh
       if (age < ttl * 1000) return parsed.data;
-  
-      // Stale → background refresh
+
+      // Stale -> background refresh
       if (age < (ttl + swr) * 1000) {
         this.refresh(key, ttl, fetcher);
         return parsed.data;
       }
     }
-  
+
     // MISS
     return this.withLock(key, ttl, fetcher);
   }
 
-  private async refresh<T>(
-    key: string,
-    ttl: number,
-    fn: () => Promise<T>
-  ) {
+  private async refresh<T>(key: string, ttl: number, fn: () => Promise<T>) {
     setTimeout(async () => {
       try {
         const data = await fn();
-  
-        await this.client.setex(
+
+        await this._client.setex(
           key,
           ttl,
           JSON.stringify({
@@ -167,13 +169,13 @@ export class RedisService {
     fetcher: () => Promise<T>
   ): Promise<T> {
     const cached = await this.get<T>(key);
-  
+
     if (cached) return cached;
-  
+
     const data = await fetcher();
-  
+
     await this.set(key, data, ttl);
-  
+
     return data;
   }
 
@@ -268,13 +270,10 @@ export class RedisService {
       const keys = await this._client.keys(pattern);
       return keys;
     } catch (error) {
-      this.logger.error(
-        `Redis keys command failed for pattern ${pattern}`,
-        {
-          error,
-          ctx: RedisService.name,
-        }
-      );
+      this.logger.error(`Redis keys command failed for pattern ${pattern}`, {
+        error,
+        ctx: RedisService.name,
+      });
       throw error;
     }
   }
@@ -356,7 +355,6 @@ export class RedisService {
    */
   public async connect(): Promise<void> {
     try {
-      // connect() only resolves on first connect if not already connected
       await this._client.connect();
       this.isConnected = true;
       this.logger.info('Redis client connected..');
@@ -387,7 +385,7 @@ export class RedisService {
    * Expose internal client if necessary.
    */
   public getClient(): Redis {
-    return this._client;
+    return this._client as Redis;
   }
 }
 
