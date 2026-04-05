@@ -31,6 +31,11 @@ export function observabilityMiddleware(
     req.method,
     req.route?.path || req.path
   );
+  const requestId =
+    (req.headers['x-request-id'] as string) ||
+    req.headers['X-Request-Id'] ||
+    'unknown';
+
   const incomingContext = propagation.extract(context.active(), req.headers);
   const span = tracer.startSpan(
     `HTTP ${req.method} ${req.path}`,
@@ -43,7 +48,7 @@ export function observabilityMiddleware(
         [SemanticAttributes.HTTP_TARGET]: req.originalUrl,
         [SemanticAttributes.HTTP_HOST]: req.get('host') || 'unknown',
         [SemanticAttributes.NET_PEER_IP]: req.ip,
-        'http.request.id': req.headers['x-request-id'] as string,
+        'http.request.id': requestId,
         // User specific attributes
         'endUser.id': req.user?.userId as string,
         'endUser.role': req.user?.roles as string[],
@@ -59,6 +64,9 @@ export function observabilityMiddleware(
       url: req.originalUrl,
       userId: req.user?.userId ?? '',
       traceId: span.spanContext().traceId,
+      requestId,
+      path: req.originalUrl,
+      ip: req.ip,
     });
     // Inject span context into headers for downstream propagation
     propagation.inject(context.active(), req.headers, {
@@ -100,6 +108,8 @@ export function observabilityMiddleware(
           statusCode: res.statusCode,
           durationMs: duration,
           traceId: span.spanContext().traceId,
+          'endUser.id': req.user?.userId as string,
+          'endUser.role': req.user?.roles as string[],
         }
       );
     });
