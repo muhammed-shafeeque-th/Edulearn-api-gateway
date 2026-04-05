@@ -1,7 +1,7 @@
-import { ChannelCredentials, ChannelOptions, Metadata } from '@grpc/grpc-js';
-import { RetryConfig } from '../retry';
+import { CallOptions, ChannelCredentials, ChannelOptions, Metadata } from '@grpc/grpc-js';
+import { RetryConfig } from '../../../services/security/retry/retry';
 import { CircuitBreakerConfig } from './circuit-breaker';
-import { RateLimiterConfig } from '../rate-limiter';
+import { RateLimiterConfig } from '../../../services/security/ratelimiter/rate-limiter';
 import { Options } from '@grpc/proto-loader';
 
 export interface GrpcClientConfig {
@@ -23,5 +23,5 @@ export interface GrpcClientConfig {
 
 export interface GrpcClientOptions {
   metadata?: Metadata;
-  attachMetadata?: () => Metadata;
+  options?: CallOptions;
 }
