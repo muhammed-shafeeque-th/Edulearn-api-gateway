@@ -19,27 +19,28 @@ import { CourseService } from '@/domains/service-clients/course';
 import { RedisService } from '@/services/redis';
 
 // Controllers
-import { AuthController } from '@/domains/auth/controllers/v1/auth.controller';
-import { UserController } from '@/domains/user/controllers/v1/user.controller';
-import { CourseController } from '@/domains/course/controllers/v1/course.controller';
+import { AuthController } from '@/domains/auth/v1/controllers';
+import { UserController } from '@/domains/user/v1/controllers/user.controller';
+import { CourseController } from '@/domains/course/v1/controllers/course.controller';
+import { CategoryController } from '@/domains/course/v1/controllers/category.controller';
 
-import { TokenService } from '@/services/token.service';
+import { TokenService } from '@/services/auth-token/token.service';
 import { PaymentService } from '@/domains/service-clients/payment';
 import { OrderService } from '@/domains/service-clients/order';
 import { WishlistService } from '@/domains/service-clients/wishlist';
 import { CartService } from '@/domains/service-clients/cart';
-import { PaymentController } from '@/domains/payment/controllers/v1/payment.controller';
-import { OrderController } from '@/domains/order/controllers/v1/order.controller';
-import { EnrollmentController } from '@/domains/enrollment/controllers/v1/enrollment.controller';
-import { WalletController } from '@/domains/wallet/controllers/v1/wallet.controller';
-import { WishlistController } from '@/domains/wishlist/controllers/v1/wishlist.controller';
-import { ChatController } from '@/domains/chat/controllers/v1/chat.controller';
-import { DiscussionController } from '@/domains/chat/controllers/v1/discussion.controller';
-import { MediaController } from '@/domains/media/controllers/v1/media.controller';
-import { UserAccessService } from '../user-blocklist.service';
-import { AdminController } from '@/domains/admin/controllers/v1/admin.controller';
-import { CartController } from '@/domains/cart/controllers/v1/cart.controller';
-import { NotificationController } from '@/domains/notification/controllers/v1/notification.controller';
+import { PaymentController } from '@/domains/payment/v1/controllers';
+import { OrderController } from '@/domains/order/v1/controllers';
+import { EnrollmentController } from '@/domains/enrollment/v1/controllers';
+import { WalletController } from '@/domains/user/v1/controllers/wallet.controller';
+import { WishlistController } from '@/domains/user/v1/controllers/wishlist.controller';
+import { ChatController } from '@/domains/chat/v1/controllers/chat.controller';
+import { DiscussionController } from '@/domains/chat/v1/controllers/discussion.controller';
+import { MediaController } from '@/domains/media/v1/controllers';
+import { AccountAccessService } from '../account-blocklist.service';
+import { AdminController } from '@/domains/admin/v1/controllers';
+import { CartController } from '@/domains/user/v1/controllers/cart.controller';
+import { NotificationController } from '@/domains/notification/v1/controllers';
 
 const container = new Container();
 
@@ -73,8 +74,8 @@ container
   .to(TokenService)
   .inSingletonScope();
 container
-  .bind<UserAccessService>(TYPES.UserAccessService)
-  .to(UserAccessService)
+  .bind<AccountAccessService>(TYPES.AccountAccessService)
+  .to(AccountAccessService)
   .inSingletonScope();
 
 // Bind Domain Services
@@ -139,6 +140,10 @@ container
 container
   .bind<CourseController>(TYPES.CourseController)
   .to(CourseController)
+  .inTransientScope();
+container
+  .bind<CategoryController>(TYPES.CategoryController)
+  .to(CategoryController)
   .inTransientScope();
 container
   .bind<PaymentController>(TYPES.PaymentController)

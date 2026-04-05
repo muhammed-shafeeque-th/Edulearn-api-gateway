@@ -20,13 +20,15 @@ export const TYPES = {
   // Infrastructure Services
   RedisService: Symbol.for('RedisService'),
   TokenService: Symbol.for('TokenService'),
-  UserAccessService: Symbol.for('UserAccessService'),
+  AccountAccessService: Symbol.for('AccountAccessService'),
 
   // Controllers
   AdminController: Symbol.for('AdminController'),
   AuthController: Symbol.for('AuthController'),
   UserController: Symbol.for('UserController'),
+  InstructorController: Symbol.for('InstructorController'),
   CourseController: Symbol.for('CourseController'),
+  CategoryController: Symbol.for('CategoryController'),
   EnrollmentController: Symbol.for('EnrollmentController'),
   ChatController: Symbol.for('ChatController'),
   DiscussionController: Symbol.for('DiscussionController'),
