@@ -1,7 +1,9 @@
 import { CookieOptions, Response as ExpressResponse } from 'express';
 import { MappingConfig, ResponseMapper } from './response-mapper';
 import { status } from '@grpc/grpc-js';
-import { ErrorResponse } from './errorHandler';
+import { ErrorResponse } from '../../middlewares/errorHandler';
+import { Pagination } from '../types/api-response';
+import { HttpStatus } from '../constants/http-status';
 
 export class ResponseWrapper {
   private readonly res: ExpressResponse;
@@ -13,7 +15,7 @@ export class ResponseWrapper {
     this.res = res;
   }
 
-  status(code: number): this {
+  status(code: HttpStatus): this {
     this.res.status(code);
     return this;
   }
@@ -46,7 +48,11 @@ export class ResponseWrapper {
     fieldOrFields: string | Record<string, string | number | string[]>,
     value?: string | string[]
   ): this {
-    this.res.set(fieldOrFields as any, value);
+    if (typeof fieldOrFields === 'object') {
+      this.res.set(fieldOrFields as any);
+    } else {
+      this.res.set(fieldOrFields, value);
+    }
     return this;
   }
 
@@ -85,15 +91,18 @@ export class ResponseWrapper {
    * Standard success response
    * @param payload - The data to send in the response
    * @param message - Optional success message
+   * @param pagination - Optional pagination response
    */
   success<T>(
     payload: T,
-    message: string = 'Operation completed successfully'
+    message: string = 'Operation completed successfully',
+    pagination?: Pagination
   ): void {
     this.res.json({
       success: true,
       message,
       data: payload,
+      pagination,
     });
   }
 
@@ -103,12 +112,13 @@ export class ResponseWrapper {
    * @param message - Error message
    * @param details - Optional additional error details
    */
-  error(code: string, message: string, details?: any): void {
+  error(code: string, message: string, reason?: string, details?: any): void {
     this.res.json({
       success: false,
       message,
       error: {
-        errorCode: code,
+        code,
+        reason,
         details,
       },
     } as ErrorResponse);
