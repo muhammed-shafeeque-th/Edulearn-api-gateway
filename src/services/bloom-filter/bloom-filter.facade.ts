@@ -115,7 +115,7 @@ export class BloomFilterFacade implements IBloomFilterService {
       const normalizedEmail = email.toLowerCase().trim();
       await this.emailStrategy.add(normalizedEmail);
 
-      this.logger.info('Email added to bloom filter successfully', {
+      this.logger.debug('Email added to bloom filter successfully', {
         email: normalizedEmail,
         ctx: BloomFilterFacade.name,
       });
@@ -138,7 +138,7 @@ export class BloomFilterFacade implements IBloomFilterService {
       const normalizedCourseName = courseName.toLowerCase().trim();
       await this.courseNameStrategy.add(normalizedCourseName);
 
-      this.logger.info('Course name added to bloom filter successfully', {
+      this.logger.debug('Course name added to bloom filter successfully', {
         courseName: normalizedCourseName,
         ctx: BloomFilterFacade.name,
       });
@@ -196,7 +196,7 @@ export class BloomFilterFacade implements IBloomFilterService {
         normalizedEmails.map(email => this.emailStrategy.add(email))
       );
 
-      this.logger.info(
+      this.logger.debug(
         `Added ${normalizedEmails.length} emails to bloom filter`,
         {
           ctx: BloomFilterFacade.name,
@@ -225,7 +225,7 @@ export class BloomFilterFacade implements IBloomFilterService {
         normalizedCourseNames.map(name => this.courseNameStrategy.add(name))
       );
 
-      this.logger.info(
+      this.logger.debug(
         `Added ${normalizedCourseNames.length} course names to bloom filter`,
         {
           ctx: BloomFilterFacade.name,
@@ -248,12 +248,12 @@ export class BloomFilterFacade implements IBloomFilterService {
       this.logger.info('Gracefully shutting down Bloom Filter Facade...', {
         ctx: BloomFilterFacade.name,
       });
-      if (this.redis && typeof this.redis.disconnect === 'function') {
-        await this.redis.disconnect();
-        this.logger.info('Redis disconnected successfully.', {
-          ctx: BloomFilterFacade.name,
-        });
-      }
+      // if (this.redis && typeof this.redis.disconnect === 'function') {
+      //   await this.redis.disconnect();
+      //   this.logger.debug('Redis disconnected successfully.', {
+      //     ctx: BloomFilterFacade.name,
+      //   });
+      // }
     } catch (error) {
       this.logger.error(
         'Error during graceful shutdown of Bloom Filter Facade:',

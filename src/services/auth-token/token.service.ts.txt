@@ -1,0 +1,330 @@
+// @api-gateway/src/middlewares/auth.middleware.ts
+
+import { Request, Response, NextFunction } from 'express';
+import { tokenService, TokenPayload } from '@/services/auth-token/token.service';
+import { AuthenticationError } from '@/shared/utils/errors/unauthenticate.error';
+import { AuthorizationError } from '@/shared/utils/errors/unauthorize.error';
+
+/**
+ * Extend Express Request to include user data
+ */
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        userId: string;
+        username: string;
+        email: string;
+        role: string;
+        avatar?: string;
+        sessionId?: string;
+        deviceId?: string;
+      };
+      authToken?: string;
+      tokenPayload?: TokenPayload;
+    }
+  }
+}
+
+/**
+ * Authentication middleware
+ * Verifies JWT token and attaches user data to request
+ */
+export const authenticate = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    // Extract token from Authorization header
+    const token = tokenService.extractTokenFromHeader(req.headers.authorization);
+
+    // Also check cookies as fallback
+    const cookieToken = req.cookies?.[tokenService.ACCESS_TOKEN_COOKIE];
+    const finalToken = token || cookieToken;
+
+    if (!finalToken) {
+      throw new AuthenticationError(
+        'Authentication failed: Token is missing or invalid.'
+      );
+    }
+
+    // Validate token format before verification
+    if (!tokenService.isValidTokenFormat(finalToken)) {
+      throw new AuthenticationError(
+        'Authentication failed: Token format is invalid.'
+      );
+    }
+
+    // Verify the access token
+    const verification = tokenService.verifyAccessToken(finalToken);
+
+    if (!verification.valid || !verification.payload) {
+      if (verification.expired) {
+        throw new AuthenticationError(
+          'Authentication failed: Token has expired.'
+        );
+      }
+      throw new AuthenticationError(
+        verification.error || 'Authentication failed: Invalid token.'
+      );
+    }
+
+    const { payload } = verification;
+
+    // Attach user data to request
+    req.user = {
+      userId: payload.userId,
+      username: payload.username,
+      email: payload.email,
+      role: payload.role,
+      avatar: payload.avatar,
+      sessionId: payload.sessionId,
+      deviceId: payload.deviceId,
+    };
+
+    // Store original token and full payload for potential use
+    req.authToken = req.headers.authorization;
+    req.tokenPayload = payload;
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Authorization middleware factory
+ * Checks if user has required role(s)
+ * 
+ * @param roles - Array of allowed roles
+ * @returns Express middleware function
+ */
+export const authorize = (roles: string | string[]) => {
+  const allowedRoles = Array.isArray(roles) ? roles : [roles];
+
+  return (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      if (!req.user) {
+        throw new AuthenticationError(
+          'Authentication required to access this resource.'
+        );
+      }
+
+      if (!allowedRoles.includes(req.user.role)) {
+        throw new AuthorizationError(
+          `Access denied. Required role(s): ${allowedRoles.join(', ')}`
+        );
+      }
+
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+};
+
+/**
+ * Optional authentication middleware
+ * Attaches user data if token is valid, but doesn't fail if missing
+ */
+export const optionalAuth = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const token = tokenService.extractTokenFromHeader(req.headers.authorization);
+    const cookieToken = req.cookies?.[tokenService.ACCESS_TOKEN_COOKIE];
+    const finalToken = token || cookieToken;
+
+    if (finalToken && tokenService.isValidTokenFormat(finalToken)) {
+      const verification = tokenService.verifyAccessToken(finalToken);
+
+      if (verification.valid && verification.payload) {
+        const { payload } = verification;
+        
+        req.user = {
+          userId: payload.userId,
+          username: payload.username,
+          email: payload.email,
+          role: payload.role,
+          avatar: payload.avatar,
+          sessionId: payload.sessionId,
+          deviceId: payload.deviceId,
+        };
+
+        req.authToken = req.headers.authorization;
+        req.tokenPayload = payload;
+      }
+    }
+
+    next();
+  } catch (error) {
+    // Continue without authentication for optional auth
+    next();
+  }
+};
+
+/**
+ * Refresh token middleware
+ * Checks if access token should be refreshed and does so automatically
+ */
+export const autoRefreshToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const accessToken = tokenService.extractTokenFromHeader(req.headers.authorization) 
+      || req.cookies?.[tokenService.ACCESS_TOKEN_COOKIE];
+    
+    const refreshToken = req.cookies?.[tokenService.REFRESH_TOKEN_COOKIE];
+
+    // If no tokens, skip
+    if (!accessToken || !refreshToken) {
+      return next();
+    }
+
+    // Check if access token should be refreshed
+    if (tokenService.shouldRefreshToken(accessToken)) {
+      try {
+        // Generate new access token
+        const newAccessToken = tokenService.refreshAccessToken(refreshToken);
+        
+        // Attach new token to cookies
+        res.cookie(
+          tokenService.ACCESS_TOKEN_COOKIE,
+          newAccessToken,
+          tokenService.getAccessTokenCookieOptions(newAccessToken)
+        );
+
+        // Also set in response header for client
+        res.setHeader(
+          'X-New-Access-Token',
+          tokenService.createAuthorizationHeader(newAccessToken)
+        );
+      } catch (error) {
+        // If refresh fails, clear cookies and let authentication fail naturally
+        tokenService.clearAuthCookies(res);
+      }
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Verify refresh token middleware
+ * Used specifically for refresh token endpoints
+ */
+export const verifyRefreshToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const refreshToken = req.cookies?.[tokenService.REFRESH_TOKEN_COOKIE] 
+      || req.body.refreshToken;
+
+    if (!refreshToken) {
+      throw new AuthenticationError(
+        'Refresh token is missing.'
+      );
+    }
+
+    if (!tokenService.isValidTokenFormat(refreshToken)) {
+      throw new AuthenticationError(
+        'Invalid refresh token format.'
+      );
+    }
+
+    const verification = tokenService.verifyRefreshToken(refreshToken);
+
+    if (!verification.valid || !verification.payload) {
+      if (verification.expired) {
+        throw new AuthenticationError(
+          'Refresh token has expired. Please login again.'
+        );
+      }
+      throw new AuthenticationError(
+        verification.error || 'Invalid refresh token.'
+      );
+    }
+
+    // Attach payload to request for use in controller
+    req.tokenPayload = verification.payload;
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Permission-based authorization middleware
+ * More granular than role-based authorization
+ * 
+ * @param requiredPermissions - Array of required permissions
+ * @param requireAll - If true, user must have all permissions. If false, any permission is sufficient
+ */
+export const requirePermissions = (
+  requiredPermissions: string[],
+  requireAll = true
+) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      if (!req.user) {
+        throw new AuthenticationError(
+          'Authentication required to access this resource.'
+        );
+      }
+
+      // This assumes you have a permission system in place
+      // You would need to fetch user permissions from database or include in token
+      const userPermissions = req.tokenPayload?.permissions || [];
+
+      const hasPermission = requireAll
+        ? requiredPermissions.every(perm => userPermissions.includes(perm))
+        : requiredPermissions.some(perm => userPermissions.includes(perm));
+
+      if (!hasPermission) {
+        throw new AuthorizationError(
+          `Access denied. Required permission(s): ${requiredPermissions.join(', ')}`
+        );
+      }
+
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+};
+
+/**
+ * Rate limiting by user middleware
+ * Useful for authenticated endpoints
+ */
+export const authenticateWithRateLimit = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  await authenticate(req, res, (error) => {
+    if (error) {
+      return next(error);
+    }
+
+    // Add user-specific rate limiting logic here
+    // This is a placeholder - implement according to your rate limiting strategy
+    const userId = req.user?.userId;
+    if (userId) {
+      // Track requests per user
+      // You could use Redis or similar for distributed rate limiting
+    }
+
+    next();
+  });
+};

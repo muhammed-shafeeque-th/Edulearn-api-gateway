@@ -22,24 +22,43 @@ export interface StandardJwtClaims {
   sub?: string;
 }
 
-export const authenticate = (
+import { TokenService } from '@/services/token.service';
+import { container, TYPES } from '@/services/di';
+
+export const authenticate = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   const token = req.headers.authorization?.split(' ')[1];
-  
+
   if (!token) {
-    throw new AuthenticationError(
-      'Authentication failed: Token is missing or invalid.'
+    return next(
+      new AuthenticationError(
+        'Authentication failed: Token is missing or invalid.'
+      )
     );
   }
   try {
-  
-    const decoded = jwt.verify(
-      token,
-      config.jwt.accessTokenSecret
-    ) as JwtPayload;
+    const tokenService = container.get<TokenService>(TYPES.TokenService);
+    const decoded = tokenService.verifyAccessToken(token) as JwtPayload;
+
+    if (!decoded) {
+      return next(
+        new AuthenticationError('Authentication failed: Invalid token payload.')
+      );
+    }
+
+    // Check for revocation
+    if (decoded.jti) {
+      const isRevoked = await tokenService.isTokenRevoked(decoded.jti);
+      if (isRevoked) {
+        return next(
+          new AuthenticationError('Authentication failed: Token revoked.')
+        );
+      }
+    }
+
     req.user = {
       userId: decoded.userId,
       username: decoded.username,
@@ -48,14 +67,15 @@ export const authenticate = (
       email: decoded.email,
     };
     req.authToken = req.headers.authorization;
+    next();
   } catch (error) {
     next(new AuthenticationError('Authentication failed! Invalid token.'));
   }
-  next();
 };
 
 export const authorize =
-  (roles: USER_ROLE[] = []) => (req: Request, res: Response, next: NextFunction) => {
+  (roles: USER_ROLE[] = []) =>
+  (req: Request, res: Response, next: NextFunction) => {
     if (!req.user || !roles.includes(req.user.role)) {
       throw new AuthorizationError('Access denied for requested resource');
     }

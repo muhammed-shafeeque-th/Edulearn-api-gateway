@@ -34,6 +34,7 @@ import { EnrollmentController } from '@/domains/enrollment/controllers/v1/enroll
 import { WalletController } from '@/domains/wallet/controllers/v1/wallet.controller';
 import { WishlistController } from '@/domains/wishlist/controllers/v1/wishlist.controller';
 import { ChatController } from '@/domains/chat/controllers/v1/chat.controller';
+import { DiscussionController } from '@/domains/chat/controllers/v1/discussion.controller';
 import { MediaController } from '@/domains/media/controllers/v1/media.controller';
 import { UserAccessService } from '../user-blocklist.service';
 import { AdminController } from '@/domains/admin/controllers/v1/admin.controller';
@@ -42,43 +43,40 @@ import { NotificationController } from '@/domains/notification/controllers/v1/no
 
 const container = new Container();
 
-
 // Bind Core Services
 container
   .bind<LoggingService>(TYPES.LoggingService)
-  .toDynamicValue((context) => {
+  .toDynamicValue(context => {
     return LoggingService.getInstance();
   })
   .inSingletonScope();
 container
   .bind<TracingService>(TYPES.TracingService)
-  .toDynamicValue((context) => {
+  .toDynamicValue(context => {
     return TracingService.getInstance();
   })
   .inSingletonScope();
 container
   .bind<MetricsService>(TYPES.MetricsService)
-  .toDynamicValue((context) => {
+  .toDynamicValue(context => {
     return MetricsService.getInstance();
   })
   .inSingletonScope();
 
-
-
 // Bind Infrastructure Services
 container
   .bind<RedisService>(TYPES.RedisService)
-  .toDynamicValue((context) =>RedisService.getInstance())
+  .toDynamicValue(context => RedisService.getInstance())
   .inSingletonScope();
-  container
-    .bind<TokenService>(TYPES.TokenService)
-    .to(TokenService)
-    .inSingletonScope();
-  container
-    .bind<UserAccessService>(TYPES.UserAccessService)
-    .to(UserAccessService)
-    .inSingletonScope();
-  
+container
+  .bind<TokenService>(TYPES.TokenService)
+  .to(TokenService)
+  .inSingletonScope();
+container
+  .bind<UserAccessService>(TYPES.UserAccessService)
+  .to(UserAccessService)
+  .inSingletonScope();
+
 // Bind Domain Services
 container
   .bind<AuthService>(TYPES.AuthService)
@@ -169,6 +167,10 @@ container
 container
   .bind<ChatController>(TYPES.ChatController)
   .to(ChatController)
+  .inTransientScope();
+container
+  .bind<DiscussionController>(TYPES.DiscussionController)
+  .to(DiscussionController)
   .inTransientScope();
 container
   .bind<CartController>(TYPES.CartController)

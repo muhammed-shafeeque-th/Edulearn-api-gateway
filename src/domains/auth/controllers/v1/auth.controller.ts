@@ -17,7 +17,7 @@ import { changePasswordSchema } from '../../schemas/change-password.schema';
 import { BloomFilterFacade } from '@/services/bloom-filter';
 import { forgotPasswordSchema } from '../../schemas/forgot-password.schema';
 import { authRefreshToken } from '../../utils/constants';
-import { attachCookies, clearCookies } from '../../utils/manage-cookies copy'; 
+import { attachCookies, clearCookies } from '../../utils/manage-cookies copy';
 import { resetPasswordSchema } from '../../schemas/reset-password.schema';
 import { attachMetadata } from '../../utils/attach-metadata';
 import { AUTH_MESSAGES } from '../../utils/resposne-messages';
@@ -35,7 +35,7 @@ export class AuthController {
     private notificationService: NotificationService
   ) {}
 
-  // Lazy getter for BloomFilterFacade 
+  // Lazy getter for BloomFilterFacade
   private get emailAvailabilityService(): BloomFilterFacade {
     if (!this._emailAvailabilityService) {
       this.logger.debug('Initializing BloomFilterFacade...');
@@ -47,7 +47,7 @@ export class AuthController {
   @Trace('AuthController.registerUser')
   @MonitorGrpc('AuthService', 'RegisterUser')
   async registerUser(req: Request, res: Response) {
-    this.logger.info(`Processing grpc method 'registerUser'`);
+    this.logger.debug(`Processing grpc method 'registerUser'`);
 
     const { email, password, role, avatar, firstName, lastName, authType } =
       validateSchema(req.body, RegisterUserSchema)!;

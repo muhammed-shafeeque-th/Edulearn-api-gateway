@@ -4,7 +4,6 @@ import {
 import { z, ZodType } from 'zod';
 
 export const addReactionSchema: ZodType<AddReactionRequest> = z.object({
-  /** user sending message */
   messageId: z.string().uuid(),
   userId: z.string().uuid(),
   emoji: z.string(),

@@ -50,14 +50,23 @@ import {
   CreateSectionRequest,
 } from './proto/generated/course/types/section';
 import { CourseServiceClient } from './proto/generated/course_service';
-import { GetCoursesStatsResponse, GetInstructorCourseRatingStatsRequest, GetInstructorCourseRatingStatsResponse, GetInstructorCoursesStatsRequest, GetInstructorCoursesStatsResponse } from './proto/generated/course/types/stats';
+import {
+  GetCoursesStatsResponse,
+  GetInstructorCourseRatingStatsRequest,
+  GetInstructorCourseRatingStatsResponse,
+  GetInstructorCoursesStatsRequest,
+  GetInstructorCoursesStatsResponse,
+} from './proto/generated/course/types/stats';
 import { Empty } from './proto/generated/course/common';
 
+import { injectable } from 'inversify';
+
+@injectable()
 export class CourseService {
   private readonly client: GrpcClient<CourseServiceClient>;
   private static instance: CourseService;
 
-  private constructor() {
+  public constructor() {
     const [host = 'localhost', port = '50052'] =
       config.grpc.services.courseService.split(':');
 
@@ -86,7 +95,9 @@ export class CourseService {
     });
   }
 
-  // Singleton pattern
+  /**
+   * @deprecated Use Dependency Injection
+   */
   public static getInstance(): CourseService {
     if (!CourseService.instance) {
       CourseService.instance = new CourseService();
@@ -378,7 +389,7 @@ export class CourseService {
     );
     return response as QuizzesResponse;
   }
-  
+
   // Stats
   async getInstructorCoursesStats(
     request: GetInstructorCoursesStatsRequest,
@@ -402,7 +413,7 @@ export class CourseService {
     );
     return response as GetCoursesStatsResponse;
   }
-  
+
   async getInstructorCourseRatingStats(
     request: GetInstructorCourseRatingStatsRequest,
     options: GrpcClientOptions = {}

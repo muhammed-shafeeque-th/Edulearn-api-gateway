@@ -22,7 +22,7 @@ export class OrderService {
   private readonly client: GrpcClient<OrderServiceClient>;
   private static instance: OrderService;
 
-  private constructor() {
+  public constructor() {
     const [host = 'localhost', port = '50054'] =
       config.grpc.services.orderService.split(':');
 
@@ -41,7 +41,9 @@ export class OrderService {
     });
   }
 
-  // Singleton pattern
+  /**
+   * @deprecated Use Dependency Injection
+   */
   public static getInstance(): OrderService {
     if (!OrderService.instance) {
       OrderService.instance = new OrderService();

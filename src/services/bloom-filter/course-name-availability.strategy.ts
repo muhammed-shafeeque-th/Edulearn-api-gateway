@@ -16,7 +16,7 @@ export class CourseNameAvailabilityStrategy extends BaseBloomFilterStrategy {
 
   protected async seedFromDatabase(): Promise<void> {
     try {
-      this.logger.info('Seeding course name bloom filter from database...', {
+      this.logger.debug('Seeding course name bloom filter from database...', {
         ctx: CourseNameAvailabilityStrategy.name,
       });
 
@@ -37,7 +37,7 @@ export class CourseNameAvailabilityStrategy extends BaseBloomFilterStrategy {
             },
             filters: {
               category: [],
-              level: []
+              level: [],
             },
           },
         });
@@ -68,7 +68,7 @@ export class CourseNameAvailabilityStrategy extends BaseBloomFilterStrategy {
           page++;
         }
 
-        // Safety check to prevent infinite loops
+        // check to prevent infinite loops
         if (page > 100) {
           this.logger.warn(
             'Reached maximum page limit while seeding course names',
@@ -81,7 +81,7 @@ export class CourseNameAvailabilityStrategy extends BaseBloomFilterStrategy {
         }
       }
 
-      this.logger.info(
+      this.logger.debug(
         `Seeding ${allCourseNames.length} course names to bloom filter`,
         {
           ctx: CourseNameAvailabilityStrategy.name,
@@ -96,7 +96,7 @@ export class CourseNameAvailabilityStrategy extends BaseBloomFilterStrategy {
 
       await this.persistFilter();
 
-      this.logger.info('Course name bloom filter seeded successfully', {
+      this.logger.debug('Course name bloom filter seeded successfully', {
         ctx: CourseNameAvailabilityStrategy.name,
         count: allCourseNames.length,
       });
@@ -132,7 +132,7 @@ export class CourseNameAvailabilityStrategy extends BaseBloomFilterStrategy {
             },
             filters: {
               category: [],
-              level: []
+              level: [],
             },
           },
         });

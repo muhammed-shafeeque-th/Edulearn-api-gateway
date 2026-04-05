@@ -2,8 +2,6 @@ import { RemoveReactionRequest } from '@/domains/service-clients/chat/proto/gene
 import { z, ZodType } from 'zod';
 
 export const removeReactionSchema: ZodType<RemoveReactionRequest> = z.object({
-  conversationId: z.string().uuid(),
-  /** user sending message */
   messageId: z.string().uuid(),
   userId: z.string().uuid(),
   reactionId: z.string().uuid(),

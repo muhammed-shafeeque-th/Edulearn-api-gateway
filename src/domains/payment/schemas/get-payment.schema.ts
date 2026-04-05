@@ -2,7 +2,7 @@ import { GetPaymentRequest } from '@/domains/service-clients/payment/proto/gener
 import { z, ZodType } from 'zod';
 
 export const getPaymentSchema: ZodType<GetPaymentRequest> = z.object({
-  paymentId: z.string(),
+  paymentId: z.string().uuid(),
 });
 
 export type GetPaymentSchemaType = z.infer<typeof getPaymentSchema>;
