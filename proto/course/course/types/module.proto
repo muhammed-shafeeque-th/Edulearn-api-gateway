@@ -1,13 +1,13 @@
 syntax = "proto3";
 
-package course.section;
+package course.module;
 
 import "course/common.proto";
 import "course/types/quiz.proto";
 import "course/types/lesson.proto";
 
-// Section Messages
-message CreateSectionRequest {
+// Module Messages
+message CreateModuleRequest {
   string course_id = 1;
   string user_id = 11;
   string title = 2;
@@ -16,12 +16,12 @@ message CreateSectionRequest {
   bool is_published = 5;
 }
 
-message GetSectionRequest {
-  string section_id = 1;
+message GetModuleRequest {
+  string module_id = 1;
 }
 
-message UpdateSectionRequest {
-  string section_id = 1;
+message UpdateModuleRequest {
+  string module_id = 1;
   string user_id = 11;
   string course_id = 10;
   string title = 2;
@@ -30,17 +30,17 @@ message UpdateSectionRequest {
   int32 order = 4;
 }
 
-message DeleteSectionRequest {
-  string section_id = 1;
+message DeleteModuleRequest {
+  string module_id = 1;
   string course_id = 3;
   string user_id = 2;
 }
 
-message GetSectionsByCourseRequest {
+message GetModulesByCourseRequest {
   string course_id = 1;
 }
 
-message SectionData {
+message ModuleData {
   string id = 1;
   string course_id = 2;
   string title = 3;
@@ -54,25 +54,25 @@ message SectionData {
   course.quiz.QuizData quiz = 11;
 }
 
-message SectionResponse {
+message ModuleResponse {
   oneof result {
-    SectionData section = 1;
+    ModuleData module = 1;
     course.common.Error error = 2;
   }
 }
 
-message SectionsData {
-  repeated SectionData sections = 1;
+message ModulesData {
+  repeated ModuleData modules = 1;
 }
 
-message SectionsResponse {
+message ModulesResponse {
   oneof result {
-    SectionsData sections = 1;
+    ModulesData modules = 1;
     course.common.Error error = 2;
   }
 }
 
-message DeleteSectionResponse {
+message DeleteModuleResponse {
   oneof result {
     course.common.DeleteSuccess success = 1;
     course.common.Error error = 2;
