@@ -1,4 +1,4 @@
-import { ValidationError } from '@/shared/utils/errors/validation-error';
+import { ValidationError } from '@/shared/errors/validation-error';
 import { ZodError, ZodType } from 'zod';
 
 export default function validateSchema<T extends ZodType>(
