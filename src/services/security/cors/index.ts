@@ -7,8 +7,14 @@ const allowedMethods = config.cors.allowedMethods;
 
 export const corsOptions: CorsOptions = {
   origin: (requestOrigin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!requestOrigin) return callback(null, true);
+    // In development allow requests with no origin (curl, Postman, mobile).
+    // In production all requests must originate from an allowed origin.
+    if (!requestOrigin) {
+      if (process.env.NODE_ENV !== 'production') {
+        return callback(null, true);
+      }
+      return callback(new Error('CORS policy violation: origin required in production'));
+    }
 
     if (allowedOrigins.includes(requestOrigin)) {
       callback(null, true);
@@ -24,7 +30,11 @@ export const corsOptions: CorsOptions = {
     'X-Requested-With',
     'X-Request-ID',
     'Idempotency-Key',
+    'X-CSRF-Token',
   ],
+  // Expose rate-limit and retry headers so clients can handle throttling gracefully
+  exposedHeaders: ['X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset', 'Retry-After'],
   optionsSuccessStatus: HttpStatus.NO_CONTENT,
   maxAge: 86400, // 24 hours
 };
+
