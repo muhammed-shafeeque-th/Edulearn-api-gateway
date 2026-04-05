@@ -1,4 +1,4 @@
-import { WorkerService } from "../../services/worker.service";
+import { WorkerService } from "../media/worker.service";
 
 export interface UploadImageResponseDto {
   image: string;

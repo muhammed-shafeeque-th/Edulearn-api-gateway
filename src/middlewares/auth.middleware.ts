@@ -1,86 +1,160 @@
 import { config } from '@/config';
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { AuthenticationError } from '@/shared/utils/errors/unauthenticate.error';
-import { AuthorizationError } from '@/shared/utils/errors/unauthorize.error';
-import { USER_ROLE } from '@/shared/types/user-types';
+import jwt, { JwtPayload } from 'jsonwebtoken';
+import { AuthenticationError } from '@/shared/errors/unauthenticate.error';
+import { AuthorizationError } from '@/shared/errors/unauthorize.error';
+import { Permissions } from '@/shared/types';
+import { AccountBlockedError } from '@/shared/errors/account-blocked.error';
+import { InstructorAccessDeniedError } from '@/shared/errors/instructor-access-denied.error';
 
-type JwtPayload = {
+type JWTPayload = {
   username: string;
   email: string;
   userId: string;
-  role: string;
+  roles: string[];
+  permissions: string[];
   avatar?: string;
-} & StandardJwtClaims;
+} & JwtPayload;
 
-export interface StandardJwtClaims {
-  iat: number;
-  iss: string;
-  aud: string;
-  jti: string;
-  exp?: number;
-  sub?: string;
+import { TokenService } from '@/services/auth-token/token.service';
+import { container, TYPES } from '@/services/di';
+import { AccountAccessService } from '@/services/account-access.service';
+import { USER_ROLE } from '@/domains/auth/v1/types';
+
+interface AuthGuardOptions {
+  roles?: USER_ROLE[];
+  permissions?: Permissions[];
 }
 
-import { TokenService } from '@/services/token.service';
-import { container, TYPES } from '@/services/di';
+export const authGuard =
+  (options?: AuthGuardOptions) =>
+  async (req: Request, res: Response, next: NextFunction) => {
+    const token = req.headers.authorization?.split(' ')[1];
 
-export const authenticate = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const token = req.headers.authorization?.split(' ')[1];
-
-  if (!token) {
-    return next(
-      new AuthenticationError(
-        'Authentication failed: Token is missing or invalid.'
-      )
-    );
-  }
-  try {
-    const tokenService = container.get<TokenService>(TYPES.TokenService);
-    const decoded = tokenService.verifyAccessToken(token) as JwtPayload;
-
-    if (!decoded) {
+    if (!token) {
       return next(
-        new AuthenticationError('Authentication failed: Invalid token payload.')
+        new AuthenticationError(
+          'Authentication failed: Token is missing or invalid.'
+        )
       );
     }
 
-    // Check for revocation
-    if (decoded.jti) {
-      const isRevoked = await tokenService.isTokenRevoked(decoded.jti);
-      if (isRevoked) {
+    try {
+      const tokenService = container.get<TokenService>(TYPES.TokenService);
+      const accessService = container.get<AccountAccessService>(
+        TYPES.AccountAccessService
+      );
+      const decoded = tokenService.verifyAccessToken(token) as JWTPayload;
+
+      if (!decoded) {
         return next(
-          new AuthenticationError('Authentication failed: Token revoked.')
+          new AuthenticationError(
+            'Authentication failed: Invalid token payload.'
+          )
         );
       }
+
+      if (decoded.jti) {
+        const isRevoked = await tokenService.isTokenRevoked(decoded.jti);
+        if (isRevoked) {
+          return next(
+            new AuthenticationError('Authentication failed: Token revoked.')
+          );
+        }
+      }
+
+      // High-performance Redis check for global revocation (immediate blocking)
+      const isUserBlocked = await accessService.isAccountBlocked(
+        decoded.userId
+      );
+      if (isUserBlocked) {
+        return next(new AccountBlockedError());
+      }
+
+      req.user = {
+        userId: decoded.userId,
+        username: decoded.username,
+        avatar: decoded.avatar,
+        roles: (decoded.roles || [decoded.role]) as USER_ROLE[],
+        email: decoded.email,
+        permissions: decoded.permissions || [],
+      };
+      req.authToken = req.headers.authorization;
+
+      // RBAC & ABAC Enforcement check
+      if (options?.roles && options.roles.length > 0) {
+        const hasRole = options.roles.some(r => req.user!.roles.includes(r));
+        if (!hasRole) {
+          return next(
+            new AuthorizationError('Access denied for requested resource')
+          );
+        }
+        const roleChecks = await Promise.all(
+          options.roles.map(async r => {
+            // Check Redis for real-time revocation
+            const isRoleBlocked = await accessService.isUserRoleBlocked(
+              req.user!.userId,
+              r
+            );
+            return !isRoleBlocked;
+          })
+        );
+
+        const hasActiveMatchedRole = roleChecks.every(active => active);
+
+        if (!hasActiveMatchedRole) {
+          // If the route specifically required instructor and it's failing due to a block
+          if (options.roles.includes('instructor' as USER_ROLE)) {
+            return next(new InstructorAccessDeniedError());
+          }
+
+          return next(
+            new AuthorizationError(
+              'Access denied: Matching role(s) have been blocked.'
+            )
+          );
+        }
+      }
+
+      if (options?.permissions && options.permissions.length > 0) {
+        const hasPerm = options.permissions.every(p =>
+          req.user!.permissions?.includes(p)
+        );
+        if (!hasPerm) {
+          return next(
+            new AuthorizationError('Access denied: Insufficient Permissions')
+          );
+        }
+      }
+
+      next();
+    } catch (error) {
+      next(new AuthenticationError('Authentication failed! Invalid token.'));
+    }
+  };
+
+export const authenticate = authGuard();
+
+export const authorize = (roles: USER_ROLE[] = []) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return next(
+        new AuthorizationError('Access denied for requested resource')
+      );
     }
 
-    req.user = {
-      userId: decoded.userId,
-      username: decoded.username,
-      avatar: decoded.avatar,
-      role: decoded.role as USER_ROLE,
-      email: decoded.email,
-    };
-    req.authToken = req.headers.authorization;
-    next();
-  } catch (error) {
-    next(new AuthenticationError('Authentication failed! Invalid token.'));
-  }
-};
-
-export const authorize =
-  (roles: USER_ROLE[] = []) =>
-  (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      throw new AuthorizationError('Access denied for requested resource');
+    const hasRole = roles.some(r => req.user!.roles.includes(r));
+    if (!hasRole) {
+      return next(
+        new AuthorizationError('Access denied for requested resource')
+      );
     }
+
+    // Since this is the legacy wrapper, it doesn't await Redis checks.
+    // The authGuard middleware already handles the real-time Redis checks above.
     next();
   };
+};
 
 /**
    * export const authenticate = async (

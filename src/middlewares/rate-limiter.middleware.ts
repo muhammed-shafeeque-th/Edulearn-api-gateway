@@ -1,11 +1,18 @@
-import { Request, Response, NextFunction } from "express";
-import { RateLimiter } from "@/shared/utils/rate-limiter";
+import { Request, Response, NextFunction } from 'express';
+import { RateLimiter } from '@/services/security/ratelimiter/rate-limiter';
+import { RateLimiterRes } from 'rate-limiter-flexible';
 
 export interface RateLimiterMiddlewareOptions {
-  points?: number; // max requests
-  duration?: number; // per duration in seconds
+  /** Max requests allowed within the window */
+  points?: number;
+  /** Window size in seconds */
+  duration?: number;
+  /** Redis key prefix (should be unique per route) */
   keyPrefix?: string;
-  getKey?: (req: Request) => string; // function to extract unique key (e.g., IP)
+  /** Seconds to block key after points exhausted (optional) */
+  blockDuration?: number;
+  /** Custom key extractor — defaults to req.user?.userId ?? req.ip */
+  getKey?: (req: Request) => string | undefined;
 }
 
 export function rateLimiter(options: RateLimiterMiddlewareOptions = {}) {
@@ -13,30 +20,46 @@ export function rateLimiter(options: RateLimiterMiddlewareOptions = {}) {
     points: options.points,
     duration: options.duration,
     keyPrefix: options.keyPrefix,
+    blockDuration: options.blockDuration,
   });
-  const getKey = options.getKey || ((req) => req.ip);
 
-  return async (req: Request, res: Response, next: NextFunction) => {
-    const key = req.user?.userId || getKey(req);
-    console.info("rate-limiter-key -> " + key);
+  const defaultGetKey = (req: Request): string =>
+    req.user?.userId ?? req.ip ?? 'unknown';
+
+  const getKey = options.getKey ?? defaultGetKey;
+
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const key = getKey(req) ?? 'unknown';
+
     try {
-      await limiter.consume(key!);
-      // Optionally, set rate limit headers
-      res.setHeader("X-RateLimit-Limit", options.points || 100);
+      const result: RateLimiterRes = await limiter.consume(key);
+      const limit = options.points ?? 100;
+
+      res.setHeader('X-RateLimit-Limit', limit);
+      res.setHeader('X-RateLimit-Remaining', result.remainingPoints);
+      // msBeforeNext is how long until the window resets, convert to seconds
+      res.setHeader('X-RateLimit-Reset', Math.ceil(result.msBeforeNext / 1000));
 
       next();
-    } catch (err: any) {
-      // Too Many Requests
-      res.setHeader("Retry-After", options.duration?.toString() || "60");
+    } catch (err: unknown) {
+      const rateLimitErr = err as RateLimiterRes;
+      const retryAfterSecs = rateLimitErr?.msBeforeNext
+        ? Math.ceil(rateLimitErr.msBeforeNext / 1000)
+        : (options.duration ?? 60);
+
+      res.setHeader('Retry-After', retryAfterSecs);
+      res.setHeader('X-RateLimit-Limit', options.points ?? 100);
+      res.setHeader('X-RateLimit-Remaining', 0);
+
       res.status(429).json({
-        status: "error",
+        success: false,
+        message: 'Too many requests. Please try again later.',
         error: {
-          errorCode: "TOO_MANY_REQUESTS",
-          message: "Too many requests, please try again later.",
+          code: 'TOO_MANY_REQUESTS',
+          message: 'Too many requests. Please try again later.',
+          retryAfter: retryAfterSecs,
         },
       });
-
-      console.warn(`Rate limit exceeded for key: ${key}`);
     }
   };
 }

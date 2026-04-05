@@ -20,6 +20,10 @@ message GetInstructorCourseRatingStatsRequest {
     string course_id = 1;
     string instructor_id = 2;
 }
+message GetInstructorCourseRevenueSummeryRequest {
+    string course_id = 1;
+    string instructor_id = 2;
+}
 
 message RatingsBreakDown {
   int32 _1 = 1; 
@@ -76,6 +80,9 @@ message InstructorCoursesStats {
     int32 total_students = 4;
     int32 average_rating = 5;
     int32 average_revenue = 6;
+    int32 total_hours_taught = 7;
+    int32 total_reviews = 8;
+    int32 enrollment_growth = 9;
 }
 
 message InstructorCourseEnrollmentSummery {
@@ -98,6 +105,13 @@ message InstructorCoursesEnrollmentSummery {
     int32 total_earnings = 2;
     int32 avg_completion = 3;
     int32 active_students = 4;
+    int32 enrollment_growth = 5;
+}
+message InstructorCourseRevenueSummery {
+     int32 total_revenue = 1;
+    int32 avg_revenue = 2;
+    int32 this_month_revenue = 3;
+    int32 revenue_growth = 4;
 }
 
 message GetInstructorCourseEnrollmentTrendRequest {
@@ -140,6 +154,12 @@ message GetRevenueStatsResponse {
   }
 }
 
+message GetInstructorCourseRevenueSummeryResponse {
+  oneof result {
+    InstructorCourseRevenueSummery success = 1;
+    course.common.Error error = 2;
+  }
+}
 message GetInstructorCoursesEnrollmentSummeryResponse {
   oneof result {
     InstructorCoursesEnrollmentSummery success = 1;

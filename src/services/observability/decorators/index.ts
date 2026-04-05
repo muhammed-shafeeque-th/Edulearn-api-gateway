@@ -1,11 +1,11 @@
-import { SpanStatusCode } from "@opentelemetry/api";
-import { TracingService } from "../tracing/trace.service";
-import { MetricsService } from "../metrics/metrics.service";
-import { LoggingService } from "../logging/logging.service";
+import { SpanStatusCode } from '@opentelemetry/api';
+import { TracingService } from '../tracing/trace.service';
+import { MetricsService } from '../metrics/metrics.service';
+import { LoggingService } from '../logging/logging.service';
 
 export interface TraceOptions {
-  name?: string; // custom span name
-  attributes?: Record<string, any>; // attributes to attach
+  name?: string;
+  attributes?: Record<string, any>;
 }
 
 /**
@@ -20,7 +20,7 @@ export function TraceSpan(options: TraceOptions = {}): MethodDecorator {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {
-      const tracer = TracingService .getInstance();
+      const tracer = TracingService.getInstance();
       const spanName = options.name || propertyKey.toString();
       const attributes = {
         ...options.attributes,
@@ -55,15 +55,11 @@ export function TraceSpan(options: TraceOptions = {}): MethodDecorator {
   };
 }
 
-
 export interface TraceOptions {
-  name?: string; // custom span name
-  attributes?: Record<string, any>; // attributes to attach
+  name?: string;
+  attributes?: Record<string, any>;
 }
 
-/**
- * Method decorator to trace execution
- */
 export function traceSpan(options: TraceOptions = {}): MethodDecorator {
   return function (
     target: Object,
@@ -108,7 +104,6 @@ export function traceSpan(options: TraceOptions = {}): MethodDecorator {
   };
 }
 
-
 interface ObservabilityOptions {
   spanName?: string;
   metricName?: string;
@@ -116,9 +111,6 @@ interface ObservabilityOptions {
   attributes?: Record<string, any>;
 }
 
-/**
- * Method decorator for unified Observability (Tracing + Metrics + Logging)
- */
 export function observe(options: ObservabilityOptions = {}): MethodDecorator {
   return function (
     target: Object,
@@ -141,20 +133,18 @@ export function observe(options: ObservabilityOptions = {}): MethodDecorator {
       };
 
       const metricName = options.metricName || 'http_request_duration_seconds';
-      const startTime = process.hrtime(); // for latency measurement
+      const startTime = process.hrtime();
 
       return tracing.startActiveSpan(
         spanName,
         async span => {
           try {
-             logger.info(`Executing ${spanName}`, {
-                ctx: `${target.constructor.name}.${String(propertyKey)}`,
-                // args,
-              });
-            // Run original method
+            logger.debug(`Executing ${spanName}`, {
+              ctx: `${target.constructor.name}.${String(propertyKey)}`,
+            });
+
             const result = await originalMethod.apply(this, args);
 
-            // Measure duration (ms)
             const diff = process.hrtime(startTime);
             const durationSeconds = diff[0] + diff[1] / 1e9;
 
@@ -169,10 +159,9 @@ export function observe(options: ObservabilityOptions = {}): MethodDecorator {
             });
 
             if (options.logLevel === 'debug' || options.logLevel === 'info') {
-              logger.info(`Execution completed for  ${spanName}`, {
+              logger.debug(`Execution completed for  ${spanName}`, {
                 ctx: `${target.constructor.name}.${String(propertyKey)}`,
                 duration: durationSeconds,
-                // args,
               });
             }
 
@@ -184,19 +173,15 @@ export function observe(options: ObservabilityOptions = {}): MethodDecorator {
               message: error.message,
             });
 
-            // Increment error metrics
             metrics.incrementHttpErrorCounter(
               'unknown',
               target.constructor.name,
               500
             );
 
-            // Log error
             logger.error(`Error in ${spanName}`, {
               ctx: `${target.constructor.name}.${String(propertyKey)}`,
               error: error.message,
-            //   stack: error.stack,
-            //   args,
             });
 
             throw error;

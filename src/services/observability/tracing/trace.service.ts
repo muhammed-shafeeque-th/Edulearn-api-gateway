@@ -6,15 +6,18 @@ import {
   Attributes,
   SpanStatusCode,
   Context,
-} from '@opentelemetry/api'; // Import Tracer and SpanStatusCode
+} from '@opentelemetry/api';
 import { config } from 'config';
 
+import { injectable } from 'inversify';
+
+@injectable()
 export class TracingService {
-  private static instance: TracingService; // Follow a singleton pattern
-  private tracer: Tracer; // Explicitly type the tracer
+  private static instance: TracingService;
+  private tracer: Tracer;
 
   private constructor() {
-    this.tracer = trace.getTracer(config.serviceName || 'api-gateway'); // Initialize tracer with service name
+    this.tracer = trace.getTracer(config.serviceName || 'api-gateway');
   }
 
   public static getInstance(): TracingService {
@@ -24,7 +27,6 @@ export class TracingService {
     return TracingService.instance;
   }
 
-  // Starts a new span and makes it active in the current context
   startActiveSpan<T>(
     name: string,
     fn: (span: Span) => T | Promise<T>,
@@ -89,11 +91,10 @@ export class TracingService {
 
   recordException(span: Span, error: any): void {
     span.recordException(error);
-    span.setStatus({ code: SpanStatusCode.ERROR, message: error.message }); // Set span status to ERROR on exception
+    span.setStatus({ code: SpanStatusCode.ERROR, message: error.message });
   }
 
   setStatus(span: Span, code: SpanStatusCode, message?: string): void {
-    // Use OpenTelemetry SpanStatusCode
     span.setStatus({ code, message });
   }
 
@@ -101,7 +102,6 @@ export class TracingService {
     span.setAttribute(key, value);
   }
 
-  // Get the current active span
   getCurrentSpan(): Span | undefined {
     return trace.getSpan(context.active());
   }

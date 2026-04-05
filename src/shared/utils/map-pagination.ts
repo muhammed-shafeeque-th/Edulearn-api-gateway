@@ -1,4 +1,4 @@
-import { Pagination } from '../types';
+import { Pagination } from '../types/api-response';
 
 export type PaginationLike = { pageSize: number; page: number };
 
@@ -7,20 +7,20 @@ export function mapPaginationResponse<
 >(pagination: T, totalItems?: number): Pagination {
   const total =
     typeof totalItems === 'number' &&
-    Number.isFinite(totalItems) &&
-    totalItems > 0
+      Number.isFinite(totalItems) &&
+      totalItems > 0
       ? Math.floor(totalItems)
       : 0;
   const pageSize =
     typeof pagination.pageSize === 'number' &&
-    Number.isFinite(pagination.pageSize) &&
-    pagination.pageSize > 0
+      Number.isFinite(pagination.pageSize) &&
+      pagination.pageSize > 0
       ? Math.floor(pagination.pageSize)
       : 10; // Default to 10 per page for UX
   const page =
     typeof pagination.page === 'number' &&
-    Number.isFinite(pagination.page) &&
-    pagination.page > 0
+      Number.isFinite(pagination.page) &&
+      pagination.page > 0
       ? Math.floor(pagination.page)
       : 1;
 
