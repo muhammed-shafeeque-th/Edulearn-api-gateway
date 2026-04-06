@@ -1,6 +1,6 @@
 import { asyncHandler } from '@/shared/utils/async-handler';
 import { cacheMiddleware } from '@/middlewares/cache.middleware';
-import { PaymentController } from '../../controllers/v1/payment.controller';
+import { PaymentController } from '../controllers';
 import { Router } from 'express';
 import { container, TYPES } from '@/services/di';
 

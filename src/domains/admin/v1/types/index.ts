@@ -1,20 +1,4 @@
-import { UserInfo } from "../../service-clients/user/proto/generated/user";
-
-export interface IUser {
-  id: string;
-  email: string;
-  role: UserRoles;
-  firstName?: string;
-  lastName?: string;
-  password?: string;
-  status: UserStatus;
-  avatar?: string;
-  authType?: AuthType;
-  phone?: string;
-  lastLogin?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { UserInfo } from "@/domains/user/v1/types";
 
 export interface IRefreshToken {
   id: string;
@@ -49,6 +33,3 @@ export enum AuthType {
   OAUTH_2 = "oauth-2",
 }
 
-export interface IUserWithAuthToken extends IAuthTokens {
-  user: UserInfo;
-}

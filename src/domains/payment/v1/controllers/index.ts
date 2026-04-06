@@ -1,6 +1,6 @@
 import { UserService } from '../../../service-clients/user';
 import { Request, Response } from 'express';
-import validateSchema from '../../../../services/validate-schema';
+import validateSchema from '../../../../services/security/validate-schema';
 
 import { HttpStatus } from '@/shared/constants/http-status';
 import { ResponseWrapper } from '@/shared/utils/response-wrapper';
@@ -8,16 +8,16 @@ import { NotificationService } from '@/domains/service-clients/notification';
 import { CourseService } from '@/domains/service-clients/course';
 import { Observe } from '@/services/observability/decorators';
 import { PaymentService } from '@/domains/service-clients/payment';
-import { attachMetadata } from '../../utils/attach-metadata';
+import { attachMetadata } from '../utils/attach-metadata';
 import { CreateProviderSessionResponse } from '@/domains/service-clients/payment/proto/generated/payment_service';
 import {
   createPaymentSchema,
   createProviderSessionSchema,
-} from '../../schemas/create-payment.schema';
-import { resolvePaymentSchema } from '../../schemas/resolve-payment.schema';
-import { cancelPaymentSchema } from '../../schemas/cancel-payment.schema';
-import { getPaymentSchema } from '../../schemas/get-payment.schema';
-import { PAYMENT_MESSAGES } from '../../utils/resposne-messages';
+} from '../schemas/create-payment.schema';
+import { resolvePaymentSchema } from '../schemas/resolve-payment.schema';
+import { cancelPaymentSchema } from '../schemas/cancel-payment.schema';
+import { getPaymentSchema } from '../schemas/get-payment.schema';
+import { PAYMENT_MESSAGES } from '../utils/resposne-messages';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '@/services/di';
 
@@ -26,7 +26,7 @@ import { TYPES } from '@/services/di';
 export class PaymentController {
   constructor(
     @inject(TYPES.PaymentService) private paymentServiceClient: PaymentService
-  ) {}
+  ) { }
 
   async createPayment(req: Request, res: Response) {
     const validPayload = validateSchema(
@@ -152,20 +152,16 @@ export class PaymentController {
       .success(success, PAYMENT_MESSAGES.PAYMENT_VERIFIED.message);
   }
 
-  // Future  Methods
-
   async refundPayment(req: Request, res: Response) {
-    // Implementation for future
+    //TODO: Implementation for future
     return new ResponseWrapper(res)
       .status(PAYMENT_MESSAGES.PAYMENT_REFUNDED.statusCode)
       .success({}, PAYMENT_MESSAGES.PAYMENT_REFUNDED.message);
   }
 
-  /**
-   * For demonstration: Update payment status (future)
-   */
+  
   async updatePaymentStatus(req: Request, res: Response) {
-    // Implementation for future
+    //TODO: Implementation for future
     return new ResponseWrapper(res)
       .status(PAYMENT_MESSAGES.PAYMENT_STATUS_UPDATED.statusCode)
       .success({}, PAYMENT_MESSAGES.PAYMENT_STATUS_UPDATED.message);
