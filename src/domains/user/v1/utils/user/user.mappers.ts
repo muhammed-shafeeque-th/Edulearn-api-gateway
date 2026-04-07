@@ -1,5 +1,8 @@
-import { UserData, UserMeta } from '@/domains/service-clients/user/proto/generated/user/types/user_types';
-import { InstructorMetadata, User, UserInfo, UserMetadata } from '../types';
+import {
+  UserData,
+  UserMeta,
+} from '@/domains/service-clients/user/proto/generated/user/types/user_types';
+import { InstructorMetadata, User, UserInfo, UserMetadata } from '../../types';
 import { InstructorMeta } from '@/domains/service-clients/user/proto/generated/user/types/instructor_types';
 
 export class UserResponseMapper {
@@ -51,12 +54,17 @@ export class UserResponseMapper {
           }
         : undefined,
       updatedAt: user.updatedAt,
+      roleStatus: user.roleStatus,
     };
   }
-  public static toUserInfo(user: UserData | UserMeta): UserInfo {
+  public static toUserInfo(
+    user: UserData | UserMeta | InstructorMeta
+  ): UserInfo {
     return {
       email: user.email,
-      name: user.firstName + ' ' + user.lastName,
+      name:
+        (user as InstructorMeta).username ??
+        (user as UserMeta).firstName + ' ' + (user as UserMeta).lastName,
       id: user.id,
       role: user.role as any,
       avatar: user.avatar,
@@ -79,6 +87,7 @@ export class UserResponseMapper {
       id: user.id,
       role: user.role as any,
       avatar: user.avatar,
+      roleStatus: user.roleStatus,
     };
   }
   public static toInstructorMetadata(user: InstructorMeta): InstructorMetadata {
@@ -106,8 +115,7 @@ export class UserResponseMapper {
       id: user.id,
       role: user.role,
       avatar: user.avatar,
+      roleStatus: user.roleStatus,
     };
   }
-
-
 }
