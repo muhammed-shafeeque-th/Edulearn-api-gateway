@@ -2,7 +2,7 @@ import {
   WishlistData,
   WishlistItemData,
 } from '@/domains/service-clients/user/proto/generated/user/types/wishlist_types';
-import { Wishlist, WishlistItem } from '../types';
+import { Wishlist, WishlistItem } from '../../types/wishlist';
 
 export class WishlistResponseMapper {
   public static toWishlist = (dto: WishlistData): Wishlist | undefined => {

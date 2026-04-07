@@ -1,29 +1,24 @@
 import { Request, Response } from 'express';
-import validateSchema from '../../../../services/validate-schema';
+import validateSchema from '../../../../services/security/validate-schema';
 
 import { ResponseWrapper } from '@/shared/utils/response-wrapper';
 import { NotificationService } from '@/domains/service-clients/notification';
 import { CourseService } from '@/domains/service-clients/course';
 import { Observe } from '@/services/observability/decorators';
-import { getUserWishlistSchema } from '../../schemas/get-user-wishlist.schema';
-import { Wishlist, WishlistItem } from '../../types';
-import { addToWishlistSchema } from '../../schemas/add-to-wishlist.schema';
-import { removeFromWishlistSchema } from '../../schemas/remove-from-wishlist.schema';
-import {
-  WishlistData,
-  WishlistItemData,
-} from '@/domains/service-clients/user/proto/generated/user/types/wishlist_types';
-import { toggleWishlistItemSchema } from '../../schemas/toggle-wishlist.schema';
-import { attachMetadata } from '../../utils/attach-metadata';
+import { getUserWishlistSchema } from '../schemas/wishlist/get-user-wishlist.schema';
+import { addToWishlistSchema } from '../schemas/wishlist/add-to-wishlist.schema';
+import { removeFromWishlistSchema } from '../schemas/wishlist/remove-from-wishlist.schema';
+import { toggleWishlistItemSchema } from '../schemas/wishlist/toggle-wishlist.schema';
+import { attachMetadata } from '../utils/attach-metadata';
 import { mapPaginationResponse } from '@/shared/utils/map-pagination';
 import {
   CourseData,
   CourseMetadata,
 } from '@/domains/service-clients/course/proto/generated/course/types/course';
-import { WISHLIST_MESSAGES } from '../../utils/response-message';
-import { CourseInfo } from '@/domains/course/types';
-import { WishlistResponseMapper } from '../../utils/mappers';
-import { CourseResponseMapper } from '@/domains/course/utils/mappers';
+import { WISHLIST_MESSAGES } from '../utils/wishlist/wishlist-response-message';
+import { CourseInfo } from '@/domains/course/v1/types';
+import { WishlistResponseMapper } from '../utils/wishlist/wallet.mappers';
+import { CourseResponseMapper } from '@/domains/course/v1/utils/mappers/course.mapper';
 import { WishlistService } from '@/domains/service-clients/wishlist';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '@/services/di';
