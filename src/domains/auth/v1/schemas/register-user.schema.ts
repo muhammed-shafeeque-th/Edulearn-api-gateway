@@ -1,22 +1,24 @@
-import { AuthType, UserRoles } from '../../../shared/types/user-types';
 import { z } from 'zod';
+import { AuthType, UserRoles } from '../types';
 
 export const RegisterUserSchema = z
   .object({
     firstName: z
       .string()
+      .trim()
       .min(3, { message: 'firstName must be at least 3 characters long' })
       .regex(
-        /^[A-Za-z]+(?: [A-Za-z]+)?$/,
-        'Name must contain only alphabets and numbers and one space between'
+        /^(?!\d)[A-Za-z0-9]+(?: [A-Za-z0-9]+)*$/,
+        'First name must start with a letter, can contain letters, numbers, and spaces (no leading numbers or extra spaces)'
       ),
     lastName: z
       .string()
-      .min(0, { message: 'lastName must be at least 3 characters long' })
+      .trim()
+      .min(3, { message: 'lastName must be at least 3 characters long' })
       .regex(
-        /^[A-Za-z]+(?: [A-Za-z]+)?$/,
-        'Name must contain only alphabets and numbers and one space between'
-      ), // .optional(),
+        /^(?!\d)[A-Za-z0-9]+(?: [A-Za-z0-9]+)*$/,
+        'Last name must start with a letter, can contain letters, numbers, and spaces (no leading numbers or extra spaces)'
+      ),
     email: z.string().email({ message: 'Invalid email format' }),
     password: z
       .string()
@@ -39,7 +41,7 @@ export const RegisterUserSchema = z
   .refine(
     data => data.authType === AuthType.OAUTH || data.password !== undefined,
     {
-      message: "Password is required unless authType is 'auth2'",
+      message: "Password is required unless",
       path: ['password'],
     }
   )
