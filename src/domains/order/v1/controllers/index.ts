@@ -1,26 +1,26 @@
-import { UserService } from '../../../service-clients/user';
+import { UserService } from '@/domains/service-clients/user';
 import { Request, Response } from 'express';
-import validateSchema from '../../../../services/validate-schema';
+import validateSchema from '@/services/security/validate-schema';
 
 import { HttpStatus } from '@/shared/constants/http-status';
 import { ResponseWrapper } from '@/shared/utils/response-wrapper';
 import { NotificationService } from '@/domains/service-clients/notification';
 import { CourseService } from '@/domains/service-clients/course';
 import { Observe } from '@/services/observability/decorators';
-import { OrderService } from '../../../service-clients/order';
-import { placeOrderSchema } from '../../schemas/place-order.schema';
-import { getOrderByIdSchema } from '../../schemas/get-order.schema';
-import { getOrdersByUserSchema } from '../../schemas/get-orders.schema';
+import { OrderService } from '@/domains/service-clients/order';
+import { placeOrderSchema } from '../schemas/place-order.schema';
+import { getOrderByIdSchema } from '../schemas/get-order.schema';
+import { getOrdersByUserSchema } from '../schemas/get-orders.schema';
 import { OrderData } from '@/domains/service-clients/order/proto/generated/order_service';
-import { Order } from '../../types';
+import { Order } from '../types';
 import { CourseMetadata } from '@/domains/service-clients/course/proto/generated/course/types/course';
-import { getOrderStatusSchema } from '../../schemas/get-order-status.schema';
-import { CourseInfo } from '@/domains/course/types';
-import { OrderResponseMapper } from '../../utils/mappers';
-import { CourseResponseMapper } from '@/domains/course/utils/mappers';
-import { restoreOrderSchema } from '../../schemas/restore-order.schema';
-import { ORDER_MESSAGES } from '../../utils/resposne-messages';
-import { attachMetadata } from '../../utils/attach-metadata';
+import { getOrderStatusSchema } from '../schemas/get-order-status.schema';
+import { CourseInfo } from '@/domains/course/v1/types';
+import { OrderResponseMapper } from '../utils/mappers';
+import { CourseResponseMapper } from '@/domains/course/v1/utils/mappers/course.mapper';
+import { restoreOrderSchema } from '../schemas/restore-order.schema';
+import { ORDER_MESSAGES } from '../utils/resposne-messages';
+import { attachMetadata } from '../utils/attach-metadata';
 import { mapPaginationResponse } from '@/shared/utils/map-pagination';
 import { TYPES } from '@/services/di';
 import { inject, injectable } from 'inversify';
@@ -32,7 +32,7 @@ export class OrderController {
     @inject(TYPES.UserService) private userServiceClient: UserService,
     @inject(TYPES.CourseService) private courseServiceClient: CourseService,
     @inject(TYPES.OrderService) private orderServiceClient: OrderService
-  ) {}
+  ) { }
 
   async placeOrder(req: Request, res: Response) {
     const validPayload = validateSchema(
