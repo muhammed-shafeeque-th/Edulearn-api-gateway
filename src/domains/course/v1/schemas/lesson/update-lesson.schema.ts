@@ -5,7 +5,7 @@ export const updateLessonSchema: ZodType<UpdateLessonRequest> = z.object({
   lessonId: z.string().uuid(),
   courseId: z.string().uuid(),
   userId: z.string().uuid(),
-  sectionId: z.string().uuid(),
+  moduleId: z.string().uuid(),
   contentType: z.string().optional(),
   contentUrl: z.string().optional(),
   description: z.string().optional(),

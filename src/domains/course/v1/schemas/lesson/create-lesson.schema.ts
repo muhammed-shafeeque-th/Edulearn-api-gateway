@@ -2,7 +2,7 @@ import { CreateLessonRequest } from '@/domains/service-clients/course/proto/gene
 import { z, ZodType } from 'zod';
 
 export const createLessonSchema: ZodType<CreateLessonRequest> = z.object({
-  sectionId: z.string().uuid(),
+  moduleId: z.string().uuid(),
   courseId: z.string().uuid(),
   userId: z.string().uuid(),
   metadata: z.any().optional(),
