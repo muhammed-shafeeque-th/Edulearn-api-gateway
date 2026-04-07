@@ -1,21 +1,21 @@
 import { Request, Response } from 'express';
-import validateSchema from '../../../../services/validate-schema';
+import validateSchema from '../../../../services/security/validate-schema';
 
 import { ResponseWrapper } from '@/shared/utils/response-wrapper';
 import { NotificationService } from '@/domains/service-clients/notification';
 import { CourseService } from '@/domains/service-clients/course';
 import { Observe } from '@/services/observability/decorators';
-import { getUserCartSchema } from '../../schemas/get-user-cart.schema';
-import { addToCartSchema } from '../../schemas/add-to-cart.schema';
-import { removeFromCartSchema } from '../../schemas/remove-from-cart.schema';
-import { toggleCartItemSchema } from '../../schemas/toggle-cart.schema';
-import { attachMetadata } from '../../utils/attach-metadata';
+import { getUserCartSchema } from '../schemas/cart/get-user-cart.schema';
+import { addToCartSchema } from '../schemas/cart/add-to-cart.schema';
+import { removeFromCartSchema } from '../schemas/cart/remove-from-cart.schema';
+import { toggleCartItemSchema } from '../schemas/cart/toggle-cart.schema';
+import { attachMetadata } from '../utils/attach-metadata';
 import { mapPaginationResponse } from '@/shared/utils/map-pagination';
-import { CartResponseMapper } from '../../utils/mappers';
-import { CourseResponseMapper } from '@/domains/course/utils/mappers';
-import { clearCartSchema } from '../../schemas/clear-cart.schema';
+import { CartResponseMapper } from '../utils/cart/cart.mappers';
+import { CourseResponseMapper } from '@/domains/course/v1/utils/mappers/course.mapper';
+import { clearCartSchema } from '../schemas/cart/clear-cart.schema';
 import { CartService } from '@/domains/service-clients/cart';
-import { CART_MESSAGES } from '../../utils/resposne-messages';
+import { CART_MESSAGES } from '../utils/cart/cart-resposne-messages';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '@/services/di';
 
@@ -27,7 +27,7 @@ export class CartController {
     @inject(TYPES.NotificationService)
     private notificationService: NotificationService,
     @inject(TYPES.CourseService) private courseServiceClient: CourseService
-  ) {}
+  ) { }
 
   async getUserCart(req: Request, res: Response) {
     const { userId, pagination } = validateSchema(
