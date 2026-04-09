@@ -1,4 +1,4 @@
-import { CreateSectionRequest } from '@/domains/service-clients/course/proto/generated/course/types/section';
+import { CreateModuleRequest } from '@/domains/service-clients/course/proto/generated/course/types/module';
 import { z, ZodType } from 'zod';
 
 // export type BasicInfoRequestPayload = {
@@ -15,7 +15,7 @@ import { z, ZodType } from 'zod';
 //   subtitleLanguage?: string | undefined;
 // };
 
-export const createSectionSchema: ZodType<CreateSectionRequest> = z.object({
+export const createModuleSchema: ZodType<CreateModuleRequest> = z.object({
   courseId: z.string().uuid(),
   userId: z.string().uuid(),
   title: z.string(),
@@ -24,4 +24,4 @@ export const createSectionSchema: ZodType<CreateSectionRequest> = z.object({
   isPublished: z.boolean(),
 });
 
-export type CreateSectionDto = z.infer<typeof createSectionSchema>;
+export type CreateModuleDto = z.infer<typeof createModuleSchema>;
