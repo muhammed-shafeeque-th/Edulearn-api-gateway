@@ -1,21 +1,21 @@
 import { Request, Response } from 'express';
-import validateSchema from '../../../../services/validate-schema';
+import validateSchema from '../../../../services/security/validate-schema';
 import { ResponseWrapper } from '@/shared/utils/response-wrapper';
 import { LoggingService } from 'services/observability/logging/logging.service';
 import { TracingService } from 'services/observability/tracing/trace.service';
 import { MetricsService } from '@/services/observability/metrics/metrics.service';
 import { HttpStatus } from '@/shared/constants/http-status';
-import { avatarPresignedSchema } from '../../schemas/avatar.presigned.schema';
-import { courseUploadPreSignSchema } from '../../schemas/course-presign.schema';
-import { getCoursePreSignSchema } from '../../schemas/get-course-presign.schema';
+import { avatarPresignedSchema } from '../schemas/avatar.presigned.schema';
+import { courseUploadPreSignSchema } from '../schemas/course-presign.schema';
+import { getCoursePreSignSchema } from '../schemas/get-course-presign.schema';
 import { CloudinaryMediaService } from '@/services/media/media.service';
 import {
   s3StorageService,
   S3StorageService,
 } from '@/services/media/storage.service';
-import { MEDIA_MESSAGES } from '../../utils/response-messages';
+import { MEDIA_MESSAGES } from '../utils/response-messages';
 import { inject, injectable } from 'inversify';
-import { Trace } from '@/shared/utils/decorators';
+import { Trace } from '@/services/decorators/decorators';
 import { TYPES } from '@/services/di';
 
 @injectable()
