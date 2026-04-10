@@ -1,9 +1,9 @@
-import { S3Client } from '@aws-sdk/client-s3';
+import { S3Client, S3ClientConfig } from '@aws-sdk/client-s3';
 import { config as appConfig } from './dev-config';
 
 const createS3Client = (): S3Client => {
-  const config: any = {
-    region: process.env.AWS_REGION || 'us-east-1',
+  const config: S3ClientConfig = {
+    region: appConfig.s3.region || 'us-east-1',
     maxAttempts: 3,
     requestHandler: {
       requestTimeout: 30000,
@@ -13,7 +13,6 @@ const createS3Client = (): S3Client => {
     },
   };
 
-  // Use IAM roles in production, explicit credentials in development
   if (appConfig.nodeEnv === 'development' && appConfig.s3.accessKey) {
     config.credentials = {
       accessKeyId: appConfig.s3.accessKey,

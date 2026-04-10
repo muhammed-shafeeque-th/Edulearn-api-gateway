@@ -110,6 +110,12 @@ export interface UserData {
   socials: UserSocialsData[];
   updatedAt: string;
   createdAt: string;
+  roleStatus: { [key: string]: string };
+}
+
+export interface UserData_RoleStatusEntry {
+  key: string;
+  value: string;
 }
 
 export interface UserMeta {
@@ -128,6 +134,12 @@ export interface UserMeta {
   country?: string | undefined;
   bio?: string | undefined;
   gender?: string | undefined;
+  roleStatus: { [key: string]: string };
+}
+
+export interface UserMeta_RoleStatusEntry {
+  key: string;
+  value: string;
 }
 
 export interface ListUsersRequest {
@@ -155,11 +167,11 @@ export interface GetCurrentUserRequest {
   userId: string;
 }
 
-export interface BlockUserRequest {
+export interface BlockAccountRequest {
   userId: string;
 }
 
-export interface UnBlockUserRequest {
+export interface UnBlockAccountRequest {
   userId: string;
 }
 
@@ -232,21 +244,21 @@ export interface CheckUserByEmailResponse {
   error?: Error | undefined;
 }
 
-export interface BlockUserResponse {
-  success?: BlockUserSuccess | undefined;
+export interface BlockAccountResponse {
+  success?: BlockAccountSuccess | undefined;
   error?: Error | undefined;
 }
 
-export interface UnBlockUserResponse {
-  success?: UnBlockUserSuccess | undefined;
+export interface UnBlockAccountResponse {
+  success?: UnBlockAccountSuccess | undefined;
   error?: Error | undefined;
 }
 
-export interface BlockUserSuccess {
+export interface BlockAccountSuccess {
   updated: boolean;
 }
 
-export interface UnBlockUserSuccess {
+export interface UnBlockAccountSuccess {
   updated: boolean;
 }
 
@@ -935,6 +947,7 @@ function createBaseUserData(): UserData {
     socials: [],
     updatedAt: "",
     createdAt: "",
+    roleStatus: {},
   };
 }
 
@@ -985,6 +998,9 @@ export const UserData: MessageFns<UserData> = {
     if (message.createdAt !== "") {
       writer.uint32(122).string(message.createdAt);
     }
+    globalThis.Object.entries(message.roleStatus).forEach(([key, value]: [string, string]) => {
+      UserData_RoleStatusEntry.encode({ key: key as any, value }, writer.uint32(130).fork()).join();
+    });
     return writer;
   },
 
@@ -1115,6 +1131,17 @@ export const UserData: MessageFns<UserData> = {
           message.createdAt = reader.string();
           continue;
         }
+        case 16: {
+          if (tag !== 130) {
+            break;
+          }
+
+          const entry16 = UserData_RoleStatusEntry.decode(reader, reader.uint32());
+          if (entry16.value !== undefined) {
+            message.roleStatus[entry16.key] = entry16.value;
+          }
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1167,6 +1194,23 @@ export const UserData: MessageFns<UserData> = {
         : isSet(object.created_at)
         ? globalThis.String(object.created_at)
         : "",
+      roleStatus: isObject(object.roleStatus)
+        ? (globalThis.Object.entries(object.roleStatus) as [string, any][]).reduce(
+          (acc: { [key: string]: string }, [key, value]: [string, any]) => {
+            acc[key] = globalThis.String(value);
+            return acc;
+          },
+          {},
+        )
+        : isObject(object.role_status)
+        ? (globalThis.Object.entries(object.role_status) as [string, any][]).reduce(
+          (acc: { [key: string]: string }, [key, value]: [string, any]) => {
+            acc[key] = globalThis.String(value);
+            return acc;
+          },
+          {},
+        )
+        : {},
     };
   },
 
@@ -1217,6 +1261,15 @@ export const UserData: MessageFns<UserData> = {
     if (message.createdAt !== "") {
       obj.createdAt = message.createdAt;
     }
+    if (message.roleStatus) {
+      const entries = globalThis.Object.entries(message.roleStatus) as [string, string][];
+      if (entries.length > 0) {
+        obj.roleStatus = {};
+        entries.forEach(([k, v]) => {
+          obj.roleStatus[k] = v;
+        });
+      }
+    }
     return obj;
   },
 
@@ -1244,6 +1297,91 @@ export const UserData: MessageFns<UserData> = {
     message.socials = object.socials?.map((e) => UserSocialsData.fromPartial(e)) || [];
     message.updatedAt = object.updatedAt ?? "";
     message.createdAt = object.createdAt ?? "";
+    message.roleStatus = (globalThis.Object.entries(object.roleStatus ?? {}) as [string, string][]).reduce(
+      (acc: { [key: string]: string }, [key, value]: [string, string]) => {
+        if (value !== undefined) {
+          acc[key] = globalThis.String(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    return message;
+  },
+};
+
+function createBaseUserData_RoleStatusEntry(): UserData_RoleStatusEntry {
+  return { key: "", value: "" };
+}
+
+export const UserData_RoleStatusEntry: MessageFns<UserData_RoleStatusEntry> = {
+  encode(message: UserData_RoleStatusEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UserData_RoleStatusEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUserData_RoleStatusEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UserData_RoleStatusEntry {
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
+  },
+
+  toJSON(message: UserData_RoleStatusEntry): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UserData_RoleStatusEntry>, I>>(base?: I): UserData_RoleStatusEntry {
+    return UserData_RoleStatusEntry.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UserData_RoleStatusEntry>, I>>(object: I): UserData_RoleStatusEntry {
+    const message = createBaseUserData_RoleStatusEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
     return message;
   },
 };
@@ -1265,6 +1403,7 @@ function createBaseUserMeta(): UserMeta {
     country: undefined,
     bio: undefined,
     gender: undefined,
+    roleStatus: {},
   };
 }
 
@@ -1315,6 +1454,9 @@ export const UserMeta: MessageFns<UserMeta> = {
     if (message.gender !== undefined) {
       writer.uint32(122).string(message.gender);
     }
+    globalThis.Object.entries(message.roleStatus).forEach(([key, value]: [string, string]) => {
+      UserMeta_RoleStatusEntry.encode({ key: key as any, value }, writer.uint32(130).fork()).join();
+    });
     return writer;
   },
 
@@ -1445,6 +1587,17 @@ export const UserMeta: MessageFns<UserMeta> = {
           message.gender = reader.string();
           continue;
         }
+        case 16: {
+          if (tag !== 130) {
+            break;
+          }
+
+          const entry16 = UserMeta_RoleStatusEntry.decode(reader, reader.uint32());
+          if (entry16.value !== undefined) {
+            message.roleStatus[entry16.key] = entry16.value;
+          }
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1491,6 +1644,23 @@ export const UserMeta: MessageFns<UserMeta> = {
       country: isSet(object.country) ? globalThis.String(object.country) : undefined,
       bio: isSet(object.bio) ? globalThis.String(object.bio) : undefined,
       gender: isSet(object.gender) ? globalThis.String(object.gender) : undefined,
+      roleStatus: isObject(object.roleStatus)
+        ? (globalThis.Object.entries(object.roleStatus) as [string, any][]).reduce(
+          (acc: { [key: string]: string }, [key, value]: [string, any]) => {
+            acc[key] = globalThis.String(value);
+            return acc;
+          },
+          {},
+        )
+        : isObject(object.role_status)
+        ? (globalThis.Object.entries(object.role_status) as [string, any][]).reduce(
+          (acc: { [key: string]: string }, [key, value]: [string, any]) => {
+            acc[key] = globalThis.String(value);
+            return acc;
+          },
+          {},
+        )
+        : {},
     };
   },
 
@@ -1541,6 +1711,15 @@ export const UserMeta: MessageFns<UserMeta> = {
     if (message.gender !== undefined) {
       obj.gender = message.gender;
     }
+    if (message.roleStatus) {
+      const entries = globalThis.Object.entries(message.roleStatus) as [string, string][];
+      if (entries.length > 0) {
+        obj.roleStatus = {};
+        entries.forEach(([k, v]) => {
+          obj.roleStatus[k] = v;
+        });
+      }
+    }
     return obj;
   },
 
@@ -1564,6 +1743,91 @@ export const UserMeta: MessageFns<UserMeta> = {
     message.country = object.country ?? undefined;
     message.bio = object.bio ?? undefined;
     message.gender = object.gender ?? undefined;
+    message.roleStatus = (globalThis.Object.entries(object.roleStatus ?? {}) as [string, string][]).reduce(
+      (acc: { [key: string]: string }, [key, value]: [string, string]) => {
+        if (value !== undefined) {
+          acc[key] = globalThis.String(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    return message;
+  },
+};
+
+function createBaseUserMeta_RoleStatusEntry(): UserMeta_RoleStatusEntry {
+  return { key: "", value: "" };
+}
+
+export const UserMeta_RoleStatusEntry: MessageFns<UserMeta_RoleStatusEntry> = {
+  encode(message: UserMeta_RoleStatusEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UserMeta_RoleStatusEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUserMeta_RoleStatusEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UserMeta_RoleStatusEntry {
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
+  },
+
+  toJSON(message: UserMeta_RoleStatusEntry): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UserMeta_RoleStatusEntry>, I>>(base?: I): UserMeta_RoleStatusEntry {
+    return UserMeta_RoleStatusEntry.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UserMeta_RoleStatusEntry>, I>>(object: I): UserMeta_RoleStatusEntry {
+    const message = createBaseUserMeta_RoleStatusEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
     return message;
   },
 };
@@ -1959,22 +2223,22 @@ export const GetCurrentUserRequest: MessageFns<GetCurrentUserRequest> = {
   },
 };
 
-function createBaseBlockUserRequest(): BlockUserRequest {
+function createBaseBlockAccountRequest(): BlockAccountRequest {
   return { userId: "" };
 }
 
-export const BlockUserRequest: MessageFns<BlockUserRequest> = {
-  encode(message: BlockUserRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const BlockAccountRequest: MessageFns<BlockAccountRequest> = {
+  encode(message: BlockAccountRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.userId !== "") {
       writer.uint32(10).string(message.userId);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): BlockUserRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): BlockAccountRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBlockUserRequest();
+    const message = createBaseBlockAccountRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1995,7 +2259,7 @@ export const BlockUserRequest: MessageFns<BlockUserRequest> = {
     return message;
   },
 
-  fromJSON(object: any): BlockUserRequest {
+  fromJSON(object: any): BlockAccountRequest {
     return {
       userId: isSet(object.userId)
         ? globalThis.String(object.userId)
@@ -2005,7 +2269,7 @@ export const BlockUserRequest: MessageFns<BlockUserRequest> = {
     };
   },
 
-  toJSON(message: BlockUserRequest): unknown {
+  toJSON(message: BlockAccountRequest): unknown {
     const obj: any = {};
     if (message.userId !== "") {
       obj.userId = message.userId;
@@ -2013,32 +2277,32 @@ export const BlockUserRequest: MessageFns<BlockUserRequest> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<BlockUserRequest>, I>>(base?: I): BlockUserRequest {
-    return BlockUserRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<BlockAccountRequest>, I>>(base?: I): BlockAccountRequest {
+    return BlockAccountRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<BlockUserRequest>, I>>(object: I): BlockUserRequest {
-    const message = createBaseBlockUserRequest();
+  fromPartial<I extends Exact<DeepPartial<BlockAccountRequest>, I>>(object: I): BlockAccountRequest {
+    const message = createBaseBlockAccountRequest();
     message.userId = object.userId ?? "";
     return message;
   },
 };
 
-function createBaseUnBlockUserRequest(): UnBlockUserRequest {
+function createBaseUnBlockAccountRequest(): UnBlockAccountRequest {
   return { userId: "" };
 }
 
-export const UnBlockUserRequest: MessageFns<UnBlockUserRequest> = {
-  encode(message: UnBlockUserRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const UnBlockAccountRequest: MessageFns<UnBlockAccountRequest> = {
+  encode(message: UnBlockAccountRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.userId !== "") {
       writer.uint32(10).string(message.userId);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): UnBlockUserRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): UnBlockAccountRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUnBlockUserRequest();
+    const message = createBaseUnBlockAccountRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2059,7 +2323,7 @@ export const UnBlockUserRequest: MessageFns<UnBlockUserRequest> = {
     return message;
   },
 
-  fromJSON(object: any): UnBlockUserRequest {
+  fromJSON(object: any): UnBlockAccountRequest {
     return {
       userId: isSet(object.userId)
         ? globalThis.String(object.userId)
@@ -2069,7 +2333,7 @@ export const UnBlockUserRequest: MessageFns<UnBlockUserRequest> = {
     };
   },
 
-  toJSON(message: UnBlockUserRequest): unknown {
+  toJSON(message: UnBlockAccountRequest): unknown {
     const obj: any = {};
     if (message.userId !== "") {
       obj.userId = message.userId;
@@ -2077,11 +2341,11 @@ export const UnBlockUserRequest: MessageFns<UnBlockUserRequest> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<UnBlockUserRequest>, I>>(base?: I): UnBlockUserRequest {
-    return UnBlockUserRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<UnBlockAccountRequest>, I>>(base?: I): UnBlockAccountRequest {
+    return UnBlockAccountRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<UnBlockUserRequest>, I>>(object: I): UnBlockUserRequest {
-    const message = createBaseUnBlockUserRequest();
+  fromPartial<I extends Exact<DeepPartial<UnBlockAccountRequest>, I>>(object: I): UnBlockAccountRequest {
+    const message = createBaseUnBlockAccountRequest();
     message.userId = object.userId ?? "";
     return message;
   },
@@ -3190,14 +3454,14 @@ export const CheckUserByEmailResponse: MessageFns<CheckUserByEmailResponse> = {
   },
 };
 
-function createBaseBlockUserResponse(): BlockUserResponse {
+function createBaseBlockAccountResponse(): BlockAccountResponse {
   return { success: undefined, error: undefined };
 }
 
-export const BlockUserResponse: MessageFns<BlockUserResponse> = {
-  encode(message: BlockUserResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const BlockAccountResponse: MessageFns<BlockAccountResponse> = {
+  encode(message: BlockAccountResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.success !== undefined) {
-      BlockUserSuccess.encode(message.success, writer.uint32(10).fork()).join();
+      BlockAccountSuccess.encode(message.success, writer.uint32(10).fork()).join();
     }
     if (message.error !== undefined) {
       Error.encode(message.error, writer.uint32(18).fork()).join();
@@ -3205,10 +3469,10 @@ export const BlockUserResponse: MessageFns<BlockUserResponse> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): BlockUserResponse {
+  decode(input: BinaryReader | Uint8Array, length?: number): BlockAccountResponse {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBlockUserResponse();
+    const message = createBaseBlockAccountResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3217,7 +3481,7 @@ export const BlockUserResponse: MessageFns<BlockUserResponse> = {
             break;
           }
 
-          message.success = BlockUserSuccess.decode(reader, reader.uint32());
+          message.success = BlockAccountSuccess.decode(reader, reader.uint32());
           continue;
         }
         case 2: {
@@ -3237,17 +3501,17 @@ export const BlockUserResponse: MessageFns<BlockUserResponse> = {
     return message;
   },
 
-  fromJSON(object: any): BlockUserResponse {
+  fromJSON(object: any): BlockAccountResponse {
     return {
-      success: isSet(object.success) ? BlockUserSuccess.fromJSON(object.success) : undefined,
+      success: isSet(object.success) ? BlockAccountSuccess.fromJSON(object.success) : undefined,
       error: isSet(object.error) ? Error.fromJSON(object.error) : undefined,
     };
   },
 
-  toJSON(message: BlockUserResponse): unknown {
+  toJSON(message: BlockAccountResponse): unknown {
     const obj: any = {};
     if (message.success !== undefined) {
-      obj.success = BlockUserSuccess.toJSON(message.success);
+      obj.success = BlockAccountSuccess.toJSON(message.success);
     }
     if (message.error !== undefined) {
       obj.error = Error.toJSON(message.error);
@@ -3255,27 +3519,27 @@ export const BlockUserResponse: MessageFns<BlockUserResponse> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<BlockUserResponse>, I>>(base?: I): BlockUserResponse {
-    return BlockUserResponse.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<BlockAccountResponse>, I>>(base?: I): BlockAccountResponse {
+    return BlockAccountResponse.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<BlockUserResponse>, I>>(object: I): BlockUserResponse {
-    const message = createBaseBlockUserResponse();
+  fromPartial<I extends Exact<DeepPartial<BlockAccountResponse>, I>>(object: I): BlockAccountResponse {
+    const message = createBaseBlockAccountResponse();
     message.success = (object.success !== undefined && object.success !== null)
-      ? BlockUserSuccess.fromPartial(object.success)
+      ? BlockAccountSuccess.fromPartial(object.success)
       : undefined;
     message.error = (object.error !== undefined && object.error !== null) ? Error.fromPartial(object.error) : undefined;
     return message;
   },
 };
 
-function createBaseUnBlockUserResponse(): UnBlockUserResponse {
+function createBaseUnBlockAccountResponse(): UnBlockAccountResponse {
   return { success: undefined, error: undefined };
 }
 
-export const UnBlockUserResponse: MessageFns<UnBlockUserResponse> = {
-  encode(message: UnBlockUserResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const UnBlockAccountResponse: MessageFns<UnBlockAccountResponse> = {
+  encode(message: UnBlockAccountResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.success !== undefined) {
-      UnBlockUserSuccess.encode(message.success, writer.uint32(10).fork()).join();
+      UnBlockAccountSuccess.encode(message.success, writer.uint32(10).fork()).join();
     }
     if (message.error !== undefined) {
       Error.encode(message.error, writer.uint32(18).fork()).join();
@@ -3283,10 +3547,10 @@ export const UnBlockUserResponse: MessageFns<UnBlockUserResponse> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): UnBlockUserResponse {
+  decode(input: BinaryReader | Uint8Array, length?: number): UnBlockAccountResponse {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUnBlockUserResponse();
+    const message = createBaseUnBlockAccountResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3295,7 +3559,7 @@ export const UnBlockUserResponse: MessageFns<UnBlockUserResponse> = {
             break;
           }
 
-          message.success = UnBlockUserSuccess.decode(reader, reader.uint32());
+          message.success = UnBlockAccountSuccess.decode(reader, reader.uint32());
           continue;
         }
         case 2: {
@@ -3315,17 +3579,17 @@ export const UnBlockUserResponse: MessageFns<UnBlockUserResponse> = {
     return message;
   },
 
-  fromJSON(object: any): UnBlockUserResponse {
+  fromJSON(object: any): UnBlockAccountResponse {
     return {
-      success: isSet(object.success) ? UnBlockUserSuccess.fromJSON(object.success) : undefined,
+      success: isSet(object.success) ? UnBlockAccountSuccess.fromJSON(object.success) : undefined,
       error: isSet(object.error) ? Error.fromJSON(object.error) : undefined,
     };
   },
 
-  toJSON(message: UnBlockUserResponse): unknown {
+  toJSON(message: UnBlockAccountResponse): unknown {
     const obj: any = {};
     if (message.success !== undefined) {
-      obj.success = UnBlockUserSuccess.toJSON(message.success);
+      obj.success = UnBlockAccountSuccess.toJSON(message.success);
     }
     if (message.error !== undefined) {
       obj.error = Error.toJSON(message.error);
@@ -3333,35 +3597,35 @@ export const UnBlockUserResponse: MessageFns<UnBlockUserResponse> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<UnBlockUserResponse>, I>>(base?: I): UnBlockUserResponse {
-    return UnBlockUserResponse.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<UnBlockAccountResponse>, I>>(base?: I): UnBlockAccountResponse {
+    return UnBlockAccountResponse.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<UnBlockUserResponse>, I>>(object: I): UnBlockUserResponse {
-    const message = createBaseUnBlockUserResponse();
+  fromPartial<I extends Exact<DeepPartial<UnBlockAccountResponse>, I>>(object: I): UnBlockAccountResponse {
+    const message = createBaseUnBlockAccountResponse();
     message.success = (object.success !== undefined && object.success !== null)
-      ? UnBlockUserSuccess.fromPartial(object.success)
+      ? UnBlockAccountSuccess.fromPartial(object.success)
       : undefined;
     message.error = (object.error !== undefined && object.error !== null) ? Error.fromPartial(object.error) : undefined;
     return message;
   },
 };
 
-function createBaseBlockUserSuccess(): BlockUserSuccess {
+function createBaseBlockAccountSuccess(): BlockAccountSuccess {
   return { updated: false };
 }
 
-export const BlockUserSuccess: MessageFns<BlockUserSuccess> = {
-  encode(message: BlockUserSuccess, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const BlockAccountSuccess: MessageFns<BlockAccountSuccess> = {
+  encode(message: BlockAccountSuccess, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.updated !== false) {
       writer.uint32(8).bool(message.updated);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): BlockUserSuccess {
+  decode(input: BinaryReader | Uint8Array, length?: number): BlockAccountSuccess {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBlockUserSuccess();
+    const message = createBaseBlockAccountSuccess();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3382,11 +3646,11 @@ export const BlockUserSuccess: MessageFns<BlockUserSuccess> = {
     return message;
   },
 
-  fromJSON(object: any): BlockUserSuccess {
+  fromJSON(object: any): BlockAccountSuccess {
     return { updated: isSet(object.updated) ? globalThis.Boolean(object.updated) : false };
   },
 
-  toJSON(message: BlockUserSuccess): unknown {
+  toJSON(message: BlockAccountSuccess): unknown {
     const obj: any = {};
     if (message.updated !== false) {
       obj.updated = message.updated;
@@ -3394,32 +3658,32 @@ export const BlockUserSuccess: MessageFns<BlockUserSuccess> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<BlockUserSuccess>, I>>(base?: I): BlockUserSuccess {
-    return BlockUserSuccess.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<BlockAccountSuccess>, I>>(base?: I): BlockAccountSuccess {
+    return BlockAccountSuccess.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<BlockUserSuccess>, I>>(object: I): BlockUserSuccess {
-    const message = createBaseBlockUserSuccess();
+  fromPartial<I extends Exact<DeepPartial<BlockAccountSuccess>, I>>(object: I): BlockAccountSuccess {
+    const message = createBaseBlockAccountSuccess();
     message.updated = object.updated ?? false;
     return message;
   },
 };
 
-function createBaseUnBlockUserSuccess(): UnBlockUserSuccess {
+function createBaseUnBlockAccountSuccess(): UnBlockAccountSuccess {
   return { updated: false };
 }
 
-export const UnBlockUserSuccess: MessageFns<UnBlockUserSuccess> = {
-  encode(message: UnBlockUserSuccess, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const UnBlockAccountSuccess: MessageFns<UnBlockAccountSuccess> = {
+  encode(message: UnBlockAccountSuccess, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.updated !== false) {
       writer.uint32(8).bool(message.updated);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): UnBlockUserSuccess {
+  decode(input: BinaryReader | Uint8Array, length?: number): UnBlockAccountSuccess {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUnBlockUserSuccess();
+    const message = createBaseUnBlockAccountSuccess();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3440,11 +3704,11 @@ export const UnBlockUserSuccess: MessageFns<UnBlockUserSuccess> = {
     return message;
   },
 
-  fromJSON(object: any): UnBlockUserSuccess {
+  fromJSON(object: any): UnBlockAccountSuccess {
     return { updated: isSet(object.updated) ? globalThis.Boolean(object.updated) : false };
   },
 
-  toJSON(message: UnBlockUserSuccess): unknown {
+  toJSON(message: UnBlockAccountSuccess): unknown {
     const obj: any = {};
     if (message.updated !== false) {
       obj.updated = message.updated;
@@ -3452,11 +3716,11 @@ export const UnBlockUserSuccess: MessageFns<UnBlockUserSuccess> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<UnBlockUserSuccess>, I>>(base?: I): UnBlockUserSuccess {
-    return UnBlockUserSuccess.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<UnBlockAccountSuccess>, I>>(base?: I): UnBlockAccountSuccess {
+    return UnBlockAccountSuccess.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<UnBlockUserSuccess>, I>>(object: I): UnBlockUserSuccess {
-    const message = createBaseUnBlockUserSuccess();
+  fromPartial<I extends Exact<DeepPartial<UnBlockAccountSuccess>, I>>(object: I): UnBlockAccountSuccess {
+    const message = createBaseUnBlockAccountSuccess();
     message.updated = object.updated ?? false;
     return message;
   },
@@ -3685,6 +3949,10 @@ export type DeepPartial<T> = T extends Builtin ? T
 type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

@@ -36,6 +36,12 @@ export interface InstructorMeta {
   joinedAt: string;
   education: string;
   experience: string;
+  roleStatus: { [key: string]: string };
+}
+
+export interface InstructorMeta_RoleStatusEntry {
+  key: string;
+  value: string;
 }
 
 /** Instructor Requests */
@@ -62,6 +68,32 @@ export interface ListInstructorsRequest {
   pagination: PaginationRequest | undefined;
   filter: UserFilter | undefined;
   sort: SortOption | undefined;
+}
+
+export interface BlockInstructorResponse {
+  success?: BlockInstructorSuccess | undefined;
+  error?: Error | undefined;
+}
+
+export interface BlockInstructorRequest {
+  instructorId: string;
+}
+
+export interface UnBlockInstructorRequest {
+  instructorId: string;
+}
+
+export interface UnBlockInstructorResponse {
+  success?: UnBlockInstructorSuccess | undefined;
+  error?: Error | undefined;
+}
+
+export interface BlockInstructorSuccess {
+  updated: boolean;
+}
+
+export interface UnBlockInstructorSuccess {
+  updated: boolean;
 }
 
 /** Instructor Responses */
@@ -114,6 +146,7 @@ function createBaseInstructorMeta(): InstructorMeta {
     joinedAt: "",
     education: "",
     experience: "",
+    roleStatus: {},
   };
 }
 
@@ -188,6 +221,9 @@ export const InstructorMeta: MessageFns<InstructorMeta> = {
     if (message.experience !== "") {
       writer.uint32(202).string(message.experience);
     }
+    globalThis.Object.entries(message.roleStatus).forEach(([key, value]: [string, string]) => {
+      InstructorMeta_RoleStatusEntry.encode({ key: key as any, value }, writer.uint32(210).fork()).join();
+    });
     return writer;
   },
 
@@ -382,6 +418,17 @@ export const InstructorMeta: MessageFns<InstructorMeta> = {
           message.experience = reader.string();
           continue;
         }
+        case 26: {
+          if (tag !== 210) {
+            break;
+          }
+
+          const entry26 = InstructorMeta_RoleStatusEntry.decode(reader, reader.uint32());
+          if (entry26.value !== undefined) {
+            message.roleStatus[entry26.key] = entry26.value;
+          }
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -444,6 +491,23 @@ export const InstructorMeta: MessageFns<InstructorMeta> = {
         : "",
       education: isSet(object.education) ? globalThis.String(object.education) : "",
       experience: isSet(object.experience) ? globalThis.String(object.experience) : "",
+      roleStatus: isObject(object.roleStatus)
+        ? (globalThis.Object.entries(object.roleStatus) as [string, any][]).reduce(
+          (acc: { [key: string]: string }, [key, value]: [string, any]) => {
+            acc[key] = globalThis.String(value);
+            return acc;
+          },
+          {},
+        )
+        : isObject(object.role_status)
+        ? (globalThis.Object.entries(object.role_status) as [string, any][]).reduce(
+          (acc: { [key: string]: string }, [key, value]: [string, any]) => {
+            acc[key] = globalThis.String(value);
+            return acc;
+          },
+          {},
+        )
+        : {},
     };
   },
 
@@ -518,6 +582,15 @@ export const InstructorMeta: MessageFns<InstructorMeta> = {
     if (message.experience !== "") {
       obj.experience = message.experience;
     }
+    if (message.roleStatus) {
+      const entries = globalThis.Object.entries(message.roleStatus) as [string, string][];
+      if (entries.length > 0) {
+        obj.roleStatus = {};
+        entries.forEach(([k, v]) => {
+          obj.roleStatus[k] = v;
+        });
+      }
+    }
     return obj;
   },
 
@@ -549,6 +622,93 @@ export const InstructorMeta: MessageFns<InstructorMeta> = {
     message.joinedAt = object.joinedAt ?? "";
     message.education = object.education ?? "";
     message.experience = object.experience ?? "";
+    message.roleStatus = (globalThis.Object.entries(object.roleStatus ?? {}) as [string, string][]).reduce(
+      (acc: { [key: string]: string }, [key, value]: [string, string]) => {
+        if (value !== undefined) {
+          acc[key] = globalThis.String(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    return message;
+  },
+};
+
+function createBaseInstructorMeta_RoleStatusEntry(): InstructorMeta_RoleStatusEntry {
+  return { key: "", value: "" };
+}
+
+export const InstructorMeta_RoleStatusEntry: MessageFns<InstructorMeta_RoleStatusEntry> = {
+  encode(message: InstructorMeta_RoleStatusEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): InstructorMeta_RoleStatusEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseInstructorMeta_RoleStatusEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): InstructorMeta_RoleStatusEntry {
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
+  },
+
+  toJSON(message: InstructorMeta_RoleStatusEntry): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<InstructorMeta_RoleStatusEntry>, I>>(base?: I): InstructorMeta_RoleStatusEntry {
+    return InstructorMeta_RoleStatusEntry.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<InstructorMeta_RoleStatusEntry>, I>>(
+    object: I,
+  ): InstructorMeta_RoleStatusEntry {
+    const message = createBaseInstructorMeta_RoleStatusEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
     return message;
   },
 };
@@ -974,6 +1134,406 @@ export const ListInstructorsRequest: MessageFns<ListInstructorsRequest> = {
   },
 };
 
+function createBaseBlockInstructorResponse(): BlockInstructorResponse {
+  return { success: undefined, error: undefined };
+}
+
+export const BlockInstructorResponse: MessageFns<BlockInstructorResponse> = {
+  encode(message: BlockInstructorResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== undefined) {
+      BlockInstructorSuccess.encode(message.success, writer.uint32(10).fork()).join();
+    }
+    if (message.error !== undefined) {
+      Error.encode(message.error, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BlockInstructorResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBlockInstructorResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.success = BlockInstructorSuccess.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.error = Error.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BlockInstructorResponse {
+    return {
+      success: isSet(object.success) ? BlockInstructorSuccess.fromJSON(object.success) : undefined,
+      error: isSet(object.error) ? Error.fromJSON(object.error) : undefined,
+    };
+  },
+
+  toJSON(message: BlockInstructorResponse): unknown {
+    const obj: any = {};
+    if (message.success !== undefined) {
+      obj.success = BlockInstructorSuccess.toJSON(message.success);
+    }
+    if (message.error !== undefined) {
+      obj.error = Error.toJSON(message.error);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BlockInstructorResponse>, I>>(base?: I): BlockInstructorResponse {
+    return BlockInstructorResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BlockInstructorResponse>, I>>(object: I): BlockInstructorResponse {
+    const message = createBaseBlockInstructorResponse();
+    message.success = (object.success !== undefined && object.success !== null)
+      ? BlockInstructorSuccess.fromPartial(object.success)
+      : undefined;
+    message.error = (object.error !== undefined && object.error !== null) ? Error.fromPartial(object.error) : undefined;
+    return message;
+  },
+};
+
+function createBaseBlockInstructorRequest(): BlockInstructorRequest {
+  return { instructorId: "" };
+}
+
+export const BlockInstructorRequest: MessageFns<BlockInstructorRequest> = {
+  encode(message: BlockInstructorRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.instructorId !== "") {
+      writer.uint32(10).string(message.instructorId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BlockInstructorRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBlockInstructorRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.instructorId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BlockInstructorRequest {
+    return {
+      instructorId: isSet(object.instructorId)
+        ? globalThis.String(object.instructorId)
+        : isSet(object.instructor_id)
+        ? globalThis.String(object.instructor_id)
+        : "",
+    };
+  },
+
+  toJSON(message: BlockInstructorRequest): unknown {
+    const obj: any = {};
+    if (message.instructorId !== "") {
+      obj.instructorId = message.instructorId;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BlockInstructorRequest>, I>>(base?: I): BlockInstructorRequest {
+    return BlockInstructorRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BlockInstructorRequest>, I>>(object: I): BlockInstructorRequest {
+    const message = createBaseBlockInstructorRequest();
+    message.instructorId = object.instructorId ?? "";
+    return message;
+  },
+};
+
+function createBaseUnBlockInstructorRequest(): UnBlockInstructorRequest {
+  return { instructorId: "" };
+}
+
+export const UnBlockInstructorRequest: MessageFns<UnBlockInstructorRequest> = {
+  encode(message: UnBlockInstructorRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.instructorId !== "") {
+      writer.uint32(10).string(message.instructorId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UnBlockInstructorRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUnBlockInstructorRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.instructorId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UnBlockInstructorRequest {
+    return {
+      instructorId: isSet(object.instructorId)
+        ? globalThis.String(object.instructorId)
+        : isSet(object.instructor_id)
+        ? globalThis.String(object.instructor_id)
+        : "",
+    };
+  },
+
+  toJSON(message: UnBlockInstructorRequest): unknown {
+    const obj: any = {};
+    if (message.instructorId !== "") {
+      obj.instructorId = message.instructorId;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UnBlockInstructorRequest>, I>>(base?: I): UnBlockInstructorRequest {
+    return UnBlockInstructorRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UnBlockInstructorRequest>, I>>(object: I): UnBlockInstructorRequest {
+    const message = createBaseUnBlockInstructorRequest();
+    message.instructorId = object.instructorId ?? "";
+    return message;
+  },
+};
+
+function createBaseUnBlockInstructorResponse(): UnBlockInstructorResponse {
+  return { success: undefined, error: undefined };
+}
+
+export const UnBlockInstructorResponse: MessageFns<UnBlockInstructorResponse> = {
+  encode(message: UnBlockInstructorResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== undefined) {
+      UnBlockInstructorSuccess.encode(message.success, writer.uint32(10).fork()).join();
+    }
+    if (message.error !== undefined) {
+      Error.encode(message.error, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UnBlockInstructorResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUnBlockInstructorResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.success = UnBlockInstructorSuccess.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.error = Error.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UnBlockInstructorResponse {
+    return {
+      success: isSet(object.success) ? UnBlockInstructorSuccess.fromJSON(object.success) : undefined,
+      error: isSet(object.error) ? Error.fromJSON(object.error) : undefined,
+    };
+  },
+
+  toJSON(message: UnBlockInstructorResponse): unknown {
+    const obj: any = {};
+    if (message.success !== undefined) {
+      obj.success = UnBlockInstructorSuccess.toJSON(message.success);
+    }
+    if (message.error !== undefined) {
+      obj.error = Error.toJSON(message.error);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UnBlockInstructorResponse>, I>>(base?: I): UnBlockInstructorResponse {
+    return UnBlockInstructorResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UnBlockInstructorResponse>, I>>(object: I): UnBlockInstructorResponse {
+    const message = createBaseUnBlockInstructorResponse();
+    message.success = (object.success !== undefined && object.success !== null)
+      ? UnBlockInstructorSuccess.fromPartial(object.success)
+      : undefined;
+    message.error = (object.error !== undefined && object.error !== null) ? Error.fromPartial(object.error) : undefined;
+    return message;
+  },
+};
+
+function createBaseBlockInstructorSuccess(): BlockInstructorSuccess {
+  return { updated: false };
+}
+
+export const BlockInstructorSuccess: MessageFns<BlockInstructorSuccess> = {
+  encode(message: BlockInstructorSuccess, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.updated !== false) {
+      writer.uint32(8).bool(message.updated);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BlockInstructorSuccess {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBlockInstructorSuccess();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.updated = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BlockInstructorSuccess {
+    return { updated: isSet(object.updated) ? globalThis.Boolean(object.updated) : false };
+  },
+
+  toJSON(message: BlockInstructorSuccess): unknown {
+    const obj: any = {};
+    if (message.updated !== false) {
+      obj.updated = message.updated;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BlockInstructorSuccess>, I>>(base?: I): BlockInstructorSuccess {
+    return BlockInstructorSuccess.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BlockInstructorSuccess>, I>>(object: I): BlockInstructorSuccess {
+    const message = createBaseBlockInstructorSuccess();
+    message.updated = object.updated ?? false;
+    return message;
+  },
+};
+
+function createBaseUnBlockInstructorSuccess(): UnBlockInstructorSuccess {
+  return { updated: false };
+}
+
+export const UnBlockInstructorSuccess: MessageFns<UnBlockInstructorSuccess> = {
+  encode(message: UnBlockInstructorSuccess, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.updated !== false) {
+      writer.uint32(8).bool(message.updated);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UnBlockInstructorSuccess {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUnBlockInstructorSuccess();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.updated = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UnBlockInstructorSuccess {
+    return { updated: isSet(object.updated) ? globalThis.Boolean(object.updated) : false };
+  },
+
+  toJSON(message: UnBlockInstructorSuccess): unknown {
+    const obj: any = {};
+    if (message.updated !== false) {
+      obj.updated = message.updated;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UnBlockInstructorSuccess>, I>>(base?: I): UnBlockInstructorSuccess {
+    return UnBlockInstructorSuccess.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UnBlockInstructorSuccess>, I>>(object: I): UnBlockInstructorSuccess {
+    const message = createBaseUnBlockInstructorSuccess();
+    message.updated = object.updated ?? false;
+    return message;
+  },
+};
+
 function createBaseInstructorSuccessResponse(): InstructorSuccessResponse {
   return { user: undefined };
 }
@@ -1355,6 +1915,10 @@ export type DeepPartial<T> = T extends Builtin ? T
 type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

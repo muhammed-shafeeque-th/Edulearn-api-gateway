@@ -1,30 +1,54 @@
 import dotenv from 'dotenv';
 
 // Only enable debug mode in development
-if (process.env.NODE_ENV === 'development') {
-  dotenv.config({ debug: true });
-} else {
-  dotenv.config();
+if (process.env.DOCKER_ENV !== 'true') {
+  if (process.env.NODE_ENV === 'development') {
+    dotenv.config({ debug: true });
+  } else {
+    dotenv.config();
+  }
 }
 
 export const config = {
   port: (process.env.PORT as string) || 4000,
-  redisUrl: process.env.REDIS_URL as string,
+  redis: {
+    host: process.env.REDIS_HOST as string,
+    cluster: process.env.IS_CLUSTER as string,
+    port: process.env.REDIS_PORT || '6379',
+    password: process.env.REDIS_PASSWORD,
+    tls: process.env.REDIS_TLS,
+    db: process.env.REDIS_DB || '0',
+    keyPrefix: process.env.REDIS_KEY_PREFIX || 'edulearn:api_gateway:',
+    connectTimeout: process.env.REDIS_CONNECTION_TIMEOUT,
+    lazyConnect: process.env.REDIS_LAZY_CONNECT === 'true',
+    maxRetriesPerRequest: process.env.REDIS_MAX_RETRIES,
+  },
   serviceName: process.env.SERVICE_NAME as string,
-  refreshTokenExpiry: process.env.REFRESH_TOKEN_EXPIRY as string,
-  refreshTokenSecret: process.env.JWT_REFRESH_TOKEN_SECRET as string,
-  accessTokenExpiry: process.env.ACCESS_TOKEN_EXPIRY as string,
-  accessTokenSecret: process.env.JWT_ACCESS_TOKEN_SECRET as string,
+  serviceVersion: process.env.SERVICE_NAME || '1.0.0',
+  serviceClientId: process.env.SERVICE_NAME || 'api-gateway',
+  jwt: {
+    refreshTokenExpiry: process.env.REFRESH_TOKEN_EXPIRY as string,
+    refreshTokenSecret: process.env.JWT_REFRESH_TOKEN_SECRET as string,
+    accessTokenExpiry: process.env.ACCESS_TOKEN_EXPIRY as string,
+    accessTokenSecret: process.env.JWT_ACCESS_TOKEN_SECRET as string,
+    tokenIssuer: process.env.JWT_TOKEN_ISSUER || 'auth-service',
+    tokenAudience: process.env.JWT_TOKEN_AUDIENCE || 'edulearn',
+    cookieDomain: process.env.JWT_TOKEN_DOMAIN,
+  },
   nodeEnv: process.env.NODE_ENV as string,
-  grpcServices: {
-    authService: process.env.AUTH_SERVICE_GRPC || 'localhost:50051',
-    userServiceClient: process.env.USER_SERVICE_GRPC || 'localhost:50052',
-    courseService: process.env.COURSE_SERVICE_GRPC || 'localhost:50053',
-    paymentService: process.env.PAYMENT_SERVICE_GRPC || 'localhost:50055',
-    orderService: process.env.ORDER_SERVICE_GRPC || 'localhost:50054',
-    sessionService: process.env.SESSION_SERVICE_GRPC || 'localhost:50057',
-    notificationService:
-      process.env.NOTIFICATION_SERVICE_GRPC || 'localhost:50056',
+  grpc: {
+    services: {
+      authService: process.env.AUTH_SERVICE_GRPC || 'localhost:50051',
+      userServiceClient: process.env.USER_SERVICE_GRPC || 'localhost:50052',
+      courseService: process.env.COURSE_SERVICE_GRPC || 'localhost:50053',
+      paymentService: process.env.PAYMENT_SERVICE_GRPC || 'localhost:50055',
+      orderService: process.env.ORDER_SERVICE_GRPC || 'localhost:50054',
+      chatService: process.env.CHAT_SERVICE_GRPC || 'localhost:50059',
+      sessionService: process.env.SESSION_SERVICE_GRPC || 'localhost:50057',
+      notificationService:
+        process.env.NOTIFICATION_SERVICE_GRPC || 'localhost:50056',
+    },
+    usePool: (process.env.GRPC_USE_POOL || 'true') as 'true' | 'false',
   },
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,
@@ -69,8 +93,17 @@ export const config = {
       logLevel: process.env.LOG_LEVEL,
     },
   },
-  cors:{
-     allowedOrigins: process.env.ALLOWED_ORIGINS?.split(",") || ["http://localhost:9000"],
-     allowedMethods: process.env.ALLOWED_METHODS?.split(",") || ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
-  }
+  cors: {
+    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || [
+      'http://localhost:9000',
+    ],
+    allowedMethods: process.env.ALLOWED_METHODS?.split(',') || [
+      'GET',
+      'POST',
+      'PUT',
+      'DELETE',
+      'PATCH',
+      'OPTIONS',
+    ],
+  },
 };

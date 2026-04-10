@@ -37,12 +37,16 @@ import {
   ListStudentsOfInstructorRequest,
 } from "./user/types/instructor_student";
 import {
+  BlockInstructorRequest,
+  BlockInstructorResponse,
   GetInstructorByNameRequest,
   GetInstructorByNameResponse,
   ListInstructorsRequest,
   ListInstructorsResponse,
   RegisterInstructorRequest,
   RegisterInstructorResponse,
+  UnBlockInstructorRequest,
+  UnBlockInstructorResponse,
 } from "./user/types/instructor_types";
 import {
   GetInstructorRevenueSummeryRequest,
@@ -55,8 +59,8 @@ import {
   GetUsersStatsResponse,
 } from "./user/types/stats_types";
 import {
-  BlockUserRequest,
-  BlockUserResponse,
+  BlockAccountRequest,
+  BlockAccountResponse,
   ChangePasswordRequest,
   ChangePasswordResponse,
   CheckUserByEmailRequest,
@@ -70,8 +74,8 @@ import {
   ListUsersByIdsRequest,
   ListUsersRequest,
   ListUsersResponse,
-  UnBlockUserRequest,
-  UnBlockUserResponse,
+  UnBlockAccountRequest,
+  UnBlockAccountResponse,
   UpdateUserDetailsRequest,
   UpdateUserDetailsResponse,
 } from "./user/types/user_types";
@@ -215,23 +219,48 @@ export const UserServiceService = {
     responseDeserialize: (value: Buffer): CheckUserByEmailResponse => CheckUserByEmailResponse.decode(value),
   },
   /** Block/Unblock */
-  blockUser: {
-    path: "/user_service.UserService/BlockUser",
+  blockAccount: {
+    path: "/user_service.UserService/BlockAccount",
     requestStream: false,
     responseStream: false,
-    requestSerialize: (value: BlockUserRequest): Buffer => Buffer.from(BlockUserRequest.encode(value).finish()),
-    requestDeserialize: (value: Buffer): BlockUserRequest => BlockUserRequest.decode(value),
-    responseSerialize: (value: BlockUserResponse): Buffer => Buffer.from(BlockUserResponse.encode(value).finish()),
-    responseDeserialize: (value: Buffer): BlockUserResponse => BlockUserResponse.decode(value),
+    requestSerialize: (value: BlockAccountRequest): Buffer => Buffer.from(BlockAccountRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): BlockAccountRequest => BlockAccountRequest.decode(value),
+    responseSerialize: (value: BlockAccountResponse): Buffer =>
+      Buffer.from(BlockAccountResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer): BlockAccountResponse => BlockAccountResponse.decode(value),
   },
-  unBlockUser: {
-    path: "/user_service.UserService/UnBlockUser",
+  unBlockAccount: {
+    path: "/user_service.UserService/UnBlockAccount",
     requestStream: false,
     responseStream: false,
-    requestSerialize: (value: UnBlockUserRequest): Buffer => Buffer.from(UnBlockUserRequest.encode(value).finish()),
-    requestDeserialize: (value: Buffer): UnBlockUserRequest => UnBlockUserRequest.decode(value),
-    responseSerialize: (value: UnBlockUserResponse): Buffer => Buffer.from(UnBlockUserResponse.encode(value).finish()),
-    responseDeserialize: (value: Buffer): UnBlockUserResponse => UnBlockUserResponse.decode(value),
+    requestSerialize: (value: UnBlockAccountRequest): Buffer =>
+      Buffer.from(UnBlockAccountRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): UnBlockAccountRequest => UnBlockAccountRequest.decode(value),
+    responseSerialize: (value: UnBlockAccountResponse): Buffer =>
+      Buffer.from(UnBlockAccountResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer): UnBlockAccountResponse => UnBlockAccountResponse.decode(value),
+  },
+  blockInstructor: {
+    path: "/user_service.UserService/BlockInstructor",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: BlockInstructorRequest): Buffer =>
+      Buffer.from(BlockInstructorRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): BlockInstructorRequest => BlockInstructorRequest.decode(value),
+    responseSerialize: (value: BlockInstructorResponse): Buffer =>
+      Buffer.from(BlockInstructorResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer): BlockInstructorResponse => BlockInstructorResponse.decode(value),
+  },
+  unBlockInstructor: {
+    path: "/user_service.UserService/UnBlockInstructor",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: UnBlockInstructorRequest): Buffer =>
+      Buffer.from(UnBlockInstructorRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): UnBlockInstructorRequest => UnBlockInstructorRequest.decode(value),
+    responseSerialize: (value: UnBlockInstructorResponse): Buffer =>
+      Buffer.from(UnBlockInstructorResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer): UnBlockInstructorResponse => UnBlockInstructorResponse.decode(value),
   },
   /** Instructor Student relations */
   listInstructorsOfStudent: {
@@ -331,8 +360,10 @@ export interface UserServiceServer extends UntypedServiceImplementation {
   getUserEmails: handleUnaryCall<GetUserEmailsRequest, GetUserEmailsResponse>;
   checkUserEmailExist: handleUnaryCall<CheckUserByEmailRequest, CheckUserByEmailResponse>;
   /** Block/Unblock */
-  blockUser: handleUnaryCall<BlockUserRequest, BlockUserResponse>;
-  unBlockUser: handleUnaryCall<UnBlockUserRequest, UnBlockUserResponse>;
+  blockAccount: handleUnaryCall<BlockAccountRequest, BlockAccountResponse>;
+  unBlockAccount: handleUnaryCall<UnBlockAccountRequest, UnBlockAccountResponse>;
+  blockInstructor: handleUnaryCall<BlockInstructorRequest, BlockInstructorResponse>;
+  unBlockInstructor: handleUnaryCall<UnBlockInstructorRequest, UnBlockInstructorResponse>;
   /** Instructor Student relations */
   listInstructorsOfStudent: handleUnaryCall<ListInstructorsOfStudentRequest, ListInstructorsResponse>;
   listStudentsOfInstructor: handleUnaryCall<ListStudentsOfInstructorRequest, ListUsersResponse>;
@@ -514,35 +545,65 @@ export interface UserServiceClient extends Client {
     callback: (error: ServiceError | null, response: CheckUserByEmailResponse) => void,
   ): ClientUnaryCall;
   /** Block/Unblock */
-  blockUser(
-    request: BlockUserRequest,
-    callback: (error: ServiceError | null, response: BlockUserResponse) => void,
+  blockAccount(
+    request: BlockAccountRequest,
+    callback: (error: ServiceError | null, response: BlockAccountResponse) => void,
   ): ClientUnaryCall;
-  blockUser(
-    request: BlockUserRequest,
+  blockAccount(
+    request: BlockAccountRequest,
     metadata: Metadata,
-    callback: (error: ServiceError | null, response: BlockUserResponse) => void,
+    callback: (error: ServiceError | null, response: BlockAccountResponse) => void,
   ): ClientUnaryCall;
-  blockUser(
-    request: BlockUserRequest,
-    metadata: Metadata,
-    options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: BlockUserResponse) => void,
-  ): ClientUnaryCall;
-  unBlockUser(
-    request: UnBlockUserRequest,
-    callback: (error: ServiceError | null, response: UnBlockUserResponse) => void,
-  ): ClientUnaryCall;
-  unBlockUser(
-    request: UnBlockUserRequest,
-    metadata: Metadata,
-    callback: (error: ServiceError | null, response: UnBlockUserResponse) => void,
-  ): ClientUnaryCall;
-  unBlockUser(
-    request: UnBlockUserRequest,
+  blockAccount(
+    request: BlockAccountRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: UnBlockUserResponse) => void,
+    callback: (error: ServiceError | null, response: BlockAccountResponse) => void,
+  ): ClientUnaryCall;
+  unBlockAccount(
+    request: UnBlockAccountRequest,
+    callback: (error: ServiceError | null, response: UnBlockAccountResponse) => void,
+  ): ClientUnaryCall;
+  unBlockAccount(
+    request: UnBlockAccountRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: UnBlockAccountResponse) => void,
+  ): ClientUnaryCall;
+  unBlockAccount(
+    request: UnBlockAccountRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: UnBlockAccountResponse) => void,
+  ): ClientUnaryCall;
+  blockInstructor(
+    request: BlockInstructorRequest,
+    callback: (error: ServiceError | null, response: BlockInstructorResponse) => void,
+  ): ClientUnaryCall;
+  blockInstructor(
+    request: BlockInstructorRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: BlockInstructorResponse) => void,
+  ): ClientUnaryCall;
+  blockInstructor(
+    request: BlockInstructorRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: BlockInstructorResponse) => void,
+  ): ClientUnaryCall;
+  unBlockInstructor(
+    request: UnBlockInstructorRequest,
+    callback: (error: ServiceError | null, response: UnBlockInstructorResponse) => void,
+  ): ClientUnaryCall;
+  unBlockInstructor(
+    request: UnBlockInstructorRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: UnBlockInstructorResponse) => void,
+  ): ClientUnaryCall;
+  unBlockInstructor(
+    request: UnBlockInstructorRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: UnBlockInstructorResponse) => void,
   ): ClientUnaryCall;
   /** Instructor Student relations */
   listInstructorsOfStudent(

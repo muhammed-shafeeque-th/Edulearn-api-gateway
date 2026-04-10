@@ -38,7 +38,6 @@ import { ChatResponseMapper } from '../utils/chat.mappers';
 import { UserResponseMapper } from '@/domains/user/v1/utils/user/user.mappers';
 import { UserInfo } from '@/domains/user/v1/types';
 import { getStudentChatsSchema } from '../schemas/chats/get-student-chats.schema';
-import { USER_ROLE } from '@/shared/types/user-types';
 import { TYPES } from '@/services/di';
 import { inject, injectable } from 'inversify';
 
