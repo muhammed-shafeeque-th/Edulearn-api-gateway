@@ -65,7 +65,7 @@ export const questionSchema = z
 // Quiz creation schema
 export const createQuizSchema: ZodType<CreateQuizRequest> = z.object({
   courseId: z.string().uuid({ message: 'Invalid courseId format' }),
-  sectionId: z.string().uuid({ message: 'Invalid sectionId format' }),
+  moduleId: z.string().uuid({ message: 'Invalid moduleId format' }),
   userId: z.string().uuid({ message: 'Invalid userId format' }),
   maxAttempts: z.number().int().min(1).max(100),
   passingScore: z.number().int().min(1).max(100),
