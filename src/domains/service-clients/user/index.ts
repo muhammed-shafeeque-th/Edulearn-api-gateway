@@ -4,8 +4,6 @@ import { GrpcClientOptions } from '@/shared/utils/grpc/types';
 import { config } from '@/config';
 import { UserServiceClient } from './proto/generated/user_service';
 import {
-  BlockUserRequest,
-  BlockUserResponse,
   CheckUserByEmailRequest,
   CheckUserByEmailResponse,
   GetCurrentUserRequest,
@@ -17,16 +15,22 @@ import {
   ListUsersByIdsRequest,
   ListUsersResponse,
   ListUsersRequest,
-  UnBlockUserRequest,
-  UnBlockUserResponse,
   UpdateUserDetailsRequest,
   UpdateUserDetailsResponse,
+  BlockAccountRequest,
+  BlockAccountResponse,
+  UnBlockAccountRequest,
+  UnBlockAccountResponse,
 } from './proto/generated/user/types/user_types';
 import {
-  GetInstructorsRequest,
+  BlockInstructorRequest,
+  BlockInstructorResponse,
+  ListInstructorsRequest,
   ListInstructorsResponse,
   RegisterInstructorRequest,
   RegisterInstructorResponse,
+  UnBlockInstructorRequest,
+  UnBlockInstructorResponse,
 } from './proto/generated/user/types/instructor_types';
 import {
   ListInstructorsOfStudentRequest,
@@ -103,7 +107,7 @@ export class UserService {
   }
 
   async listInstructors(
-    request: GetInstructorsRequest,
+    request: ListInstructorsRequest,
     options: GrpcClientOptions = {}
   ): Promise<ListInstructorsResponse> {
     const response = await this.client.unaryCall(
@@ -158,23 +162,35 @@ export class UserService {
     return response as UpdateUserDetailsResponse;
   }
 
-  async blockUser(
-    request: BlockUserRequest,
+
+  async blockAccount(
+    request: BlockAccountRequest,
     options: GrpcClientOptions = {}
-  ): Promise<BlockUserResponse> {
-    const response = await this.client.unaryCall('blockUser', request, options);
-    return response as BlockUserResponse;
+  ): Promise<BlockAccountResponse> {
+    const response = await this.client.unaryCall('blockAccount', request, options);
+    return response as BlockAccountResponse;
   }
-  async unBlockUser(
-    request: UnBlockUserRequest,
+  async unBlockAccount(
+    request: UnBlockAccountRequest,
     options: GrpcClientOptions = {}
-  ): Promise<UnBlockUserResponse> {
-    const response = await this.client.unaryCall(
-      'unBlockUser',
-      request,
-      options
-    );
-    return response as UnBlockUserResponse;
+  ): Promise<UnBlockAccountResponse> {
+    const response = await this.client.unaryCall('unBlockAccount', request, options);
+    return response as UnBlockAccountResponse;
+  }
+
+  async blockInstructor(
+    request: BlockInstructorRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<BlockInstructorResponse> {
+    const response = await this.client.unaryCall('blockInstructor', request, options);
+    return response as BlockInstructorResponse;
+  }
+  async unBlockInstructor(
+    request: UnBlockInstructorRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<UnBlockInstructorResponse> {
+    const response = await this.client.unaryCall('unBlockInstructor', request, options);
+    return response as UnBlockInstructorResponse;
   }
 
   async getCurrentUser(

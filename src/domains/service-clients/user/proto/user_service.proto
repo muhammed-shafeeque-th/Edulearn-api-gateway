@@ -40,7 +40,7 @@ message InstructorProfileData {
 message UserData {
   string id = 1;
   string email = 2;
-  string role = 3;
+  repeated string roles = 3; 
   string firstName = 4;
   string status = 5;
   optional string lastName = 9;
@@ -51,6 +51,8 @@ message UserData {
   repeated UserSocialsData socials = 11;
   optional string updatedAt = 12;
   optional string createdAt = 13;
+  // Use json formatted string or map for roleStatus map
+  map<string, string> roleStatus = 14; 
 }
 
 // Common Pagination Request
@@ -278,12 +280,17 @@ service UserService {
 //   // Get Details About the currently logged in User
   rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse);
 
-  // Block/Unblock a User
+  // Block/Unblock a User Account Completely
+  rpc BlockAccount(BlockAccountRequest) returns (BlockAccountResponse);
+  rpc UnBlockAccount(UnBlockAccountRequest) returns (UnBlockAccountResponse);
+
+  // Block/Unblock an Instructor Role specifically
+  rpc BlockInstructor(BlockInstructorRequest) returns (BlockInstructorResponse);
+  rpc UnBlockInstructor(UnBlockInstructorRequest) returns (UnBlockInstructorResponse);
+
+  // Legacy (Keep while migrating)
   rpc BlockUser(BlockUserRequest) returns (BlockUserResponse);
-
-  // Block/Unblock a User
   rpc UnBlockUser(UnBlockUserRequest) returns (UnBlockUserResponse);
-
 
   // Get All Instructors (with pagination)
   rpc GetAllInstructors(GetAllInstructorsRequest) returns (GetAllInstructorsResponse);
@@ -509,7 +516,7 @@ message GetUserResponse {
   }
 }
 
-// Block User
+// Legacy Block User
 message BlockUserRequest {
   string userId = 1;
 }
@@ -535,6 +542,57 @@ message BlockUserSuccess {
 }
 
 message UnBlockUserSuccess {
+  bool updated = 1;
+}
+
+// Explicit Role Blocking
+message BlockAccountRequest {
+  string userId = 1;
+}
+message UnBlockAccountRequest {
+  string userId = 1;
+}
+message BlockAccountResponse {
+  oneof result {
+    BlockAccountSuccess success = 1;
+    Error error = 2;
+  }
+}
+message UnBlockAccountResponse {
+  oneof result {
+    UnBlockAccountSuccess success = 1;
+    Error error = 2;
+  }
+}
+message BlockAccountSuccess {
+  bool updated = 1;
+}
+message UnBlockAccountSuccess {
+  bool updated = 1;
+}
+
+message BlockInstructorRequest {
+  string instructorId = 1;
+}
+message UnBlockInstructorRequest {
+  string instructorId = 1;
+}
+message BlockInstructorResponse {
+  oneof result {
+    BlockInstructorSuccess success = 1;
+    Error error = 2;
+  }
+}
+message UnBlockInstructorResponse {
+  oneof result {
+    UnBlockInstructorSuccess success = 1;
+    Error error = 2;
+  }
+}
+message BlockInstructorSuccess {
+  bool updated = 1;
+}
+message UnBlockInstructorSuccess {
   bool updated = 1;
 }
 
