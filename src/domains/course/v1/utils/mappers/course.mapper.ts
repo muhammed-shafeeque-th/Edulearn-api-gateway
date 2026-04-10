@@ -1,9 +1,9 @@
 import { CourseData, CourseMetadata } from "@/domains/service-clients/course/proto/generated/course/types/course";
-import { Course, CourseInfo, Lesson, Quiz, Section } from "../types";
+import { Course, CourseInfo, Lesson, Quiz, Module } from "../../types";
 import { QuizData } from "@/domains/service-clients/course/proto/generated/course/types/quiz";
 import { ContentMetaData, LessonData } from "@/domains/service-clients/course/proto/generated/course/types/lesson";
 import { ReviewData } from "@/domains/service-clients/course/proto/generated/course/types/review";
-import { SectionData } from "@/domains/service-clients/course/proto/generated/course/types/section";
+import { ModuleData } from "@/domains/service-clients/course/proto/generated/course/types/module";
 
 export class CourseResponseMapper {
   public static toCourse = (dto: CourseData): Course => {
@@ -40,7 +40,7 @@ export class CourseResponseMapper {
         email: dto.instructor!.email,
       },
       instructorId: dto.instructorId,
-      sections: dto.sections.map(CourseResponseMapper.toSection),
+      modules: dto.modules.map(CourseResponseMapper.toModule),
       createdAt: dto.createdAt,
       updatedAt: dto.updatedAt,
       deletedAt: dto.deletedAt ? dto.deletedAt : undefined,
@@ -82,14 +82,14 @@ export class CourseResponseMapper {
       instructorId: dto.instructorId,
       noOfLessons: dto.noOfLessons,
       noOfQuizzes: dto.noOfQuizzes,
-      noOfSections: dto.noOfSections,
+      noOfModules: dto.noOfModules,
       createdAt: dto.createdAt,
       updatedAt: dto.updatedAt,
       deletedAt: dto.deletedAt ? dto.deletedAt : undefined,
     };
   };
 
-  public static toSection = (dto: SectionData): Section => {
+  public static toModule = (dto: ModuleData): Module => {
     return {
       id: dto.id,
       courseId: dto.courseId,
@@ -122,7 +122,7 @@ export class CourseResponseMapper {
   public static toLesson = (dto: LessonData): Lesson => {
     return {
       id: dto.id,
-      sectionId: dto.sectionId,
+      moduleId: dto.moduleId,
       title: dto.title,
       contentUrl: dto.contentUrl,
       description: dto.description,
@@ -147,7 +147,7 @@ export class CourseResponseMapper {
     return {
       id: dto.id,
       courseId: dto.courseId,
-      sectionId: dto.sectionId,
+      moduleId: dto.moduleId,
       title: dto.title,
       description: dto.description,
       timeLimit: dto.timeLimit,
