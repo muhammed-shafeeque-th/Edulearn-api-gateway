@@ -2,7 +2,7 @@ import {
   CartData,
   CartItemData,
 } from '@/domains/service-clients/user/proto/generated/user/types/cart_types';
-import { Cart, CartItem } from '../types';
+import { Cart, CartItem } from '../../types/cart';
 
 export class CartResponseMapper {
   // Mapping Functions
