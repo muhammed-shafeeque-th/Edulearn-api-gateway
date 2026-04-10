@@ -1,60 +1,60 @@
 import { UserService } from '../../../service-clients/user';
 import { Request, Response } from 'express';
-import validateSchema from '../../../../services/validate-schema';
+import validateSchema from '../../../../services/security/validate-schema';
 
 import { ResponseWrapper } from '@/shared/utils/response-wrapper';
 import { NotificationService } from '@/domains/service-clients/notification';
 import { CourseService } from '@/domains/service-clients/course';
 import { Observe } from '@/services/observability/decorators';
-import { attachMetadata } from '../../utils/attach-metadata';
+import { attachMetadata } from '../utils/attach-metadata';
 import { mapPaginationResponse } from '@/shared/utils/map-pagination';
-import { getEnrollmentByUserSchema } from '../../schemas/enrollment/get-enrollments-by-user.schema';
-import { getReviewsByCourseSchema } from '../../schemas/review/get-reviews-by-courseId.schema';
-import { getReviewByEnrollmentSchema } from '../../schemas/review/get-review.schema';
-import { submitReviewSchema } from '../../schemas/review/submit-review.schema';
-import { deleteReviewSchema } from '../../schemas/review/delete-review.schema';
-import { updateReviewSchema } from '../../schemas/review/update-section.schema';
-import { getEnrollmentSchema } from '../../schemas/enrollment/get-enrollment.schema';
-import { deleteEnrollmentSchema } from '../../schemas/enrollment/delete-enrollment.schema';
-import { updateEnrollmentSchema } from '../../schemas/enrollment/update-enrollment.schema';
-import { getProgressSchema } from '../../schemas/progress/get-progress.schema';
-import { getProgressByEnrollmentSchema } from '../../schemas/progress/get-progress-by-enrollment.schema';
-import { updateLessonProgressSchema } from '../../schemas/progress/update-lesson-progress.schema';
-import { submitQuizProgressSchema } from '../../schemas/progress/submit-quiz-progress.schema';
-import { deleteProgressSchema } from '../../schemas/progress/delete-enrollment.schema';
-import { checkEnrollmentSchema } from '../../schemas/enrollment/check-enrollment.schema';
+import { getEnrollmentByUserSchema } from '../schemas/enrollment/get-enrollments-by-user.schema';
+import { getReviewsByCourseSchema } from '../schemas/review/get-reviews-by-courseId.schema';
+import { getReviewByEnrollmentSchema } from '../schemas/review/get-review.schema';
+import { submitReviewSchema } from '../schemas/review/submit-review.schema';
+import { deleteReviewSchema } from '../schemas/review/delete-review.schema';
+import { updateReviewSchema } from '../schemas/review/update-review.schema';
+import { getEnrollmentSchema } from '../schemas/enrollment/get-enrollment.schema';
+import { deleteEnrollmentSchema } from '../schemas/enrollment/delete-enrollment.schema';
+import { updateEnrollmentSchema } from '../schemas/enrollment/update-enrollment.schema';
+import { getProgressSchema } from '../schemas/progress/get-progress.schema';
+import { getProgressByEnrollmentSchema } from '../schemas/progress/get-progress-by-enrollment.schema';
+import { updateLessonProgressSchema } from '../schemas/progress/update-lesson-progress.schema';
+import { submitQuizProgressSchema } from '../schemas/progress/submit-quiz-progress.schema';
+import { deleteProgressSchema } from '../schemas/progress/delete-enrollment.schema';
+import { checkEnrollmentSchema } from '../schemas/enrollment/check-enrollment.schema';
 import {
   EnrollmentProgressData,
   ProgressData,
 } from '@/domains/service-clients/course/proto/generated/course/types/progress';
 import { ReviewData } from '@/domains/service-clients/course/proto/generated/course/types/review';
-import { videoPlaybackRefreshUrlSchema } from '../../schemas/video-playback-refresh.schema';
-import { videoPlaybackUrlSchema } from '../../schemas/video-playback.schema';
-import { AuthorizationError } from '@/shared/utils/errors/unauthorize.error';
+import { videoPlaybackRefreshUrlSchema } from '../schemas/video-playback-refresh.schema';
+import { videoPlaybackUrlSchema } from '../schemas/video-playback.schema';
+import { AuthorizationError } from '@/shared/errors/unauthorize.error';
 import {
   s3StorageService,
   S3StorageService,
 } from '@/services/media/storage.service';
-import { ENROLLMENT_MESSAGES } from '../../utils/resposne-messages';
+import { ENROLLMENT_MESSAGES } from '../utils/resposne-messages';
 import {
   DomainEnrollmentDetail,
   Enrollment,
   QuestionOption,
   QuizQuestion,
-} from '../../types';
+} from '../types';
 import {
   EnrollmentData,
   EnrollmentDetail,
 } from '@/domains/service-clients/course/proto/generated/course/types/enrollment';
-import { getCertificateSchema } from '../../schemas/certificate/get-certificate.schema';
+import { getCertificateSchema } from '../schemas/certificate/get-certificate.schema';
 import { CertificateData } from '@/domains/service-clients/course/proto/generated/course/types/certificate';
-import { getCertificateByEnrollmentSchema } from '../../schemas/certificate/get-certificate-by-enrollment.schema';
-import { generateCertificateSchema } from '../../schemas/certificate/generate-certificate.schema';
-import { getReviewSchema } from '../../schemas/review/get-review-by-enrollment.schema';
-import { getCertificatesByUserSchema } from '../../schemas/certificate/get-certificates-by-user.schema';
-import { downloadCertificateSchema } from '../../schemas/certificate/download-certificate.schema';
+import { getCertificateByEnrollmentSchema } from '../schemas/certificate/get-certificate-by-enrollment.schema';
+import { generateCertificateSchema } from '../schemas/certificate/generate-certificate.schema';
+import { getReviewSchema } from '../schemas/review/get-review-by-enrollment.schema';
+import { getCertificatesByUserSchema } from '../schemas/certificate/get-certificates-by-user.schema';
+import { downloadCertificateSchema } from '../schemas/certificate/download-certificate.schema';
 import { HttpStatus } from '@/shared/constants/http-status';
-import { EnrollmentResponseMapper } from '../../utils/mappers';
+import { EnrollmentResponseMapper } from '../utils/mappers';
 import { EnrollmentService } from '@/domains/service-clients/enrollment';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '@/services/di';

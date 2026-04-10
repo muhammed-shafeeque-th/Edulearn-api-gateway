@@ -16,13 +16,13 @@ export class EnrollmentResponseMapper {
       progressPercent: enrollmentDetail.progressPercent,
       userId: enrollmentDetail.userId,
       status: enrollmentDetail.status,
-      sections: enrollmentDetail.sections.map(section => ({
-        description: section.description,
-        id: section.id,
-        isPublished: section.isPublished,
-        order: section.order,
-        title: section.title,
-        lessons: section.lessons.map(lesson => ({
+      modules: enrollmentDetail.modules.map(module => ({
+        description: module.description,
+        id: module.id,
+        isPublished: module.isPublished,
+        order: module.order,
+        title: module.title,
+        lessons: module.lessons.map(lesson => ({
           id: lesson.id,
           duration: lesson.duration,
           completed: lesson.completed,
@@ -30,11 +30,11 @@ export class EnrollmentResponseMapper {
           order: lesson.order,
           title: lesson.title,
         })),
-        quiz: section.quiz
+        quiz: module.quiz
           ? {
-            description: section.quiz.description,
-            timeLimit: section.quiz.timeLimit,
-            questions: section.quiz.questions.map<QuizQuestion>(question => ({
+            description: module.quiz.description,
+            timeLimit: module.quiz.timeLimit,
+            questions: module.quiz.questions.map<QuizQuestion>(question => ({
               id: question.id,
               options: question.options.map<QuestionOption>(option => ({
                 value: option.value,
@@ -47,14 +47,14 @@ export class EnrollmentResponseMapper {
               score: question.score,
               timeLimit: question.timeLimit,
             })),
-            completed: section.quiz.completed,
-            completedAt: section.quiz.completedAt,
-            id: section.quiz.id,
-            passed: section.quiz.passed,
-            passingScore: section.quiz.passingScore,
-            requirePassingScore: section.quiz.requirePassingScore,
-            score: section.quiz.score,
-            title: section.quiz.title,
+            completed: module.quiz.completed,
+            completedAt: module.quiz.completedAt,
+            id: module.quiz.id,
+            passed: module.quiz.passed,
+            passingScore: module.quiz.passingScore,
+            requirePassingScore: module.quiz.requirePassingScore,
+            score: module.quiz.score,
+            title: module.quiz.title,
           }
           : undefined,
       })),

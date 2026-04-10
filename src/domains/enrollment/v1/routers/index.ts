@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '@/shared/utils/async-handler';
-import { EnrollmentController } from '../../controllers/v1/enrollment.controller';
+import { EnrollmentController } from '../controllers';
 import { container, TYPES } from '@/services/di';
 
 const router = Router();
@@ -120,4 +120,4 @@ router.post(
   )
 );
 
-export { router as enrollmentRoutesV1 };
+export { router as enrollmentRouterV1 };
