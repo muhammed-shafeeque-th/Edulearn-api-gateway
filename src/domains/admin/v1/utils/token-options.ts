@@ -1,4 +1,4 @@
-import { ITokenOptions } from '@/shared/types';
+import { ITokenOptions } from '@/services/auth-token';
 import { config } from '../../../../config';
 import { decode } from 'jsonwebtoken';
 

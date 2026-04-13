@@ -2,7 +2,7 @@ import { ResponseWrapper } from '@/shared/utils/response-wrapper';
 import { adminRefreshToken, adminToken } from './constants';
 import { getAdminAccessTokenOptions, getAdminRefreshTokenOptions } from './token-options';
 import { Response } from 'express';
-import { ITokenOptions } from '@/shared/types';
+import { ITokenOptions } from '@/services/auth-token';
 
 export function attachAdminCookies<TResponse extends Response>(
   res: TResponse | ResponseWrapper,
