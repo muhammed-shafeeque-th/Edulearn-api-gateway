@@ -1,3 +1,4 @@
+import { injectable } from 'inversify';
 import {
   httpRequestDurationSeconds,
   httpRequestsTotal,
@@ -14,16 +15,11 @@ import {
   Registry,
   register as globalRegister,
 } from 'prom-client';
-
-export interface MetricLabels {
-  [key: string]: string | number;
-}
-
-import { injectable } from 'inversify';
+import { IMetricService, MetricLabels } from '../../interfaces/metric.interface';
 
 @injectable()
-export class MetricsService {
-  private static instance: MetricsService;
+export class MetricService implements IMetricService {
+  private static instance: MetricService;
   private readonly registry: Registry;
 
   private constructor() {
@@ -32,12 +28,11 @@ export class MetricsService {
     collectDefaultMetrics({ register: this.registry });
   }
 
-  
-  public static getInstance(): MetricsService {
-    if (!MetricsService.instance) {
-      MetricsService.instance = new MetricsService();
+  public static getInstance(): MetricService {
+    if (!MetricService.instance) {
+      MetricService.instance = new MetricService();
     }
-    return MetricsService.instance;
+    return MetricService.instance;
   }
 
   public measureHttpRequestDuration(
@@ -116,9 +111,7 @@ export class MetricsService {
     if (counter && counter instanceof Counter) {
       counter.inc({ ...labels });
     } else {
-      console.warn(
-        `[MetricsService] Counter metric '${metricName}' not found.`
-      );
+      console.warn(`[MetricService] Counter metric '${metricName}' not found.`);
     }
   }
 
@@ -132,7 +125,7 @@ export class MetricsService {
       histogram.observe({ ...labels }, value);
     } else {
       console.warn(
-        `[MetricsService] Histogram metric '${metricName}' not found.`
+        `[MetricService] Histogram metric '${metricName}' not found.`
       );
     }
   }
@@ -146,7 +139,7 @@ export class MetricsService {
     if (metric && metric instanceof Gauge) {
       metric.set({ ...labels }, value);
     } else {
-      console.warn(`[MetricsService] Gauge metric '${metricName}' not found.`);
+      console.warn(`[MetricService] Gauge metric '${metricName}' not found.`);
     }
   }
 
@@ -159,9 +152,7 @@ export class MetricsService {
     if (metric && metric instanceof Summary) {
       metric.observe({ ...labels }, value);
     } else {
-      console.warn(
-        `[MetricsService] Summary metric '${metricName}' not found.`
-      );
+      console.warn(`[MetricService] Summary metric '${metricName}' not found.`);
     }
   }
 
@@ -170,7 +161,7 @@ export class MetricsService {
       this.registry.removeSingleMetric(metricName);
     } catch (err) {
       console.warn(
-        `[MetricsService] Failed removing metric '${metricName}'.`,
+        `[MetricService] Failed removing metric '${metricName}'.`,
         err
       );
     }
@@ -181,7 +172,7 @@ export class MetricsService {
       return this.registry.metrics();
     } catch (error) {
       console.error(
-        '[MetricsService] Error while fetching prometheus metrics:',
+        '[MetricService] Error while fetching prometheus metrics:',
         error
       );
       throw error;
