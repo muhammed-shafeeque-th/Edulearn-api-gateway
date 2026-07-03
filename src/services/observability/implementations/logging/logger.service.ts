@@ -2,21 +2,12 @@ import { config } from '@/config';
 import { logger, shutdownLogger } from './setup';
 import { context, trace } from '@opentelemetry/api';
 import { injectable } from 'inversify';
+import { ILoggerService, LogContext } from '../../interfaces/logger.service';
 
-export interface LogContext {
-  traceId?: string;
-  spanId?: string;
-  userId?: string;
-  correlationId?: string;
-  service?: string;
-  environment?: string;
-  ctx?: string; // e.g., method or component
-  [key: string]: unknown;
-}
 
 
 @injectable()
-export class LoggingService {
+export class LoggerService implements ILoggerService {
   private readonly serviceName: string;
   private readonly boundContext: LogContext;
 
@@ -25,18 +16,18 @@ export class LoggingService {
     this.boundContext = { ...defaultContext };
   }
 
-  public static getLogger(context: LogContext = {}): LoggingService {
-    return new LoggingService(context);
+  public static getLogger(context: LogContext = {}): ILoggerService {
+    return new LoggerService(context);
   }
 
  
-  public static getInstance(context: LogContext = {}): LoggingService {
-    if (!LoggingService.singleton) {
-      LoggingService.singleton = new LoggingService(context);
+  public static getInstance(context: LogContext = {}): ILoggerService {
+    if (!LoggerService.singleton) {
+      LoggerService.singleton = new LoggerService(context);
     }
-    return LoggingService.singleton;
+    return LoggerService.singleton;
   }
-  private static singleton: LoggingService;
+  private static singleton: ILoggerService;
 
   private composeLog(
     level: 'info' | 'warn' | 'error' | 'debug',
