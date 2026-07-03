@@ -2,9 +2,10 @@ import { Container } from 'inversify';
 import { TYPES } from './types';
 
 // Core Services
-import { LoggingService } from '@/services/observability/logging/logging.service';
-import { TracingService } from '@/services/observability/tracing/trace.service';
-import { MetricsService } from '@/services/observability/metrics/metrics.service';
+import { LoggerService, MetricService, TraceService } from '../observability/implementations';
+import { ITraceService } from '../observability/interfaces/trace.service';
+import { ILoggerService } from '../observability/interfaces/logger.service';
+import { IMetricService } from '../observability/interfaces/metric.interface';
 
 // Domain Services
 import { AuthService } from '@/domains/service-clients/auth';
@@ -46,21 +47,21 @@ const container = new Container();
 
 // Bind Core Services
 container
-  .bind<LoggingService>(TYPES.LoggingService)
+  .bind<ILoggerService>(TYPES.LoggerService)
   .toDynamicValue(context => {
-    return LoggingService.getInstance();
+    return LoggerService.getInstance();
   })
   .inSingletonScope();
 container
-  .bind<TracingService>(TYPES.TracingService)
+  .bind<ITraceService>(TYPES.TraceService)
   .toDynamicValue(context => {
-    return TracingService.getInstance();
+    return TraceService.getInstance();
   })
   .inSingletonScope();
 container
-  .bind<MetricsService>(TYPES.MetricsService)
+  .bind<IMetricService>(TYPES.MetricService)
   .toDynamicValue(context => {
-    return MetricsService.getInstance();
+    return MetricService.getInstance();
   })
   .inSingletonScope();
 
