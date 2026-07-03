@@ -43,7 +43,11 @@ export const config = {
       courseService: process.env.COURSE_SERVICE_GRPC || 'localhost:50053',
       paymentService: process.env.PAYMENT_SERVICE_GRPC || 'localhost:50055',
       orderService: process.env.ORDER_SERVICE_GRPC || 'localhost:50054',
-      chatService: process.env.CHAT_SERVICE_GRPC || 'localhost:50059',
+      chatService: process.env./* The `CHAT_SERVICE_GRPC` environment variable is used to store the
+      address and port of the gRPC service for the chat service. This
+      variable is used to configure the connection to the chat service
+      within the application. */
+      CHAT_SERVICE_GRPC || 'localhost:50059',
       sessionService: process.env.SESSION_SERVICE_GRPC || 'localhost:50057',
       notificationService:
         process.env.NOTIFICATION_SERVICE_GRPC || 'localhost:50056',
