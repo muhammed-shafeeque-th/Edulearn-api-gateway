@@ -2,7 +2,10 @@ export abstract class BaseError extends Error {
   abstract statusCode: number;
   abstract errorCode: any;
 
-  constructor(message?: string, public readonly reason?: string) {
+  constructor(
+    message?: string,
+    public readonly reason?: string
+  ) {
     super(message);
 
     Object.setPrototypeOf(this, new.target.prototype);

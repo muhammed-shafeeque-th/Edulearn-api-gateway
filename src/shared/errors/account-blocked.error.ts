@@ -1,6 +1,6 @@
-import { BaseError } from "./base-error";
-import { ErrorCodes } from "./codes/error-codes";
-import { ErrorStatusCodes } from "./codes/error-status-codes";
+import { BaseError } from './base-error';
+import { ErrorCodes } from './codes/error-codes';
+import { ErrorStatusCodes } from './codes/error-status-codes';
 
 export class AccountBlockedError extends BaseError {
   errorCode: ErrorCodes.ACCOUNT_BLOCKED = ErrorCodes.ACCOUNT_BLOCKED;
@@ -8,7 +8,7 @@ export class AccountBlockedError extends BaseError {
     ErrorStatusCodes.ACCOUNT_BLOCKED;
 
   public constructor(message?: string) {
-    super(message || "Your account has been blocked. Please contact support.");
+    super(message || 'Your account has been blocked. Please contact support.');
   }
 
   serializeErrors(): { message: string; field?: string }[] {
