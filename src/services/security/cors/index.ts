@@ -13,7 +13,9 @@ export const corsOptions: CorsOptions = {
       if (process.env.NODE_ENV !== 'production') {
         return callback(null, true);
       }
-      return callback(new Error('CORS policy violation: origin required in production'));
+      return callback(
+        new Error('CORS policy violation: origin required in production')
+      );
     }
 
     if (allowedOrigins.includes(requestOrigin)) {
@@ -33,8 +35,12 @@ export const corsOptions: CorsOptions = {
     'X-CSRF-Token',
   ],
   // Expose rate-limit and retry headers so clients can handle throttling gracefully
-  exposedHeaders: ['X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset', 'Retry-After'],
+  exposedHeaders: [
+    'X-RateLimit-Limit',
+    'X-RateLimit-Remaining',
+    'X-RateLimit-Reset',
+    'Retry-After',
+  ],
   optionsSuccessStatus: HttpStatus.NO_CONTENT,
   maxAge: 86400, // 24 hours
 };
-
