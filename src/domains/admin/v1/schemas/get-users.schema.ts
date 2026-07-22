@@ -60,7 +60,6 @@ const userFilterSchema = z
   })
   .partial();
 
-
 export const getUsersRequestSchema: ZodType<ListUsersRequest> = z
   .object({
     pagination: paginationSchema.optional(),

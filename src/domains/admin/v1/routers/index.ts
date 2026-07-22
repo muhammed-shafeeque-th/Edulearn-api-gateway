@@ -5,8 +5,9 @@ import { Router } from 'express';
 import { authGuard } from '@/middlewares/auth.middleware';
 import { Permissions } from '@/shared/types';
 import { RESPONSE_CACHE_KEYS } from '@/services/redis/cache-keys';
-import { container, TYPES } from '@/services/di';
 import { adminRateLimiter } from '@/services/security/ratelimiter';
+import { container } from '@/services/di/di.config';
+import { TYPES } from '@/services/di';
 
 const router = Router();
 

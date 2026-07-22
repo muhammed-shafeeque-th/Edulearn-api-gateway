@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import validateSchema from '../../../../services/security/validate-schema';
+import validateSchema from '@/services/security/validate-schema';
 import { ResponseWrapper } from '@/shared/utils/response-wrapper';
 
 import { NotificationService } from '../../../service-clients/notification';
@@ -7,7 +7,6 @@ import { blockUserSchema } from '../schemas/block-user.schema';
 import { updateUserSchema } from '../schemas/update-user.schema';
 import { unBlockUserSchema } from '../schemas/unblock-user.schema';
 import { detailedUserSchema } from '../schemas/get-user.schema';
-import { LoggingService } from 'services/observability/logging/logging.service';
 import { HttpStatus } from '@/shared/constants/http-status';
 import { attachMetadata } from '../utils/attach-metadata';
 import { Observe } from '@/services/observability/decorators';
@@ -32,12 +31,13 @@ import { TYPES } from '@/services/di';
 import { unBlockInstructorSchema } from '../schemas/unblock-instructor.schema';
 import { blockInstructorSchema } from '../schemas/block-instructor.schema';
 import { config } from '@/config';
+import { LoggerService } from '@/services/observability/implementations';
 
 @injectable()
 @Observe({ logLevel: config.observability.logger.logLevel as 'debug' })
 export class AdminController {
   constructor(
-    @inject(TYPES.LoggingService) private logger: LoggingService,
+    @inject(TYPES.LoggerService) private logger: LoggerService,
     @inject(TYPES.UserService) private userServiceClient: UserService,
     @inject(TYPES.NotificationService)
     private notificationService: NotificationService,

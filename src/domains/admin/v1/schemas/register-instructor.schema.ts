@@ -3,7 +3,10 @@ import { z, ZodType } from 'zod';
 
 export const registerInstructorSchema: ZodType<RegisterInstructorRequest> =
   z.object({
-    userId: z.string().uuid().uuid({ message: '`userId` must be type of UUID' }),
+    userId: z
+      .string()
+      .uuid()
+      .uuid({ message: '`userId` must be type of UUID' }),
     username: z.string(),
     tags: z.array(z.string()),
     agreeToTerms: z.boolean(),
