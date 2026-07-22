@@ -36,12 +36,12 @@ export const RegisterUserSchema = z
     avatar: z.string().optional(),
     authType: z.enum(Object.values(AuthType) as [string], {
       message: 'Invalid authType. type must be one of the auth types*',
-    }), 
+    }),
   })
   .refine(
     data => data.authType === AuthType.OAUTH || data.password !== undefined,
     {
-      message: "Password is required unless",
+      message: 'Password is required unless',
       path: ['password'],
     }
   )

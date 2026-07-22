@@ -11,7 +11,6 @@ import { ResendOtpSchema } from '../schemas/resend-otp.schema';
 import { Auth2SignSchema } from '../schemas/auth2-sign.schema';
 import { LogoutUserSchema } from '../schemas/logout.schema';
 import { refreshTokenSchema } from '../schemas/refresh-token.schema';
-import { LoggingService } from '@/services/observability/logging/logging.service';
 import { changePasswordSchema } from '../schemas/change-password.schema';
 import { BloomFilterFacade } from '@/services/bloom-filter';
 import { forgotPasswordSchema } from '../schemas/forgot-password.schema';
@@ -26,21 +25,22 @@ import { emailAvailabilitySchema } from '@/domains/admin/v1/schemas/email-availa
 import { Observe } from '@/services/observability/decorators';
 import { config } from '@/config';
 import { CSRF_COOKIE_NAME } from '@/services/auth-token';
-import { randomBytes } from "node:crypto";
+import { randomBytes } from 'node:crypto';
+import { ILoggerService } from '@/services/observability/interfaces/logger.service';
 
 @injectable()
-@Observe({ logLevel: config.observability.logger.logLevel as "debug" })
+@Observe({ logLevel: config.observability.logger.logLevel as 'debug' })
 export class AuthController {
   private _emailAvailabilityService?: BloomFilterFacade;
 
   constructor(
-    @inject(TYPES.LoggingService) private logger: LoggingService,
+    @inject(TYPES.LoggerService) private logger: ILoggerService,
     @inject(TYPES.AuthService) private userServiceClient: AuthService,
     @inject(TYPES.NotificationService)
     private notificationService: NotificationService
-  ) { }
+  ) {}
 
-  // Lazy getter for BloomFilterFacade 
+  // Lazy getter for BloomFilterFacade
   private get emailAvailabilityService(): BloomFilterFacade {
     if (!this._emailAvailabilityService) {
       this.logger.debug('Initializing BloomFilterFacade...');
@@ -328,5 +328,5 @@ export class AuthController {
    */
   private _generateCsrfToken = (): string => {
     return randomBytes(32).toString('hex');
-  }
+  };
 }
