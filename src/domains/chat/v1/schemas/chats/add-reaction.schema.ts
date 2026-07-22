@@ -1,6 +1,4 @@
-import {
-  AddReactionRequest,
-} from '@/domains/service-clients/chat/proto/generated/chat_service';
+import { AddReactionRequest } from '@/domains/service-clients/chat/proto/generated/chat_service';
 import { z, ZodType } from 'zod';
 
 export const addReactionSchema: ZodType<AddReactionRequest> = z.object({

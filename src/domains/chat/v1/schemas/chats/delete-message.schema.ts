@@ -12,8 +12,8 @@ export const deleteMessagesSchema: ZodType<DeleteMessageRequest> = z.object({
   // Accept forEveryOne from querystring as a string and convert to boolean
   forEveryOne: z
     .string()
-    .default("false")
-    .transform(str => str === 'true' ? true : false),
+    .default('false')
+    .transform(str => (str === 'true' ? true : false)),
 }) as unknown as ZodType<DeleteMessageRequest>;
 
 export type EditMessagesSchema = z.infer<typeof deleteMessagesSchema>;
