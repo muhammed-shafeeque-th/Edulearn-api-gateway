@@ -2,14 +2,15 @@ import { Request, Response, NextFunction } from 'express';
 import { promisify } from 'util';
 import { RedisService } from '@/services/redis';
 import zlib from 'zlib';
-import { LoggingService } from '../services/observability/logging/logging.service';
-import { container, TYPES } from '@/services/di';
+import { container } from '@/services/di/di.config';
+import { TYPES } from '@/services/di';
+import { ILoggerService } from '@/services/observability/interfaces/logger.service';
 
 const compress = promisify(zlib.gzip);
 const decompress = promisify(zlib.gunzip);
 
-const logger = container.get<LoggingService>(TYPES.LoggingService);
-const redisService = container.get<RedisService>(TYPES.RedisService);
+const logger = container.get<ILoggerService>(TYPES.LoggerService);
+const redisService = container.get<RedisService>(TYPES.CacheService);
 
 interface CacheOptions {
   duration: number;

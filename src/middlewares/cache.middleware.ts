@@ -1,9 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { RedisService } from '@/services/redis';
 import { ResponseWrapper } from '@/shared/utils/response-wrapper';
-import { container, TYPES } from '@/services/di';
-
-const redis = container.get<RedisService>(TYPES.RedisService);
+import { lazyCache } from '@/shared/utils/lazy.services';
 
 export function cacheMiddleware(
   ttl: number,
@@ -13,7 +10,7 @@ export function cacheMiddleware(
   return async (req: Request, res: Response, next: NextFunction) => {
     const key = keyGen(req);
 
-    const cached = await redis.get<any>(key);
+    const cached = await lazyCache()?.get<any>(key);
 
     if (cached) {
       if (!res.headersSent) {
@@ -69,11 +66,11 @@ export function cacheMiddleware(
         ts: Date.now(),
       };
 
-      await redis.set(key, cacheData, ttl);
+      await lazyCache()?.set(key, cacheData, ttl);
 
       if (tags) {
         for (const tag of tags(req)) {
-          await redis.getClient().sadd(`tag:${tag}`, key);
+          await lazyCache()?.getClient().sadd(`tag:${tag}`, key);
         }
       }
     });

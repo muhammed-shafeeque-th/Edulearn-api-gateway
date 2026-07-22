@@ -10,7 +10,7 @@ const getCompressionLevel = (size: number): number => {
 
 export const compress = compression({
   filter: (req: Request, res: Response) => {
-    // Skip compression for small responses 
+    // Skip compression for small responses
     const contentType = res.getHeader('Content-Type');
     if (!contentType) return false;
 

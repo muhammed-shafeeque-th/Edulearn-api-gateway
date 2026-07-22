@@ -109,7 +109,6 @@ export const errorHandler = async (
       statusCode === 401 ||
       errorResponse.error.code?.includes('AUTHENTICATION'))
   ) {
-
     // Clear cookies if refresh fails
     clearCookies(res);
   }
