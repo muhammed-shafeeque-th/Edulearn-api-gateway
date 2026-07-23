@@ -29,8 +29,10 @@ const EXEMPT_PREFIXES: string[] = [
 ];
 
 function isExemptPath(url: string): boolean {
-  const path = (url.split('?')[0]) ?? url; // strip query string, guaranteed non-undefined
-  return EXEMPT_PREFIXES.some((prefix) => path === prefix || path.startsWith(prefix + '/'));
+  const path = url.split('?')[0] ?? url; // strip query string, guaranteed non-undefined
+  return EXEMPT_PREFIXES.some(
+    prefix => path === prefix || path.startsWith(prefix + '/')
+  );
 }
 
 /**
@@ -40,18 +42,11 @@ export function generateCsrfToken(): string {
   return crypto.randomBytes(32).toString('hex');
 }
 
-
-/**
- * CSRF validation middleware (double-submit cookie pattern).
- *
- * For every mutating request:
- * 1. Read the token from the `X-CSRF-Token` request header.
- * 2. Read the token from the `__Host-csrf` cookie.
- * 3. Reject with 403 if either is missing or they do not match.
- *
- * Safe methods (GET, HEAD, OPTIONS) and explicitly exempt paths bypass validation.
- */
-export function csrfProtection(req: Request, res: Response, next: NextFunction): void {
+export function csrfProtection(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
   // Skip safe HTTP methods
   if (SAFE_METHODS.has(req.method)) {
     return next();
@@ -65,8 +60,12 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction):
 
   // req.headers values can be string | string[] | undefined; normalize to a plain string
   const rawHeader = req.headers[CSRF_HEADER_NAME];
-  const headerToken: string | undefined = Array.isArray(rawHeader) ? rawHeader[0] : rawHeader;
-  const cookieToken: string | undefined = req.cookies?.[CSRF_COOKIE_NAME] as string | undefined;
+  const headerToken: string | undefined = Array.isArray(rawHeader)
+    ? rawHeader[0]
+    : rawHeader;
+  const cookieToken: string | undefined = req.cookies?.[CSRF_COOKIE_NAME] as
+    | string
+    | undefined;
 
   if (!headerToken || !cookieToken) {
     res.status(403).json({

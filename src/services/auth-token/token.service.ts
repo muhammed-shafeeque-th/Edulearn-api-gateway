@@ -6,14 +6,13 @@ import { TYPES } from '../di';
 
 @injectable()
 export class TokenService {
-  constructor(@inject(TYPES.RedisService) private redisService: RedisService) {}
+  constructor(@inject(TYPES.CacheService) private redisService: RedisService) {}
 
   public async isTokenRevoked(jti: string): Promise<boolean> {
     const client = this.redisService.getClient();
     const isRevoked = await client.get(`revoked_token:${jti}`);
     return !!isRevoked;
   }
-
 
   public async isUserBlocked(userId: string): Promise<boolean> {
     const client = this.redisService.getClient();
@@ -35,4 +34,3 @@ export class TokenService {
     });
   }
 }
-

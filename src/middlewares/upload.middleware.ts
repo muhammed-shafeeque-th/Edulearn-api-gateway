@@ -1,6 +1,6 @@
-import multer from "multer";
-import { StorageMemory } from "@/shared/constants/storage";
-import { fileFilter } from "@/shared/utils/fileFilter.utils";
+import multer from 'multer';
+import { StorageMemory } from '@/shared/constants/storage';
+import { fileFilter } from '@/shared/utils/fileFilter.utils';
 
 const storage = multer.memoryStorage();
 
@@ -12,6 +12,6 @@ const upload = multer({
   fileFilter: fileFilter,
 });
 
-export const uploadSingleImage = upload.single("image");
-export const uploadSingleFile = upload.single("file");
-export const uploadMultipleFiles = upload.array("files", 5);
+export const uploadSingleImage = upload.single('image');
+export const uploadSingleFile = upload.single('file');
+export const uploadMultipleFiles = upload.array('files', 5);

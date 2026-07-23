@@ -41,15 +41,13 @@ export const updateCurrentUserSchema: ZodType<UpdateUserDetailsRequest> =
     country: z.string().optional(),
     gender: z.enum(['male', 'female', 'other']).optional(),
     phone: z
-    .string()
-    .optional()
-    .or(z.literal(''))
-    .refine(
-      phone =>
-        !phone ||
-        /^[\d\s()+-]{7,20}$/.test(phone), // accepts international numbers with spaces, +, -, (, )
-      { message: 'Phone must be a valid phone number' }
-    ),
+      .string()
+      .optional()
+      .or(z.literal(''))
+      .refine(
+        phone => !phone || /^[\d\s()+-]{7,20}$/.test(phone), // accepts international numbers with spaces, +, -, (, )
+        { message: 'Phone must be a valid phone number' }
+      ),
   }) as ZodType<UpdateUserDetailsRequest>;
 
 export type UpdateCurrentUserDto = z.infer<typeof updateCurrentUserSchema>;

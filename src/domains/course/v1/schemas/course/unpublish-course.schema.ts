@@ -1,4 +1,4 @@
-import {  UnPublishCourseRequest } from '@/domains/service-clients/course/proto/generated/course/types/course';
+import { UnPublishCourseRequest } from '@/domains/service-clients/course/proto/generated/course/types/course';
 import { z, ZodType } from 'zod';
 
 export const unPublishCourseSchema: ZodType<UnPublishCourseRequest> = z.object({

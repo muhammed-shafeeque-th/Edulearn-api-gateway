@@ -10,77 +10,81 @@ import {
   forgotPasswordRateLimiter,
   emailCheckRateLimiter,
 } from '@/services/security/ratelimiter';
-import { container, TYPES } from '@/services/di';
+import { container } from '@/services/di/di.config';
+import { TYPES } from '@/services/di';
+import { authEndpoints } from './route.constants';
 
 const router = Router();
 
 const authController = container.get<AuthController>(TYPES.AuthController);
 
-router.get('/csrf-token', authController.generateCsrfToken.bind(authController));
+router.get(
+  authEndpoints.csrfToken,
+  authController.generateCsrfToken.bind(authController)
+);
 
 router.post(
-  '/register',
+  authEndpoints.register,
   registerRateLimiter,
   asyncHandler(authController.registerUser.bind(authController))
 );
 
 router.post(
-  '/oauth',
+  authEndpoints.oauth,
   asyncHandler(authController.oauthSign.bind(authController))
 );
 
 router.get(
-  '/email-check',
+  authEndpoints.emailCheck,
   emailCheckRateLimiter,
   asyncHandler(authController.checkEmailAvailability.bind(authController))
 );
 
 router.post(
-  '/login',
+  authEndpoints.login,
   loginRateLimiter,
   asyncHandler(authController.loginUser.bind(authController))
 );
 
 router.post(
-  '/logout',
+  authEndpoints.logout,
   authGuard(),
   asyncHandler(authController.logoutUser.bind(authController))
 );
 
 router.post(
-  '/refresh',
+  authEndpoints.refresh,
   asyncHandler(authController.refreshToken.bind(authController))
 );
 
 router.post(
-  '/verify',
+  authEndpoints.verify,
   otpRateLimiter,
   asyncHandler(authController.verifyUser.bind(authController))
 );
 
 router.post(
-  '/resend-otp',
+  authEndpoints.resendOtp,
   otpRateLimiter,
   asyncHandler(authController.resendOtp.bind(authController))
 );
 
 router.post(
-  '/reset-password',
+  authEndpoints.resetPassword,
   asyncHandler(authController.resetPassword.bind(authController))
 );
 
 router.post(
-  '/change-password',
+  authEndpoints.changePassword,
   authGuard(),
   blocklistMiddleware,
   asyncHandler(authController.changePassword.bind(authController))
 );
 
 router.post(
-  '/forgot-password',
+  authEndpoints.forgotPassword,
   forgotPasswordRateLimiter,
   asyncHandler(authController.forgotPassword.bind(authController))
 );
 
 export { router as authRoutesV1 };
-

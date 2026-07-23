@@ -9,9 +9,6 @@ import { blockUserSchema } from '../schemas/user/block-user.schema';
 import { updateUserSchema } from '../schemas/user/update-user.schema';
 import { unBlockUserSchema } from '../schemas/user/unblock-user.schema';
 import { detailedUserSchema } from '../schemas/user/get-user.schema';
-import { LoggingService } from '@/services/observability/logging/logging.service';
-import { TracingService } from '@/services/observability/tracing/trace.service';
-import { MetricsService } from '@/services/observability/metrics/metrics.service';
 import { UserData } from '@/domains/service-clients/user/proto/generated/user/types/user_types';
 import { updateCurrentUserSchema } from '../schemas/user/update-current-user.schema';
 import { currentUserSchema } from '../schemas/user/current-user.schema';
@@ -47,6 +44,11 @@ import { Trace, MonitorGrpc } from '@/services/decorators/decorators';
 import { TYPES } from '@/services/di';
 import { Observe } from '@/services/observability/decorators';
 import { BloomFilterFacade } from '@/services/bloom-filter';
+import {
+  ILoggerService,
+  IMetricService,
+  ITraceService,
+} from '@/services/observability/interfaces';
 
 @injectable()
 @Observe({ logLevel: 'debug' })
@@ -61,10 +63,10 @@ export class UserController {
     private enrollmentService: EnrollmentService,
     @inject(TYPES.ChatService) private chatService: ChatService,
     @inject(TYPES.CourseService) private courseServiceClient: CourseService,
-    @inject(TYPES.RedisService) private cacheService: RedisService,
-    @inject(TYPES.LoggingService) private logger: LoggingService,
-    @inject(TYPES.TracingService) private tracer: TracingService,
-    @inject(TYPES.MetricsService) private monitor: MetricsService
+    @inject(TYPES.CacheService) private cacheService: RedisService,
+    @inject(TYPES.LoggerService) private logger: ILoggerService,
+    @inject(TYPES.TraceService) private tracer: ITraceService,
+    @inject(TYPES.MetricService) private monitor: IMetricService
   ) {}
 
   private get bloomFilterService(): BloomFilterFacade {
@@ -181,7 +183,6 @@ export class UserController {
     const { users } = await this.userServiceClient.listUsers(validPayload, {
       metadata: attachMetadata(req),
     });
-
 
     const paginationResponse = mapPaginationResponse(
       validPayload.pagination!,

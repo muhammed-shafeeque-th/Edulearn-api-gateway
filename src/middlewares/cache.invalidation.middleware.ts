@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { RedisService } from '@/services/redis';
-import { container, TYPES } from '@/services/di';
+import { container } from '@/services/di/di.config';
+import { TYPES } from '@/services/di';
 
-const redis = container.get<RedisService>(TYPES.RedisService);
+const redis = container.get<RedisService>(TYPES.CacheService);
 
 /**
  * Middleware to invalidate cache tags after a successful response.

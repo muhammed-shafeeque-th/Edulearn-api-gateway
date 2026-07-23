@@ -4,7 +4,10 @@ import {
   CircuitBreakerWrapper,
   defaultCircuitBreakerConfig,
 } from './circuit-breaker';
-import { defaultRateLimiterConfig, RateLimiter } from '../../../services/security/ratelimiter/rate-limiter';
+import {
+  defaultRateLimiterConfig,
+  RateLimiter,
+} from '../../../services/security/ratelimiter/rate-limiter';
 import { GrpcClientConfig, GrpcClientOptions } from './types';
 import { StorageMemory } from '@/shared/constants/storage';
 import { GrpcServiceError } from '../../errors/grpc-service.error';
@@ -13,13 +16,11 @@ import { type Error as ErrorResponse } from '@/domains/service-clients/user/prot
 import { config as appConfig, config } from '@/config';
 import { EventEmitter } from 'events';
 
-
 type ProtoObject =
   | grpc.GrpcObject
   | grpc.ServiceClientConstructor
   | grpc.ProtobufTypeDefinition
   | undefined;
-
 
 export class GrpcClient<T extends grpc.Client> {
   private readonly client: T;
@@ -42,7 +43,6 @@ export class GrpcClient<T extends grpc.Client> {
 
     this.metadata = new grpc.Metadata();
     this.initializeMetadata();
-
 
     const proto = this.loadProto();
     this.client = this.initializeClient(proto);
@@ -130,7 +130,6 @@ export class GrpcClient<T extends grpc.Client> {
    * Sets base metadata for each outbound call.
    */
   private initializeMetadata(): void {
-
     this.metadata.set('x-service-version', config?.serviceVersion || '1.0.1');
     this.metadata.set('x-client-id', config?.serviceClientId || '123');
   }
@@ -155,7 +154,6 @@ export class GrpcClient<T extends grpc.Client> {
   ): Promise<P> {
     let metadata = options.metadata || this.metadata;
     metadata = this.mergeMetadata(metadata);
-
 
     return this.circuitBreaker.execute(
       method,
@@ -185,7 +183,6 @@ export class GrpcClient<T extends grpc.Client> {
         `Method ${String(method)} is not defined on the gRPC client.`
       );
     }
-
 
     const stream = clientMethod.call(this.client, request, metadata, {
       deadline,
@@ -290,7 +287,6 @@ export class GrpcClient<T extends grpc.Client> {
   }
 
   private isRetryable(error: grpc.ServiceError): boolean {
-
     const retryableStatusCodes = new Set([
       grpc.status.DEADLINE_EXCEEDED,
       grpc.status.UNAVAILABLE,

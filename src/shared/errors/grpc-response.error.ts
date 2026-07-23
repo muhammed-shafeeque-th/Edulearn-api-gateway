@@ -16,7 +16,6 @@ export class GrpcResponseError extends BaseError {
     this.details = Array.isArray(error.details)
       ? error.details
       : [{ message: error.message || 'Unknown error' }];
-
   }
 
   private mapErrorCodeToHttpStatus(errorCode: string): ErrorStatusCodes {
@@ -31,7 +30,11 @@ export class GrpcResponseError extends BaseError {
     if (['alreadyexist', 'already_exist'].includes(lowerErrorCode)) {
       return ErrorStatusCodes.CONFLICT; // 409
     }
-    if (['permissiondenied', 'permission_denied', "forbidden_error"].includes(lowerErrorCode)) {
+    if (
+      ['permissiondenied', 'permission_denied', 'forbidden_error'].includes(
+        lowerErrorCode
+      )
+    ) {
       return ErrorStatusCodes.PERMISSION_DENIED; // 403
     }
     if (['unauthenticated', 'unauthenticated'].includes(lowerErrorCode)) {

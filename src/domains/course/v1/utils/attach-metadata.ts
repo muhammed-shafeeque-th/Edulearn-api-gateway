@@ -20,25 +20,15 @@ export const attachMetadata = (req: Request): Metadata => {
     );
   }
 
-  // User info 
+  // User info
   if (req.user) {
-    metadata.set("x-user-id", req.user.userId)
+    metadata.set('x-user-id', req.user.userId);
     metadata.set('x-user', JSON.stringify(req.user));
   }
 
   if (req.headers['x-correlation-id']) {
     metadata.set('x-correlation-id', String(req.headers['x-correlation-id']));
   }
-
-  // Inject OpenTelemetry context as HTTP headers into gRPC metadata.
-  propagation.inject(context.active(), metadata, {
-    set: (carrier, key, value) => {
-      (carrier as Metadata).set(
-        key,
-        typeof value === 'string' ? value : JSON.stringify(value)
-      );
-    },
-  });
 
   return metadata;
 };

@@ -1,2 +1,2 @@
-export * from "./category.types"
-export * from "./course.types"
+export * from './category.types';
+export * from './course.types';

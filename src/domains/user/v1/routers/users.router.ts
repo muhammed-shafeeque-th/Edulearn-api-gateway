@@ -4,15 +4,17 @@ import { Router } from 'express';
 import { authGuard } from '@/middlewares/auth.middleware';
 import { blocklistMiddleware } from '@/middlewares/blocklist.middleware';
 import { invalidateCacheMiddleware } from '@/middlewares/cache.invalidation.middleware';
-import { container, TYPES } from '@/services/di';
+import { container } from '@/services/di/di.config';
+import { TYPES } from '@/services/di';
 import { Permissions } from '@/shared/types';
+import { userEndpoints } from './route.constants';
 
 const router = Router();
 
 const userController = container.get<UserController>(TYPES.UserController);
 
 router.get(
-  '/',
+  userEndpoints.base,
   // cacheMiddleware(
   //   60,
   //   req => RESPONSE_CACHE_KEYS.userService.listUsers(req.query),
@@ -22,7 +24,7 @@ router.get(
 );
 
 router.get(
-  '/stats',
+  userEndpoints.stats,
   authGuard({ roles: ['admin'], permissions: [Permissions.USER_MANAGE] }),
   // cacheMiddleware(
   //   300,
@@ -33,7 +35,7 @@ router.get(
 );
 
 router.get(
-  '/online',
+  userEndpoints.online,
   authGuard(),
   // cacheMiddleware(
   //   30,
@@ -44,12 +46,12 @@ router.get(
 );
 
 router.get(
-  '/username-check',
+  userEndpoints.usernameCheck,
   asyncHandler(userController.checkUsername.bind(userController))
 );
 
 router.get(
-  '/me',
+  userEndpoints.me,
   authGuard(),
   // cacheMiddleware(
   //   60,
@@ -60,7 +62,7 @@ router.get(
 );
 
 router.patch(
-  '/me',
+  userEndpoints.me,
   authGuard(),
   // invalidateCacheMiddleware(req => [
   //   `user:${req.user!.userId}`,
@@ -70,19 +72,19 @@ router.patch(
 );
 
 router.get(
-  '/me/instructors',
+  userEndpoints.myInstructors,
   authGuard(),
   asyncHandler(userController.listInstructorsOfStudent.bind(userController))
 );
 
 router.get(
-  '/me/students',
+  userEndpoints.myStudents,
   authGuard({ roles: ['instructor'] }),
   asyncHandler(userController.listStudentsOfInstructor.bind(userController))
 );
 
 router.get(
-  '/instructors',
+  userEndpoints.instructors,
   // cacheMiddleware(
   //   60,
   //   req => RESPONSE_CACHE_KEYS.userService.listInstructors(req.query),
@@ -92,7 +94,7 @@ router.get(
 );
 
 router.get(
-  '/instructors/stats',
+  userEndpoints.instructorsStats,
   authGuard(),
   // cacheMiddleware(
   //   120,
@@ -103,7 +105,7 @@ router.get(
 );
 
 router.post(
-  '/instructors/register',
+  userEndpoints.instructorRegister,
   authGuard(),
   blocklistMiddleware,
   // invalidateCacheMiddleware(req => ['instructors:list', 'instructors:stats']),
@@ -111,7 +113,7 @@ router.post(
 );
 
 router.get(
-  '/instructors/:instructorId/stats',
+  userEndpoints.instructorStats,
   authGuard({ roles: ['instructor', 'admin'] }),
   // cacheMiddleware(
   //   120,
@@ -125,7 +127,7 @@ router.get(
 );
 
 router.get(
-  '/instructors/:instructorId/courses/stats',
+  userEndpoints.instructorCoursesStats,
   authGuard({ roles: ['instructor', 'admin'] }),
   // cacheMiddleware(
   //   120,
@@ -139,7 +141,7 @@ router.get(
 );
 
 router.get(
-  '/instructors/:instructorId/courses/:courseId/stats',
+  userEndpoints.instructorCourseStats,
   authGuard({ roles: ['instructor', 'admin'] }),
   // cacheMiddleware(
   //   120,
@@ -155,7 +157,7 @@ router.get(
 );
 
 router.get(
-  '/:userId',
+  userEndpoints.user,
   // cacheMiddleware(
   //   120,
   //   req => RESPONSE_CACHE_KEYS.userService.getUserById(req.params.userId),
@@ -165,20 +167,20 @@ router.get(
 );
 
 router.patch(
-  '/:userId',
+  userEndpoints.user,
   authGuard(),
   blocklistMiddleware,
   invalidateCacheMiddleware(req => [`user:${req.params.userId}`, 'users:list']),
   asyncHandler(userController.updateUserData.bind(userController))
 );
 
-//   '/:userId/block',
+//   userEndpoints:userId/block',
 //   authenticate,
 //   // blocklistMiddleware,
 //   asyncHandler(userController.blockUser.bind(userController))
 // );
 // router.patch(
-//   '/:userId/unblock',
+//   userEndpoints:userId/unblock',
 //   authenticate,
 //   // blocklistMiddleware,
 //   asyncHandler(userController.unBlockUser.bind(userController))

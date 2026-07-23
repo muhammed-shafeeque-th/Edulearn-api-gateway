@@ -1,6 +1,8 @@
+import {
+  LoggerService,
+  MetricService,
+} from '@/services/observability/implementations';
 import { Request, Response, NextFunction } from 'express';
-import { LoggingService } from '@/services/observability/logging/logging.service';
-import { MetricsService } from '@/services/observability/metrics/metrics.service';
 
 type AsyncHandler = (
   req: Request,
@@ -8,8 +10,8 @@ type AsyncHandler = (
   next: NextFunction
 ) => Promise<any>;
 
-const logger = LoggingService.getInstance();
-const monitoring = MetricsService.getInstance();
+const logger = LoggerService.getInstance();
+const monitoring = MetricService.getInstance();
 
 /**
  * Generic async handler for Express route handlers.
@@ -177,9 +179,7 @@ export function asyncGrpcCall<TArgs extends any[], TResult>(
 ): (...args: TArgs) => Promise<TResult> {
   // Method name extraction: prefer explicit, fallback to handler.name, or use <anonymous>
   const methodName =
-    options?.methodName ||
-    handler.name ||
-    '<anonymous gRPC method>';
+    options?.methodName || handler.name || '<anonymous gRPC method>';
 
   return async (...args: TArgs): Promise<TResult> => {
     const startTime = Date.now();
@@ -190,7 +190,9 @@ export function asyncGrpcCall<TArgs extends any[], TResult>(
       try {
         meta = options.extractMeta(...args) || {};
       } catch (e) {
-        logger.warn(`[gRPC] Metadata extraction failed: ${methodName}`, { error: e });
+        logger.warn(`[gRPC] Metadata extraction failed: ${methodName}`, {
+          error: e,
+        });
         meta = {};
       }
     }

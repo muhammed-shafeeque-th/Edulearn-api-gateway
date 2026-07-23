@@ -1,10 +1,9 @@
-
 export enum Permissions {
   // Navigation & Generic Access
   DASHBOARD_ACCESS = 'dashboard:access',
 
   // Profile & Account Management
-  USER_PROFILE_VIEW = "user:profile:view",
+  USER_PROFILE_VIEW = 'user:profile:view',
   PROFILE_UPDATE = 'profile:update',
   ACCOUNT_DELETE = 'account:delete',
 
@@ -74,8 +73,6 @@ export enum Permissions {
   API_KEYS_MANAGE = 'api_keys:manage',
 
   // Frontend Dashboards
-  INSTRUCTOR_DASHBOARD = "instructor:dashboard",
-  ADMIN_DASHBOARD = "admin:dashboard",
-
-  
+  INSTRUCTOR_DASHBOARD = 'instructor:dashboard',
+  ADMIN_DASHBOARD = 'admin:dashboard',
 }

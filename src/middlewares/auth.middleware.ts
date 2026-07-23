@@ -17,7 +17,8 @@ type JWTPayload = {
 } & JwtPayload;
 
 import { TokenService } from '@/services/auth-token/token.service';
-import { container, TYPES } from '@/services/di';
+import { container } from '@/services/di/di.config';
+import { TYPES } from '@/services/di';
 import { AccountAccessService } from '@/services/account-access.service';
 import { USER_ROLE } from '@/domains/auth/v1/types';
 

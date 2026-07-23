@@ -1,7 +1,6 @@
-import  dotenv from "dotenv"
-import { EnvNotFoundError } from "../errors/env-not-found-error";
+import dotenv from 'dotenv';
+import { EnvNotFoundError } from '../errors/env-not-found-error';
 dotenv.config();
-
 
 type EnvironmentVariables = {
   [key: string]: string;
@@ -9,7 +8,7 @@ type EnvironmentVariables = {
 
 export function getEnvs(...envs: string[]): EnvironmentVariables {
   const variables: EnvironmentVariables = {};
-  envs.forEach((env) => {
+  envs.forEach(env => {
     if (!process.env[env]) {
       throw new EnvNotFoundError(env);
     }
@@ -17,4 +16,3 @@ export function getEnvs(...envs: string[]): EnvironmentVariables {
   });
   return variables;
 }
- 

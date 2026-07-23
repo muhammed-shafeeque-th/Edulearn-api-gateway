@@ -27,7 +27,7 @@ export class CartController {
     @inject(TYPES.NotificationService)
     private notificationService: NotificationService,
     @inject(TYPES.CourseService) private courseServiceClient: CourseService
-  ) { }
+  ) {}
 
   async getUserCart(req: Request, res: Response) {
     const { userId, pagination } = validateSchema(

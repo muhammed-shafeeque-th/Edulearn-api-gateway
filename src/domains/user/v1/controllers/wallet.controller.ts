@@ -27,7 +27,7 @@ export class WalletController {
   constructor(
     @inject(TYPES.WalletService)
     private walletServiceClient: WalletService
-  ) { }
+  ) {}
 
   async getWalletTransactions(req: Request, res: Response) {
     const validPayload = validateSchema(

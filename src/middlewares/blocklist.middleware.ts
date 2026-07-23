@@ -2,7 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import { AuthenticationError } from '@/shared/errors/unauthenticate.error';
 import { AccountAccessService } from '@/services/account-access.service';
 import { UserProhibitedError } from '@/shared/errors/user-prohibited.error';
-import { container, TYPES } from '@/services/di';
+import { container } from '@/services/di/di.config';
+import { TYPES } from '@/services/di';
 
 export async function blocklistMiddleware(
   req: Request,
@@ -15,11 +16,17 @@ export async function blocklistMiddleware(
       return next(new AuthenticationError());
     }
 
-    const accountAccessService = container.get<AccountAccessService>(TYPES.AccountAccessService);
+    const accountAccessService = container.get<AccountAccessService>(
+      TYPES.AccountAccessService
+    );
     const isBlocked = await accountAccessService.isAccountBlocked(user.userId);
 
     if (isBlocked) {
-      return next(new UserProhibitedError('Your account has been blocked. Please contact support for further assistance.'));
+      return next(
+        new UserProhibitedError(
+          'Your account has been blocked. Please contact support for further assistance.'
+        )
+      );
     }
 
     return next();

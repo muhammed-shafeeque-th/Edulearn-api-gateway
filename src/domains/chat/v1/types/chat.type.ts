@@ -12,7 +12,7 @@ export interface Chat {
   isArchived: boolean;
   isMuted: boolean;
 
-  otherUser?: UserInfo
+  otherUser?: UserInfo;
 }
 
 export interface MessageReaction {

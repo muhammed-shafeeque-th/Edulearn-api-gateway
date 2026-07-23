@@ -1,6 +1,4 @@
-import {
-  GetModulesByCourseRequest,
-} from '@/domains/service-clients/course/proto/generated/course/types/module';
+import { GetModulesByCourseRequest } from '@/domains/service-clients/course/proto/generated/course/types/module';
 import { z, ZodType } from 'zod';
 
 export const getModulesByCourseSchema: ZodType<GetModulesByCourseRequest> =

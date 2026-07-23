@@ -9,9 +9,6 @@ import { blockUserSchema } from '../schemas/user/block-user.schema';
 import { updateUserSchema } from '../schemas/user/update-user.schema';
 import { unBlockUserSchema } from '../schemas/user/unblock-user.schema';
 import { detailedUserSchema } from '../schemas/user/get-user.schema';
-import { LoggingService } from '@/services/observability/logging/logging.service';
-import { TracingService } from '@/services/observability/tracing/trace.service';
-import { MetricsService } from '@/services/observability/metrics/metrics.service';
 import { UserData } from '@/domains/service-clients/user/proto/generated/user/types/user_types';
 import { updateCurrentUserSchema } from '../schemas/user/update-current-user.schema';
 import { currentUserSchema } from '../schemas/user/current-user.schema';
@@ -47,6 +44,12 @@ import { Trace, MonitorGrpc } from '@/services/decorators/decorators';
 import { TYPES } from '@/services/di';
 import { Observe } from '@/services/observability/decorators';
 import { BloomFilterFacade } from '@/services/bloom-filter';
+import { LoggerService } from '@/services/observability/implementations';
+import {
+  ILoggerService,
+  IMetricService,
+  ITraceService,
+} from '@/services/observability/interfaces';
 
 @injectable()
 @Observe({ logLevel: 'debug' })
@@ -61,11 +64,11 @@ export class InstructorController {
     private enrollmentService: EnrollmentService,
     @inject(TYPES.ChatService) private chatService: ChatService,
     @inject(TYPES.CourseService) private courseServiceClient: CourseService,
-    @inject(TYPES.RedisService) private cacheService: RedisService,
-    @inject(TYPES.LoggingService) private logger: LoggingService,
-    @inject(TYPES.TracingService) private tracer: TracingService,
-    @inject(TYPES.MetricsService) private monitor: MetricsService
-  ) { }
+    @inject(TYPES.CacheService) private cacheService: RedisService,
+    @inject(TYPES.LoggerService) private logger: ILoggerService,
+    @inject(TYPES.TraceService) private tracer: ITraceService,
+    @inject(TYPES.MetricService) private monitor: IMetricService
+  ) {}
 
   private get bloomFilterService(): BloomFilterFacade {
     if (!this._bloomFilterService) {
@@ -74,7 +77,6 @@ export class InstructorController {
     }
     return this._bloomFilterService;
   }
-
 
   async listInstructors(req: Request, res: Response): Promise<void> {
     const {
@@ -103,19 +105,18 @@ export class InstructorController {
 
     const paginationResponse = mapPaginationResponse(
       validPayload.pagination!,
-      Number(instructors?.pagination?.totalItems ?? 0),
+      Number(instructors?.pagination?.totalItems ?? 0)
     );
 
     return new ResponseWrapper(res)
       .status(ADMIN_MESSAGES.INSTRUCTORS_FETCH_SUCCESS.statusCode)
       .success(
         instructors?.instructors.map(UserResponseMapper.toInstructorMetadata) ??
-        [],
+          [],
         ADMIN_MESSAGES.INSTRUCTORS_FETCH_SUCCESS.message,
         paginationResponse
       );
   }
-
 
   async registerInstructor(req: Request, res: Response) {
     const validatedUserData = validateSchema(
@@ -137,8 +138,6 @@ export class InstructorController {
         USER_MESSAGES.INSTRUCTOR_REGISTERED.message
       );
   }
-
-
 
   async listStudentsOfInstructor(req: Request, res: Response) {
     const validPayload = validateSchema(
@@ -204,18 +203,17 @@ export class InstructorController {
       monthlyRevenue: revenueSummary?.thisMonthEarnings ?? 0,
       revenueGrowth:
         revenueSummary &&
-          typeof revenueSummary.lastMonthEarnings === 'number' &&
-          revenueSummary.lastMonthEarnings !== 0
+        typeof revenueSummary.lastMonthEarnings === 'number' &&
+        revenueSummary.lastMonthEarnings !== 0
           ? (
-            (((revenueSummary.thisMonthEarnings ?? 0) -
-              (revenueSummary.lastMonthEarnings ?? 0)) /
-              (revenueSummary.lastMonthEarnings ?? 1)) *
-            100
-          ).toFixed(2)
+              (((revenueSummary.thisMonthEarnings ?? 0) -
+                (revenueSummary.lastMonthEarnings ?? 0)) /
+                (revenueSummary.lastMonthEarnings ?? 1)) *
+              100
+            ).toFixed(2)
           : '0.00',
       avgCompletionRate: coursesEnrollmentSummary?.avgCompletion ?? 0,
     };
-
 
     return new ResponseWrapper(res)
       .status(COURSE_MESSAGES.COURSE_FETCHED.statusCode)
@@ -223,7 +221,6 @@ export class InstructorController {
         typeof mappedStats
       >(mappedStats, COURSE_MESSAGES.COURSE_FETCHED.message);
   }
-
 
   async getInstructorsStats(req: Request, res: Response) {
     type InstructorsStats = {
@@ -413,7 +410,7 @@ export class InstructorController {
 
     console.log(
       'Instructor stats : ' +
-      JSON.stringify({ courseStats, revenueStats, enrollStats }, null, 2)
+        JSON.stringify({ courseStats, revenueStats, enrollStats }, null, 2)
     );
 
     const stats: InstructorStats = {
@@ -428,14 +425,14 @@ export class InstructorController {
       monthlyRevenue: revenueStats?.thisMonthEarnings ?? 0,
       revenueGrowth:
         revenueStats &&
-          typeof revenueStats.lastMonthEarnings === 'number' &&
-          revenueStats.lastMonthEarnings !== 0
+        typeof revenueStats.lastMonthEarnings === 'number' &&
+        revenueStats.lastMonthEarnings !== 0
           ? (
-            (((revenueStats.thisMonthEarnings ?? 0) -
-              (revenueStats.lastMonthEarnings ?? 0)) /
-              (revenueStats.lastMonthEarnings ?? 1)) *
-            100
-          ).toFixed(2)
+              (((revenueStats.thisMonthEarnings ?? 0) -
+                (revenueStats.lastMonthEarnings ?? 0)) /
+                (revenueStats.lastMonthEarnings ?? 1)) *
+              100
+            ).toFixed(2)
           : '0.00',
 
       monthlyEnrollments: enrollStats?.totalStudents ?? 0,

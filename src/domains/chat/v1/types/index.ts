@@ -1,2 +1,2 @@
-export * from "./chat.type"
-export * from "./discussion.type"
+export * from './chat.type';
+export * from './discussion.type';

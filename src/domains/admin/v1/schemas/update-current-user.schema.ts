@@ -3,8 +3,10 @@ import { z, ZodType } from 'zod';
 
 export const updateCurrentUserSchema: ZodType<UpdateUserDetailsRequest> =
   z.object({
-    
-    userId: z.string().uuid().uuid({ message: '`userId` must be type of UUID' }),
+    userId: z
+      .string()
+      .uuid()
+      .uuid({ message: '`userId` must be type of UUID' }),
     firstName: z
       .string()
       .min(3, { message: 'First name must be at least 3 characters long' })
@@ -47,6 +49,6 @@ export const updateCurrentUserSchema: ZodType<UpdateUserDetailsRequest> =
         message: 'Phone must be a valid phone number',
       })
       .optional(),
-  }) as  ZodType<UpdateUserDetailsRequest>;
+  }) as ZodType<UpdateUserDetailsRequest>;
 
 export type UpdateCurrentUserDto = z.infer<typeof updateCurrentUserSchema>;

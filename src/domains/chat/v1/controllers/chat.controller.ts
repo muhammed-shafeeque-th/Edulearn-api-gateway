@@ -26,12 +26,7 @@ import { deleteMessagesSchema } from '../schemas/chats/delete-message.schema';
 import { removeReactionSchema } from '../schemas/chats/remove-reaction.schema';
 import { addReactionSchema } from '../schemas/chats/add-reaction.schema';
 import { getInstructorChatsSchema } from '../schemas/chats/get-instructor-chats.schema';
-import {
-  ChatResponse,
-  ChatsListResponse,
-  ChatsResponse,
-  MessageResponse,
-} from '@/domains/service-clients/chat/proto/generated/chat_service';
+import { ChatsResponse } from '@/domains/service-clients/chat/proto/generated/chat_service';
 import { CHAT_MESSAGES } from '../utils/resposne-messages';
 import { getMessagesSchema } from '../schemas/chats/get-messages.schema';
 import { ChatResponseMapper } from '../utils/chat.mappers';

@@ -4,8 +4,10 @@ import { Router } from 'express';
 import { authGuard } from '@/middlewares/auth.middleware';
 import { blocklistMiddleware } from '@/middlewares/blocklist.middleware';
 import { invalidateCacheMiddleware } from '@/middlewares/cache.invalidation.middleware';
-import { container, TYPES } from '@/services/di';
+import { container } from '@/services/di/di.config';
+import { TYPES } from '@/services/di';
 import { InstructorController } from '../controllers/instructor.controller';
+import { instructorEndpoints } from './route.constants';
 
 const router = Router();
 
@@ -14,7 +16,7 @@ const instructorController = container.get<InstructorController>(
 );
 
 router.get(
-  '/me/students',
+  instructorEndpoints.myStudents,
   authGuard({ roles: ['instructor'] }),
   asyncHandler(
     instructorController.listStudentsOfInstructor.bind(instructorController)
@@ -22,7 +24,7 @@ router.get(
 );
 
 router.get(
-  '/',
+  instructorEndpoints.base,
   // cacheMiddleware(
   //   60,
   //   req => RESPONSE_CACHE_KEYS.userService.listInstructors(req.query),
@@ -32,7 +34,7 @@ router.get(
 );
 
 router.get(
-  '/stats',
+  instructorEndpoints.stats,
   authGuard({ roles: ['admin'] }),
   // cacheMiddleware(
   //   120,
@@ -45,7 +47,7 @@ router.get(
 );
 
 router.post(
-  '/register',
+  instructorEndpoints.register,
   authGuard(),
   // invalidateCacheMiddleware(req => ['instructors:list', 'instructors:stats']),
   asyncHandler(
@@ -54,7 +56,7 @@ router.post(
 );
 
 router.get(
-  '/:instructorId/stats',
+  instructorEndpoints.instructorStats,
   authGuard({ roles: ['instructor', 'admin'] }),
   // cacheMiddleware(
   //   120,
@@ -70,7 +72,7 @@ router.get(
 );
 
 router.get(
-  '/:instructorId/courses/stats',
+  instructorEndpoints.instructorCoursesStats,
   authGuard({ roles: ['instructor', 'admin'] }),
   // cacheMiddleware(
   //   120,
@@ -86,7 +88,7 @@ router.get(
 );
 
 router.get(
-  '/:instructorId/courses/:courseId/stats',
+  instructorEndpoints.instructorCourseStats,
   authGuard({ roles: ['instructor', 'admin'] }),
   // cacheMiddleware(
   //   120,

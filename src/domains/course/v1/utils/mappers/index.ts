@@ -1,2 +1,2 @@
-export * from "./category.mapper"
-export * from "./course.mapper"
+export * from './category.mapper';
+export * from './course.mapper';

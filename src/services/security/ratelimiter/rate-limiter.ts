@@ -1,5 +1,6 @@
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
-import { RedisService } from '../../redis';
+import { lazyCache } from '@/shared/utils/lazy.services';
+import { RedisService } from '@/services/redis';
 
 export interface RateLimiterConfig {
   keyPrefix?: string;
@@ -15,13 +16,15 @@ export const defaultRateLimiterConfig: RateLimiterConfig = {
   duration: 60,
 };
 
+const redis = RedisService.getInstance();
+
 export class RateLimiter {
   private limiter: RateLimiterRedis;
 
   constructor(config: RateLimiterConfig = {}) {
     const limiterConfig = { ...defaultRateLimiterConfig, ...config };
     this.limiter = new RateLimiterRedis({
-      storeClient: RedisService.getInstance().getClient(),
+      storeClient: redis.getClient(),
       keyPrefix: limiterConfig.keyPrefix!,
       points: limiterConfig.points!,
       duration: limiterConfig.duration!,

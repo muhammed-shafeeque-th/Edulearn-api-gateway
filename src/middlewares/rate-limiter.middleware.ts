@@ -28,7 +28,11 @@ export function rateLimiter(options: RateLimiterMiddlewareOptions = {}) {
 
   const getKey = options.getKey ?? defaultGetKey;
 
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  return async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     const key = getKey(req) ?? 'unknown';
 
     try {

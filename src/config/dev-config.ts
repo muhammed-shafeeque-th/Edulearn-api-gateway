@@ -76,19 +76,16 @@ export const config = {
     },
   },
   observability: {
-    jaeger: {
-      endpoint: process.env.JAEGER_ENDPOINT,
-      port: process.env.JAEGER_PORT,
-      host: process.env.JAEGER_HOST,
+    tracer: {
       samplingRate: process.env.JAEGER_SAMPLING_RATE,
+      collectorUrl: process.env.TRACE_COLLECTOR_URL,
     },
-    prometheus: {
+    metrics: {
       port: process.env.JAEGER_PORT,
       path: process.env.PROMETHEUS_PATH,
+      collectorUrl: process.env.METRICS_COLLECTOR_URL,
     },
-    loki: {
-      url: process.env.LOKI_URL,
-    },
+
     logger: {
       logLevel: process.env.LOG_LEVEL,
     },
@@ -106,4 +103,5 @@ export const config = {
       'OPTIONS',
     ],
   },
+  healthPort: process.env.HEALTH_PORT ?? 3000,
 };

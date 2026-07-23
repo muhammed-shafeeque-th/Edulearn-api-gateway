@@ -1,8 +1,8 @@
 export const TYPES = {
   // Core Services
-  LoggingService: Symbol.for('LoggingService'),
-  TracingService: Symbol.for('TracingService'),
-  MetricsService: Symbol.for('MetricsService'),
+  LoggerService: Symbol.for('LoggerService'),
+  TraceService: Symbol.for('TraceService'),
+  MetricService: Symbol.for('MetricService'),
 
   // Domain Services
   AuthService: Symbol.for('AuthService'),

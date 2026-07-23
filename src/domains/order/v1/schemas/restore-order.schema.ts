@@ -1,4 +1,7 @@
-import { GetOrderByIdRequest, RestoreOrderRequest } from '@/domains/service-clients/order/proto/generated/order_service';
+import {
+  GetOrderByIdRequest,
+  RestoreOrderRequest,
+} from '@/domains/service-clients/order/proto/generated/order_service';
 import { z, ZodType } from 'zod';
 
 export const restoreOrderSchema: ZodType<RestoreOrderRequest> = z.object({
