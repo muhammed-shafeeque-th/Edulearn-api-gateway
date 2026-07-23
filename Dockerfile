@@ -1,65 +1,69 @@
-# Stage 1: Build
-FROM node:20-alpine AS builder
+ARG BASE_IMAGE=ghcr.io/muhammed-shafeeque-th/edulearn-node:22
 
-# Set working directory
+# Stage 1: Dependency
+FROM ${BASE_IMAGE} AS deps
+
 WORKDIR /app
 
-# Install build dependencies
-RUN apk add --no-cache python3 make g++
+ENV NODE_ENV=development
 
-# Copy package files first for better caching
-COPY package*.json ./
 
-# Install all dependencies (dev deps needed to build)
-RUN npm ci && npm cache clean --force
+# Copy package files first for caching
+COPY package.json package-lock.json ./
 
-# Copy source code
-COPY tsconfig.json ./
+# Use cache mount for faster repeated builds (BuildKit)
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --no-audit --no-fund
+
+# Stage 2: Dependency
+FROM deps AS builder
+
+# Copy source and configs
+COPY tsconfig*.json ./
 COPY src ./src
-COPY proto ./proto    
 
-# Build the TypeScript application
+# Build (keep your existing build for stability)
 RUN npm run build
 
-# Stage 2: Production image
-FROM node:20-alpine AS production
+# Install production deps in builder
+RUN npm install --production --no-audit --no-fund --no-optional
 
-# Install runtime dependencies
-RUN apk add --no-cache tini curl && \
-    addgroup -S appgroup && \
-    adduser -S appuser -G appgroup
 
-# Set working directory
+#  Cleanup unnecessary files from node_modules with node-prune
+ARG NODE_PRUNE_VERSION=v1.0.2
+
+RUN  apk add --no-cache curl \
+  && curl -sfL https://gobinaries.com/tj/node-prune | sh -s -- -b /usr/local/bin \
+  && node-prune \
+  && npm cache clean --force \
+  && rm -rf \
+       /tmp/* \
+       /root/.npm \
+       /usr/local/share/.cache
+
+# Stage 2: Runtime (Lightweight)
+FROM node:22.17.1-alpine3.22 AS runner
+
 WORKDIR /app
 
-# Copy built application and package manifests
-COPY --from=builder --chown=appuser:appgroup /app/dist ./dist
-COPY --from=builder --chown=appuser:appgroup /app/proto ./proto
-COPY --from=builder --chown=appuser:appgroup /app/package*.json ./
+ENV NODE_ENV=production
 
-# Install only production dependencies
-RUN npm ci --omit=dev && npm cache clean --force
+LABEL org.opencontainers.image.title="edulearn-gateway"
+LABEL org.opencontainers.image.description="EduLearn Api Gateway"
+LABEL org.opencontainers.image.source="https://github.com/muhammed-shafeeque-th/Edulearn-gateway"
 
-# Create logs directory
-RUN mkdir -p /app/logs && chown -R appuser:appgroup /app
+# Non-root user
+RUN addgroup -S edulearn_admin && adduser -S edulearn_user -G edulearn_admin
 
-# Switch to non-root user
-USER appuser
+# Copy only essentials from builder
+COPY --from=builder --chown=edulearn_user:edulearn_admin /app/dist ./dist
+COPY --from=builder --chown=edulearn_user:edulearn_admin /app/node_modules ./node_modules
+COPY --from=builder --chown=edulearn_user:edulearn_admin /app/package.json ./
 
-# Expose port
+
+USER edulearn_user
+
 EXPOSE 4000
 
-# Health check with proper timeout
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:4000/health || exit 1
-
-# Set environment variables
-ENV NODE_ENV=production \
-    PORT=4000 \
-    NODE_OPTIONS="--max-old-space-size=512"
-
-# Use tini as init system
-ENTRYPOINT ["/sbin/tini", "--"]
-
-# Start the application
-CMD ["npm", "run", "start"]
+# Direct start (no yarn overhead, better signal handling)
+CMD ["node", "dist/index.js"]
