@@ -9,4 +9,6 @@ export const toggleCategoryStatusSchema = z.object({
 });
 
 export type DeleteCategoryDto = z.infer<typeof deleteCategorySchema>;
-export type ToggleCategoryStatusDto = z.infer<typeof toggleCategoryStatusSchema>;
+export type ToggleCategoryStatusDto = z.infer<
+  typeof toggleCategoryStatusSchema
+>;

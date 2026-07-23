@@ -69,7 +69,6 @@ export interface CourseMetadata {
   instructor: User | undefined;
 }
 
-
 export interface CourseInfo {
   thumbnail: string;
   id: string;
@@ -86,7 +85,6 @@ export interface CourseInfo {
   discountPrice: number | undefined;
   instructor: User;
 }
-
 
 export interface User {
   id: string;

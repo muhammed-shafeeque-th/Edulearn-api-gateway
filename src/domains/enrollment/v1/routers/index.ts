@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import { asyncHandler } from '@/shared/utils/async-handler';
 import { EnrollmentController } from '../controllers';
-import { container, TYPES } from '@/services/di';
+import { container } from '@/services/di/di.config';
+import { TYPES } from '@/services/di';
+import { enrollmentEndpoints } from './route.constants';
 
 const router = Router();
 const enrollmentController = container.get<EnrollmentController>(
@@ -13,94 +15,91 @@ const enrollmentController = container.get<EnrollmentController>(
 // ============================================================================
 
 router.get(
-  '/',
+  enrollmentEndpoints.base,
   asyncHandler(enrollmentController.getEnrollments.bind(enrollmentController))
 );
 
-
 router.get(
-  '/certificates/me',
+  enrollmentEndpoints.certificateMe,
   asyncHandler(
     enrollmentController.getCertificatesByUser.bind(enrollmentController)
   )
 );
 
 router.get(
-  '/certificates/:certificateId',
+  enrollmentEndpoints.certificate,
   asyncHandler(enrollmentController.getCertificate.bind(enrollmentController))
 );
 router.get(
-  '/certificates/:certificateId/download',
+  enrollmentEndpoints.certificateDownload,
   asyncHandler(
     enrollmentController.downloadCertificate.bind(enrollmentController)
   )
 );
 
-
-
 router.get(
-  '/:enrollmentId',
+  enrollmentEndpoints.enrollment,
   asyncHandler(enrollmentController.getEnrollment.bind(enrollmentController))
 );
 
 router.get(
-  '/:enrollmentId/check',
+  enrollmentEndpoints.enrollmentCheck,
   asyncHandler(enrollmentController.checkEnrollment.bind(enrollmentController))
 );
 
 router.get(
-  '/:enrollmentId/progress',
+  enrollmentEndpoints.enrollmentProgress,
   asyncHandler(
     enrollmentController.getProgressByEnrollment.bind(enrollmentController)
   )
 );
 
 router.post(
-  '/:enrollmentId/lessons/:lessonId/progress',
+  enrollmentEndpoints.lessonProgress,
   asyncHandler(
     enrollmentController.updateLessonProgress.bind(enrollmentController)
   )
 );
 router.get(
-  '/:enrollmentId/review',
+  enrollmentEndpoints.enrollmentReview,
   asyncHandler(
     enrollmentController.getEnrollmentReview.bind(enrollmentController)
   )
 );
 router.post(
-  '/:enrollmentId/review',
+  enrollmentEndpoints.enrollmentReview,
   asyncHandler(
     enrollmentController.submitCourseReview.bind(enrollmentController)
   )
 );
 
 router.patch(
-  '/:enrollmentId/review/:reviewId',
+  enrollmentEndpoints.review,
   asyncHandler(
     enrollmentController.updateEnrollmentReview.bind(enrollmentController)
   )
 );
 router.delete(
-  '/:enrollmentId/review/:reviewId',
+  enrollmentEndpoints.enrollmentReview,
   asyncHandler(
     enrollmentController.deleteEnrollmentReview.bind(enrollmentController)
   )
 );
 
 router.post(
-  '/:enrollmentId/quizzes/:quizId/attempt',
+  enrollmentEndpoints.quizAttempt,
   asyncHandler(
     enrollmentController.submitQuizProgress.bind(enrollmentController)
   )
 );
 router.get(
-  '/:enrollmentId/lessons/:lessonId/playback/url',
+  enrollmentEndpoints.playbackUrl,
   asyncHandler(
     enrollmentController.getSignedVideoPlaybackUrl.bind(enrollmentController)
   )
 );
 router.get(
-  '/:enrollmentId/lessons/:lessonId/playback/url/refresh',
+  enrollmentEndpoints.playbackRefreshUrl,
   asyncHandler(
     enrollmentController.getSignedVideoPlaybackUrl.bind(enrollmentController)
   )
@@ -108,13 +107,13 @@ router.get(
 
 // Certificates
 router.get(
-  '/:enrollmentId/certificate',
+  enrollmentEndpoints.enrollmentCertificate,
   asyncHandler(
     enrollmentController.getCertificateByEnrolment.bind(enrollmentController)
   )
 );
 router.post(
-  '/:enrollmentId/certificate',
+  enrollmentEndpoints.enrollmentCertificate,
   asyncHandler(
     enrollmentController.generateCertificate.bind(enrollmentController)
   )

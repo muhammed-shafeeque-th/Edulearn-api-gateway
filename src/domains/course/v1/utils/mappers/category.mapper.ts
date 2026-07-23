@@ -1,5 +1,5 @@
-import { CategoryData } from "@/domains/service-clients/course/proto/generated/course/types/category";
-import { Category } from "../../types";
+import { CategoryData } from '@/domains/service-clients/course/proto/generated/course/types/category';
+import { Category } from '../../types';
 
 export class CategoryResponseMapper {
   public static toCategory = (cat: CategoryData): Category => {
@@ -17,7 +17,9 @@ export class CategoryResponseMapper {
       createdAt: cat.createdAt,
       updatedAt: cat.updatedAt,
       deletedAt: cat.deletedAt ?? null,
-      subcategories: (cat.subcategories ?? []).map(CategoryResponseMapper.toCategory),
+      subcategories: (cat.subcategories ?? []).map(
+        CategoryResponseMapper.toCategory
+      ),
     };
   };
 }

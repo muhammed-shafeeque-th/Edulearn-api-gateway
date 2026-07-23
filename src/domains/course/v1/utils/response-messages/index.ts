@@ -1,2 +1,2 @@
-export * from "./category-message"
-export * from "./course-messages"
+export * from './category-message';
+export * from './course-messages';

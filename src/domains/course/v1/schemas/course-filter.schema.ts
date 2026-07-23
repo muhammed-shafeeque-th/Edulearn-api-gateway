@@ -1,6 +1,4 @@
-import {
-  CourseFilters,
-} from '@/domains/service-clients/course/proto/generated/course/types/course';
+import { CourseFilters } from '@/domains/service-clients/course/proto/generated/course/types/course';
 import { z, ZodType } from 'zod';
 
 export type CourseLevel =

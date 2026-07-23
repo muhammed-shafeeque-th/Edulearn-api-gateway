@@ -1,6 +1,4 @@
-import {
-  GetCoursesByInstructorRequest,
-} from '@/domains/service-clients/course/proto/generated/course/types/course';
+import { GetCoursesByInstructorRequest } from '@/domains/service-clients/course/proto/generated/course/types/course';
 import { z, ZodType } from 'zod';
 import { paginationSchema } from '../pagination.schema';
 

@@ -1,9 +1,15 @@
-import { CourseData, CourseMetadata } from "@/domains/service-clients/course/proto/generated/course/types/course";
-import { Course, CourseInfo, Lesson, Quiz, Module } from "../../types";
-import { QuizData } from "@/domains/service-clients/course/proto/generated/course/types/quiz";
-import { ContentMetaData, LessonData } from "@/domains/service-clients/course/proto/generated/course/types/lesson";
-import { ReviewData } from "@/domains/service-clients/course/proto/generated/course/types/review";
-import { ModuleData } from "@/domains/service-clients/course/proto/generated/course/types/module";
+import {
+  CourseData,
+  CourseMetadata,
+} from '@/domains/service-clients/course/proto/generated/course/types/course';
+import { Course, CourseInfo, Lesson, Quiz, Module } from '../../types';
+import { QuizData } from '@/domains/service-clients/course/proto/generated/course/types/quiz';
+import {
+  ContentMetaData,
+  LessonData,
+} from '@/domains/service-clients/course/proto/generated/course/types/lesson';
+import { ReviewData } from '@/domains/service-clients/course/proto/generated/course/types/review';
+import { ModuleData } from '@/domains/service-clients/course/proto/generated/course/types/module';
 
 export class CourseResponseMapper {
   public static toCourse = (dto: CourseData): Course => {
@@ -192,5 +198,5 @@ export class CourseResponseMapper {
         email: course.instructor?.email,
       },
     };
-  }
+  };
 }
