@@ -44,9 +44,7 @@ export const updateUserSchema: ZodType<UpdateUserDetailsRequest> = z.object({
     .optional()
     .or(z.literal(''))
     .refine(
-      phone =>
-        !phone ||
-        /^[\d\s()+-]{7,20}$/.test(phone), // accepts international numbers with spaces, +, -, (, )
+      phone => !phone || /^[\d\s()+-]{7,20}$/.test(phone), // accepts international numbers with spaces, +, -, (, )
       { message: 'Phone must be a valid phone number' }
     ),
 }) as ZodType<UpdateUserDetailsRequest>;

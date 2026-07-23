@@ -2,9 +2,12 @@ import { ListInstructorsOfStudentRequest } from '@/domains/service-clients/user/
 import { z, ZodType } from 'zod';
 import { paginationSchema } from './pagination.schema';
 
-export const listInstructorsOfStudentSchema: ZodType<ListInstructorsOfStudentRequest> = z.object({
-  studentId: z.string().uuid(),
-  pagination: paginationSchema,
-});
+export const listInstructorsOfStudentSchema: ZodType<ListInstructorsOfStudentRequest> =
+  z.object({
+    studentId: z.string().uuid(),
+    pagination: paginationSchema,
+  });
 
-export type ListInstructorsOfStudentType = z.infer<typeof listInstructorsOfStudentSchema>;
+export type ListInstructorsOfStudentType = z.infer<
+  typeof listInstructorsOfStudentSchema
+>;

@@ -1,5 +1,4 @@
-import { CourseInfo } from "@/domains/course/v1/types";
-
+import { CourseInfo } from '@/domains/course/v1/types';
 
 export interface Wishlist {
   id: string;
