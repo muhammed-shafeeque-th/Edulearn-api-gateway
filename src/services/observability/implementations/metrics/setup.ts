@@ -1,4 +1,6 @@
-import {  Counter, Gauge, Histogram } from 'prom-client';
+import { config } from '@/config';
+import { MetricsServer } from '@edulearn/core';
+import { Counter, Gauge, Histogram } from 'prom-client';
 
 export const httpRequestDurationSeconds = new Histogram({
   name: 'http_request_duration_seconds',
@@ -59,3 +61,9 @@ export const bloomFilterResponseTimes = new Histogram({
   labelNames: ['stage', 'type'],
   buckets: [0.1, 0.5, 1, 2, 5],
 });
+
+const metricsServer = new MetricsServer({
+  port: Number(config.observability.metrics.port),
+});
+
+metricsServer.start();

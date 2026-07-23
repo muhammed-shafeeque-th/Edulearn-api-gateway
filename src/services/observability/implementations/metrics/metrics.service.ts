@@ -13,19 +13,24 @@ import {
   Summary,
   collectDefaultMetrics,
   Registry,
-  register as globalRegister,
 } from 'prom-client';
-import { IMetricService, MetricLabels } from '../../interfaces/metric.interface';
+import {
+  IMetricService,
+  MetricLabels,
+} from '../../interfaces/metric.interface';
+import {
+  MetricService as MetricsService,
+  globalRegistry,
+} from '@edulearn/core';
 
 @injectable()
-export class MetricService implements IMetricService {
+export class MetricService extends MetricsService implements IMetricService {
   private static instance: MetricService;
   private readonly registry: Registry;
 
   private constructor() {
-    this.registry = globalRegister;
-
-    collectDefaultMetrics({ register: this.registry });
+    super();
+    this.registry = globalRegistry;
   }
 
   public static getInstance(): MetricService {
