@@ -47,13 +47,15 @@ export class TokenService {
     // }
   }
 
-  
-  public verifyAccessToken(token: string, allowExpired?: boolean): TokenVerificationResult {
+  public verifyAccessToken(
+    token: string,
+    allowExpired?: boolean
+  ): TokenVerificationResult {
     try {
       const verifyOptions: VerifyOptions = {
         issuer: this.issuer,
         audience: this.audience,
-        ignoreExpiration: !!allowExpired
+        ignoreExpiration: !!allowExpired,
       };
       const payload = jwt.verify(
         token,
@@ -101,7 +103,6 @@ export class TokenService {
       };
     }
   }
-
 
   public verifyRefreshToken(token: string): TokenVerificationResult {
     try {
@@ -186,7 +187,6 @@ export class TokenService {
     return null;
   }
 
- 
   public getAccessTokenCookieOptions(token?: string): CookieOptions {
     let expiresAt: Date | undefined;
     let maxAge: number | undefined;
@@ -357,13 +357,16 @@ export class TokenService {
   }
 
   /**
- * Validates JWT token and returns payload
- *
- * @param token - JWT token to validate
- * @param allowExpired - Whether to allow expired tokens
- * @returns JWT payload or null
- */
-  public validateToken(token: string, allowExpired: boolean = false): {
+   * Validates JWT token and returns payload
+   *
+   * @param token - JWT token to validate
+   * @param allowExpired - Whether to allow expired tokens
+   * @returns JWT payload or null
+   */
+  public validateToken(
+    token: string,
+    allowExpired: boolean = false
+  ): {
     valid: boolean;
     user?: {
       userId: string;
@@ -371,7 +374,6 @@ export class TokenService {
       email: string;
       role: string;
       avatar?: string;
-      
     };
     error?: string;
   } {
