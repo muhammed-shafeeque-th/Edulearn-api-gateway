@@ -1,8 +1,6 @@
-import { USER_ROLE } from "@/domains/auth/v1/types";
+import { USER_ROLE } from '@/domains/auth/v1/types';
 
 export {};
-
-
 
 declare global {
   namespace Express {
@@ -17,7 +15,7 @@ declare global {
         avatar?: string;
         sessionId?: string;
         deviceId?: string;
-        permissions?: string[]
+        permissions?: string[];
       };
     }
   }

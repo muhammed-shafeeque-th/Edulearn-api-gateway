@@ -1,7 +1,7 @@
-import { LoggingService } from '@/services/observability/logging/logging.service';
+import { LoggerService } from '@/services/observability/implementations/logging/logger.service';
 import CircuitBreaker from 'opossum';
 
-const logger = LoggingService.getInstance();
+const logger = LoggerService.getInstance();
 
 export interface CircuitBreakerConfig {
   timeout: number;
