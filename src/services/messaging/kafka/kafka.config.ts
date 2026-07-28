@@ -1,5 +1,5 @@
-import { config } from "../../../config";
-import { ConsumerConfig, Kafka, Producer, ProducerConfig } from "kafkajs";
+import { config } from '../../../config';
+import { ConsumerConfig, Kafka, Producer, ProducerConfig } from 'kafkajs';
 
 const kafka = new Kafka({
   clientId: config.kafka.clientId,

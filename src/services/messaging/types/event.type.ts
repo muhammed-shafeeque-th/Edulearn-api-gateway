@@ -14,7 +14,7 @@ export interface EventPayload {
 
 // Typed event interfaces
 export interface CourseUploadedPayload extends EventPayload {
-  eventType: "course.content.uploaded";
+  eventType: 'course.content.uploaded';
   courseId: string;
   fileKey: string;
   fileUrl: string;
@@ -24,8 +24,8 @@ export interface CourseUploadedPayload extends EventPayload {
 }
 
 export interface MediaUploadedPayload extends EventPayload {
-  eventType: "media.uploaded";
-  mediaType: "image" | "video" | "document";
+  eventType: 'media.uploaded';
+  mediaType: 'image' | 'video' | 'document';
   publicId: string;
   url: string;
   format: string;

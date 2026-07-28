@@ -1,4 +1,4 @@
-import { EventMetadata, EventPayload } from "../types/event.type";
+import { EventMetadata, EventPayload } from '../types/event.type';
 
 export interface IMessageProducer {
   publish<T extends EventPayload>(

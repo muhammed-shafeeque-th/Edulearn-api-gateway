@@ -1,9 +1,9 @@
 import { IMessageProducer } from '../interfaces/producer.interface';
 import { createProducer } from './kafka.config';
 import { EventMetadata, EventPayload } from '../types/event.type';
-import { LoggingService } from '../../../services/observability/logging/logging.service';
+import { LoggerService } from '../../observability/implementations/logging/logger.service';
 
-const logger = LoggingService.getInstance();
+const logger = LoggerService.getInstance();
 
 export class IKafkaProducerService implements IMessageProducer {
   private producer = createProducer();

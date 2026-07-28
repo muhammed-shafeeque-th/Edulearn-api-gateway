@@ -1,5 +1,5 @@
-import { IKafkaProducerService } from "../kafka/producer.service";
-import { EventMetadata, MediaUploadedPayload } from "../types/event.type";
+import { IKafkaProducerService } from '../kafka/producer.service';
+import { EventMetadata, MediaUploadedPayload } from '../types/event.type';
 
 export class publishMediaUploadedEvents {
   constructor(private producer: IKafkaProducerService) {}
@@ -10,9 +10,9 @@ export class publishMediaUploadedEvents {
   ): Promise<void> {
     const fullPayload: MediaUploadedPayload = {
       ...payload,
-      eventType: "media.uploaded",
+      eventType: 'media.uploaded',
     };
 
-    this.producer.publish("media-events", fullPayload, metadata);
+    this.producer.publish('media-events', fullPayload, metadata);
   }
 }
