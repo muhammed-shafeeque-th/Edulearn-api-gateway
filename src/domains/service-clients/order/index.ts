@@ -16,7 +16,8 @@ import {
   PlaceOrderRequest,
   RestoreOrderRequest,
 } from './proto/generated/order_service';
-import { config } from 'config';
+import { config } from '@/config';
+import { getProtoPath } from '@edulearn/core';
 
 export class OrderService {
   private readonly client: GrpcClient<OrderServiceClient>;
@@ -27,12 +28,7 @@ export class OrderService {
       config.grpc.services.orderService.split(':');
 
     this.client = new GrpcClient({
-      protoPath: path.join(
-        process.cwd(),
-        'proto',
-        'order',
-        'order_service.proto'
-      ),
+      protoPath: path.join(getProtoPath('order')),
       packageName: 'order_service',
       serviceName: 'OrderService',
       host,
