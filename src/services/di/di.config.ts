@@ -2,7 +2,11 @@ import { Container } from 'inversify';
 import { TYPES } from './types';
 
 // Core Services
-import { LoggerService, MetricService, TraceService } from '../observability/implementations';
+import {
+  LoggerService,
+  MetricService,
+  TraceService,
+} from '../observability/implementations';
 import { ITraceService } from '../observability/interfaces/trace.service';
 import { ILoggerService } from '../observability/interfaces/logger.service';
 import { IMetricService } from '../observability/interfaces/metric.interface';
@@ -42,8 +46,33 @@ import { AccountAccessService } from '../account-access.service';
 import { AdminController } from '@/domains/admin/v1/controllers';
 import { CartController } from '@/domains/user/v1/controllers/cart.controller';
 import { NotificationController } from '@/domains/notification/v1/controllers';
+import {
+  initializeTracer,
+  registerShutdown as shutdownTracer,
+} from '@edulearn/core';
+import { config } from '@/config';
+import { RedisHealthCheck } from '../health/checks/redis.check';
+import { AppHealthController } from '../health/health-server';
+import { GatewayApplication } from '@/app';
+import { createServer } from 'http';
+import { MetricsEngine } from '../observability/implementations/metrics/setup';
+import { S3StorageService } from '../media/storage.service';
+import { CloudinaryMediaService } from '../media/media.service';
+import { IMediaService } from '../media/interfaces/media.interface';
 
 const container = new Container();
+
+container
+  .bind<ReturnType<typeof initializeTracer>>(TYPES.TracerProvider)
+  .toDynamicValue(() =>
+    initializeTracer({
+      environment: String(config.nodeEnv),
+      serviceName: String(config.serviceName),
+      collectorUrl: String(config.observability.tracer.collectorUrl),
+    })
+  )
+  .inSingletonScope();
+shutdownTracer(container.get(TYPES.TracerProvider));
 
 // Bind Core Services
 container
@@ -54,21 +83,19 @@ container
   .inSingletonScope();
 container
   .bind<ITraceService>(TYPES.TraceService)
-  .toDynamicValue(context => {
-    return TraceService.getInstance();
-  })
+  .to(TraceService)
   .inSingletonScope();
+
+container.bind(TYPES.MetricsEngine).to(MetricsEngine).inSingletonScope();
 container
   .bind<IMetricService>(TYPES.MetricService)
-  .toDynamicValue(context => {
-    return MetricService.getInstance();
-  })
+  .to(MetricService)
   .inSingletonScope();
 
 // Bind Infrastructure Services
 container
-  .bind<RedisService>(TYPES.RedisService)
-  .toDynamicValue(context => RedisService.getInstance())
+  .bind<RedisService>(TYPES.CacheService)
+  .to(RedisService)
   .inSingletonScope();
 container
   .bind<TokenService>(TYPES.TokenService)
@@ -77,6 +104,14 @@ container
 container
   .bind<AccountAccessService>(TYPES.AccountAccessService)
   .to(AccountAccessService)
+  .inSingletonScope();
+container
+  .bind<S3StorageService>(TYPES.StorageService)
+  .to(S3StorageService)
+  .inSingletonScope();
+container
+  .bind<IMediaService>(TYPES.MediaService)
+  .to(CloudinaryMediaService)
   .inSingletonScope();
 
 // Bind Domain Services
@@ -186,5 +221,22 @@ container
   .bind<MediaController>(TYPES.MediaController)
   .to(MediaController)
   .inTransientScope();
+
+// Servers
+container
+  .bind(TYPES.HttpServer)
+  .toDynamicValue(() => {
+    return createServer().listen(config.httpPort, () =>
+      console.log(`HttpServer listening on ${config.httpPort}`)
+    );
+  })
+  .inSingletonScope();
+container.bind(TYPES.HealthController).to(AppHealthController).inSingletonScope();
+
+// Health check
+container.bind(TYPES.RedisHealthCheck).to(RedisHealthCheck);
+
+// App
+// container.bind(TYPES.Application).to(GatewayApplication);
 
 export { container };

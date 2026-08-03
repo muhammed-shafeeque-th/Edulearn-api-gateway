@@ -1,8 +1,10 @@
 export const TYPES = {
   // Core Services
   LoggerService: Symbol.for('LoggerService'),
+  TracerProvider: Symbol.for('TracerProvider'),
   TraceService: Symbol.for('TraceService'),
   MetricService: Symbol.for('MetricService'),
+  MetricsEngine: Symbol.for('MetricsEngine'),
 
   // Domain Services
   AuthService: Symbol.for('AuthService'),
@@ -18,9 +20,11 @@ export const TYPES = {
   NotificationService: Symbol.for('NotificationService'),
 
   // Infrastructure Services
-  RedisService: Symbol.for('RedisService'),
+  CacheService: Symbol.for('CacheService'),
   TokenService: Symbol.for('TokenService'),
   AccountAccessService: Symbol.for('AccountAccessService'),
+  StorageService: Symbol.for('StorageService'),
+  MediaService: Symbol.for('MediaService'),
 
   // Controllers
   AdminController: Symbol.for('AdminController'),
@@ -39,4 +43,12 @@ export const TYPES = {
   MediaController: Symbol.for('MediaController'),
   OrderController: Symbol.for('OrderController'),
   PaymentController: Symbol.for('PaymentController'),
+
+  // Health check
+  HttpServer: Symbol.for('HttpServer'),
+  RedisHealthCheck: Symbol.for('RedisHealthCheck'),
+  HealthController: Symbol.for('HealthController'),
+  MetricsController: Symbol.for('MetricsController'),
+  
+  Application: Symbol.for('Application'),
 };
