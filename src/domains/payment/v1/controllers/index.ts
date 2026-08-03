@@ -1,11 +1,8 @@
-import { UserService } from '../../../service-clients/user';
 import { Request, Response } from 'express';
 import validateSchema from '../../../../services/security/validate-schema';
 
 import { HttpStatus } from '@/shared/constants/http-status';
 import { ResponseWrapper } from '@/shared/utils/response-wrapper';
-import { NotificationService } from '@/domains/service-clients/notification';
-import { CourseService } from '@/domains/service-clients/course';
 import { Observe } from '@/services/observability/decorators';
 import { PaymentService } from '@/domains/service-clients/payment';
 import { attachMetadata } from '../utils/attach-metadata';
@@ -68,8 +65,6 @@ export class PaymentController {
         options: { deadline: Date.now() + 60_000 },
       }
     );
-
-    console.log('Provider session :' + JSON.stringify(success, null, 2));
 
     return new ResponseWrapper(res).status(HttpStatus.OK).success(
       {
@@ -148,14 +143,14 @@ export class PaymentController {
   }
 
   async refundPayment(req: Request, res: Response) {
-    //TODO: Implementation for future
+    //TODO
     return new ResponseWrapper(res)
       .status(PAYMENT_MESSAGES.PAYMENT_REFUNDED.statusCode)
       .success({}, PAYMENT_MESSAGES.PAYMENT_REFUNDED.message);
   }
 
   async updatePaymentStatus(req: Request, res: Response) {
-    //TODO: Implementation for future
+    //TODO
     return new ResponseWrapper(res)
       .status(PAYMENT_MESSAGES.PAYMENT_STATUS_UPDATED.statusCode)
       .success({}, PAYMENT_MESSAGES.PAYMENT_STATUS_UPDATED.message);
