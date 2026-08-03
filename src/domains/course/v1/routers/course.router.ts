@@ -8,7 +8,9 @@ import {
   authGuard,
 } from '@/middlewares/auth.middleware';
 import { Permissions } from '@/shared/types';
-import { container, TYPES } from '@/services/di';
+import { container } from '@/services/di/di.config';
+import { TYPES } from '@/services/di';
+import { courseEndpoints } from './route.constants';
 
 const router = Router();
 
@@ -21,21 +23,21 @@ const courseController = container.get<CourseController>(
 //  ============================================================================
 
 router.get(
-  '/',
+  courseEndpoints.base,
   asyncHandler(courseController.getCourses.bind(courseController))
 );
 
 router.get(
-  '/instructor/:instructorId',
+  courseEndpoints.instructor,
   asyncHandler(courseController.getCoursesByInstructor.bind(courseController))
 );
 
 router.get(
-  '/:courseId',
+  courseEndpoints.course,
   asyncHandler(courseController.getCourse.bind(courseController))
 );
 router.get(
-  '/:courseId/analytics',
+  courseEndpoints.analytics,
   authGuard({
     roles: ['admin', 'instructor'],
     permissions: [Permissions.ANALYTICS_VIEW],
@@ -43,7 +45,7 @@ router.get(
   asyncHandler(courseController.getCourseAnalytics.bind(courseController))
 );
 router.get(
-  '/stats',
+  courseEndpoints.stats,
   authGuard({
     roles: ['admin', 'instructor'],
     permissions: [Permissions.ANALYTICS_VIEW],
@@ -52,17 +54,17 @@ router.get(
 );
 
 router.get(
-  '/:courseId/reviews',
+  courseEndpoints.reviews,
   asyncHandler(courseController.getReviewsByCourse.bind(courseController))
 );
 
 router.get(
-  '/slug/:slug',
+  courseEndpoints.slug,
   asyncHandler(courseController.getCourseBySlug.bind(courseController))
 );
 
 router.patch(
-  '/:courseId',
+  courseEndpoints.course,
   authGuard({
     roles: ['admin', 'instructor'],
     permissions: [Permissions.COURSE_CONTENT_MANAGE],
@@ -71,7 +73,7 @@ router.patch(
 );
 
 router.post(
-  '/',
+  courseEndpoints.base,
   authGuard({
     roles: ['admin', 'instructor'],
     permissions: [Permissions.COURSE_CONTENT_MANAGE],
@@ -80,7 +82,7 @@ router.post(
 );
 
 router.delete(
-  '/:courseId',
+  courseEndpoints.course,
   authGuard({
     roles: ['admin', 'instructor'],
     permissions: [Permissions.COURSE_DELETE_OWN],
@@ -89,7 +91,7 @@ router.delete(
 );
 
 router.patch(
-  '/:courseId/publish',
+  courseEndpoints.publish,
   authGuard({
     roles: ['admin', 'instructor'],
     // permissions: [Permissions.COURSE_CONTENT_MANAGE],
@@ -97,7 +99,7 @@ router.patch(
   asyncHandler(courseController.publishCourse.bind(courseController))
 );
 router.patch(
-  '/:courseId/unpublish',
+  courseEndpoints.unpublish,
   authGuard({
     roles: ['admin', 'instructor'],
     // permissions: [Permissions.COURSE_CONTENT_MANAGE],
@@ -106,19 +108,19 @@ router.patch(
 );
 
 // router.get(
-//   '/:courseId/related',
+//   courseEndpoints.related,
 //   authenticate,
 //   asyncHandler(courseController.relatedCourses.bind(courseController))
 // );
 
 // router.post(
-//   '/:courseId/enroll',
+//   courseEndpoints.enroll,
 //   authenticate,
 //   asyncHandler(courseController.enrollInCourse.bind(courseController))
 // );
 
 // router.get(
-//   '/featured',
+//   courseEndpoints.featured,
 //   authenticate,
 //   asyncHandler(courseController.getFeaturedCourses.bind(courseController))
 // );
@@ -128,7 +130,7 @@ router.patch(
 //  ============================================================================
 
 router.post(
-  '/:courseId/modules/:moduleId',
+  courseEndpoints.module,
   authGuard({
     roles: ['admin', 'instructor'],
     permissions: [Permissions.COURSE_CONTENT_MANAGE],
@@ -137,12 +139,12 @@ router.post(
 );
 
 router.get(
-  '/:courseId/modules/',
+  courseEndpoints.modules,
   asyncHandler(courseController.getModulesByCourse.bind(courseController))
 );
 
 router.post(
-  '/:courseId/modules/',
+  courseEndpoints.modules,
   authGuard({
     roles: ['admin', 'instructor'],
     permissions: [Permissions.COURSE_CONTENT_MANAGE],
@@ -151,7 +153,7 @@ router.post(
 );
 
 router.patch(
-  '/:courseId/modules/:moduleId',
+  courseEndpoints.module,
   authGuard({
     roles: ['admin', 'instructor'],
     permissions: [Permissions.COURSE_CONTENT_MANAGE],
@@ -160,7 +162,7 @@ router.patch(
 );
 
 router.delete(
-  '/:courseId/modules/:moduleId',
+  courseEndpoints.module,
   authGuard({
     roles: ['admin', 'instructor'],
     permissions: [Permissions.COURSE_CONTENT_MANAGE],
@@ -173,17 +175,17 @@ router.delete(
 //  ============================================================================
 
 router.get(
-  '/:courseId/modules/:moduleId/lessons/:lessonId',
+  courseEndpoints.lesson,
   asyncHandler(courseController.getLesson.bind(courseController))
 );
 
 router.get(
-  '/:courseId/modules/:moduleId/lessons',
+  courseEndpoints.lessons,
   asyncHandler(courseController.getLessonsByModule.bind(courseController))
 );
 
 router.post(
-  '/:courseId/modules/:moduleId/lessons',
+  courseEndpoints.lessons,
   authGuard({
     roles: ['admin', 'instructor'],
     permissions: [Permissions.COURSE_CONTENT_MANAGE],
@@ -192,7 +194,7 @@ router.post(
 );
 
 router.patch(
-  '/:courseId/modules/:moduleId/lessons/:lessonId',
+  courseEndpoints.lesson,
   authGuard({
     roles: ['admin', 'instructor'],
     permissions: [Permissions.COURSE_CONTENT_MANAGE],
@@ -201,7 +203,7 @@ router.patch(
 );
 
 router.delete(
-  '/:courseId/modules/:moduleId/lessons/:lessonId',
+  courseEndpoints.lesson,
   authGuard({
     roles: ['admin', 'instructor'],
     permissions: [Permissions.COURSE_CONTENT_MANAGE],
@@ -214,17 +216,17 @@ router.delete(
 //  ============================================================================
 
 router.get(
-  '/:courseId/modules/:moduleId/quizzes',
+  courseEndpoints.quizzes,
   asyncHandler(courseController.getQuizzesByCourse.bind(courseController))
 );
 
 router.get(
-  '/:courseId/modules/:moduleId/quizzes/:quizId',
+  courseEndpoints.quiz,
   asyncHandler(courseController.getQuiz.bind(courseController))
 );
 
 router.post(
-  '/:courseId/modules/:moduleId/quizzes',
+  courseEndpoints.quizzes,
   authGuard({
     roles: ['admin', 'instructor'],
     permissions: [Permissions.COURSE_CONTENT_MANAGE],
@@ -233,7 +235,7 @@ router.post(
 );
 
 router.delete(
-  '/:courseId/modules/:moduleId/quizzes/:quizId',
+  courseEndpoints.quiz,
   authGuard({
     roles: ['admin', 'instructor'],
     permissions: [Permissions.COURSE_CONTENT_MANAGE],
@@ -242,7 +244,7 @@ router.delete(
 );
 
 router.patch(
-  '/:courseId/modules/:moduleId/quizzes/:quizId',
+  courseEndpoints.quiz,
   authGuard({
     roles: ['admin', 'instructor'],
     permissions: [Permissions.COURSE_CONTENT_MANAGE],

@@ -5,7 +5,7 @@ import { categoryRouter } from './category.router';
 
 const router = Router();
 
-router.use(categoryRouter)
-router.use(courseRouter)
+router.use(categoryRouter);
+router.use(courseRouter);
 
-export {router as courseRouterV1}
+export { router as courseRouterV1 };

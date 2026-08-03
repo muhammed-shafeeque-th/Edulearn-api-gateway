@@ -6,7 +6,9 @@ import { Router } from 'express';
 import { authGuard } from '@/middlewares/auth.middleware';
 import { Permissions } from '@/shared/types';
 import { blocklistMiddleware } from '@/middlewares/blocklist.middleware';
-import { container, TYPES } from '@/services/di';
+import { container } from '@/services/di/di.config';
+import { TYPES } from '@/services/di';
+import { categoryEndpoints } from './route.constants';
 
 const router = Router();
 
@@ -19,38 +21,37 @@ const categoryController = container.get<CategoryController>(
 //  ============================================================================
 
 router.get(
-  '/categories',
+  categoryEndpoints.categories,
   asyncHandler(categoryController.getAllCategories.bind(categoryController))
 );
 router.get(
-  '/categories/stats',
+  categoryEndpoints.stats,
   asyncHandler(categoryController.getCategoriesStats.bind(categoryController))
 );
 
-// Admin-only: create a category
 router.post(
-  '/categories',
+  categoryEndpoints.categories,
   authGuard({ roles: ['admin'], permissions: [Permissions.CATEGORY_MANAGE] }),
   asyncHandler(categoryController.createCategory.bind(categoryController))
 );
 
 // Admin-only: update a category
 router.patch(
-  '/categories/:id',
+  categoryEndpoints.category,
   authGuard({ roles: ['admin'], permissions: [Permissions.CATEGORY_MANAGE] }),
   asyncHandler(categoryController.updateCategory.bind(categoryController))
 );
 
 // Admin-only: toggle active/inactive status
 router.patch(
-  '/categories/:id/toggle-status',
+  categoryEndpoints.status,
   authGuard({ roles: ['admin'], permissions: [Permissions.CATEGORY_MANAGE] }),
   asyncHandler(categoryController.toggleCategoryStatus.bind(categoryController))
 );
 
 // Admin-only: soft-delete a category
 router.delete(
-  '/categories/:id',
+  categoryEndpoints.category,
   authGuard({ roles: ['admin'], permissions: [Permissions.CATEGORY_MANAGE] }),
   blocklistMiddleware,
   asyncHandler(categoryController.deleteCategory.bind(categoryController))
