@@ -13,98 +13,43 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { v4 as uuidv4 } from 'uuid';
 import { config } from '@/config';
-import { LoggingService } from '../observability/logging/logging.service';
+import {
+  CompletedPart,
+  CompleteMultipartResult,
+  FileMetadata,
+  ListPartsResult,
+  MultipartUploadResult,
+  PresignedUploadResult,
+  S3Config,
+  UploadedPart,
+} from './interfaces/storage.interface';
+import { inject, injectable } from 'inversify';
+import { TYPES } from '../di';
+import { ILoggerService } from '../observability/interfaces';
 
-const logger = LoggingService.getInstance();
-export interface S3Config {
-  bucket: string;
-  region: string;
-  accessKeyId?: string;
-  secretAccessKey?: string;
-  maxRetries: number;
-  timeout: number;
-}
-
-export interface FileMetadata {
-  courseId: string;
-  userId: string;
-  fileName: string;
-  fileSize: number;
-  fileType: string;
-  uploadId?: string;
-  checksum?: string;
-  tags?: Record<string, string>;
-}
-
-export interface PresignedUploadResult {
-  uploadUrl: string;
-  fileUrl: string;
-  key: string;
-  expires: number;
-  uploadId?: string;
-}
-
-export interface MultipartUploadResult {
-  uploadId: string;
-  fileUrl: string;
-  key: string;
-  parts: Array<{
-    partNumber: number;
-    uploadUrl: string;
-    expires: number;
-  }>;
-}
-
-export interface CompletedPart {
-  partNumber: number;
-  etag: string;
-}
-
-export interface UploadedPart {
-  partNumber: number;
-  etag: string;
-  size: number;
-  lastModified: Date;
-}
-
-export interface ListPartsResult {
-  parts: UploadedPart[];
-  isTruncated: boolean;
-  nextPartNumberMarker?: number;
-}
-
-export interface CompleteMultipartResult {
-  url: string;
-  location: string;
-  etag: string;
-}
-
-class S3StorageService {
+@injectable()
+export class S3StorageService {
   private s3Client: S3Client;
-  private s3SecureClient: S3Client;
   private config: S3Config;
-  private secureConfig: S3Config;
 
-  constructor(config: S3Config, secureConfig: S3Config) {
-    this.config = config;
-    this.secureConfig = secureConfig;
+  constructor(
+    @inject(TYPES.LoggerService) private readonly logger: ILoggerService
+  ) {
+    // Create singleton instance
+    this.config = {
+      bucket: config.s3.bucketName!,
+      region: config.s3.region,
+      accessKeyId: config.s3.accessKey,
+      secretAccessKey: config.s3.accessSecret,
+      maxRetries: 3,
+      timeout: 60000, // 60 seconds for large file operations
+    };
 
     const clientConfig: any = {
-      region: config.region,
-      maxAttempts: config.maxRetries,
+      region: this.config.region,
+      maxAttempts: this.config.maxRetries,
       requestHandler: {
-        requestTimeout: config.timeout,
-        httpsAgent: {
-          maxSockets: 50,
-          keepAlive: true,
-        },
-      },
-    };
-    const secureClientConfig: any = {
-      region: secureConfig.region,
-      maxAttempts: secureConfig.maxRetries,
-      requestHandler: {
-        requestTimeout: secureConfig.timeout,
+        requestTimeout: this.config.timeout,
         httpsAgent: {
           maxSockets: 50,
           keepAlive: true,
@@ -113,27 +58,24 @@ class S3StorageService {
     };
 
     // Use explicit credentials if provided, otherwise use IAM roles
-    if (config.accessKeyId && config.secretAccessKey) {
+    if (
+      config.nodeEnv === 'development' &&
+      this.config.accessKeyId &&
+      this.config.secretAccessKey
+    ) {
       clientConfig.credentials = {
-        accessKeyId: config.accessKeyId,
-        secretAccessKey: config.secretAccessKey,
-      };
-    }
-    if (secureConfig.accessKeyId && secureConfig.secretAccessKey) {
-      secureClientConfig.credentials = {
-        accessKeyId: secureConfig.accessKeyId,
-        secretAccessKey: secureConfig.secretAccessKey,
+        accessKeyId: this.config.accessKeyId,
+        secretAccessKey: this.config.secretAccessKey,
       };
     }
 
     this.s3Client = new S3Client(clientConfig);
-    this.s3SecureClient = new S3Client(secureClientConfig);
 
     logger.debug('S3StorageService initialized', {
-      region: config.region,
-      bucket: config.bucket + ', ' + secureConfig.region,
+      region: this.config.region,
+      bucket: this.config.bucket + ', ' + this.config.region,
       usingExplicitCredentials: !!(
-        config.accessKeyId && config.secretAccessKey
+        this.config.accessKeyId && this.config.secretAccessKey
       ),
     });
   }
@@ -236,7 +178,7 @@ class S3StorageService {
         uploadId: metadata.uploadId,
       };
 
-      logger.debug('Generated presigned upload URL', {
+      this.logger.debug('Generated presigned upload URL', {
         uploadId: metadata.uploadId,
         key,
         fileSize: metadata.fileSize,
@@ -245,7 +187,7 @@ class S3StorageService {
 
       return result;
     } catch (error: any) {
-      logger.error('Failed to generate presigned upload URL', {
+      this.logger.error('Failed to generate presigned upload URL', {
         error: error.message,
         uploadId: metadata.uploadId,
         fileSize: metadata.fileSize,
@@ -265,7 +207,7 @@ class S3StorageService {
       const s3Metadata = this.prepareS3Metadata(metadata);
 
       const command = new PutObjectCommand({
-        Bucket: this.secureConfig.bucket,
+        Bucket: this.config.bucket,
         Key: key,
         ContentType: metadata.fileType,
         // ContentLength: metadata.fileSize,
@@ -276,7 +218,7 @@ class S3StorageService {
         // ContentDisposition: `attachment; filename="${metadata.fileName}"`,
       });
 
-      const uploadUrl = await getSignedUrl(this.s3SecureClient, command, {
+      const uploadUrl = await getSignedUrl(this.s3Client, command, {
         expiresIn,
       });
 
@@ -290,7 +232,7 @@ class S3StorageService {
         uploadId: metadata.uploadId,
       };
 
-      logger.debug('Generated presigned upload URL', {
+      this.logger.debug('Generated presigned upload URL', {
         uploadId: metadata.uploadId,
         key,
         fileSize: metadata.fileSize,
@@ -299,7 +241,7 @@ class S3StorageService {
 
       return result;
     } catch (error: any) {
-      logger.error('Failed to generate presigned upload URL', {
+      this.logger.error('Failed to generate presigned upload URL', {
         error: error.message,
         uploadId: metadata.uploadId,
         fileSize: metadata.fileSize,
@@ -310,7 +252,7 @@ class S3StorageService {
 
   async getSignedSecureCourseUrl(key: string, expiryInSec: number = 60 * 60) {
     const command = new GetObjectCommand({
-      Bucket: this.secureConfig.bucket,
+      Bucket: this.config.bucket,
       Key: key,
     });
     const url = await getSignedUrl(this.s3Client, command, {
@@ -337,7 +279,7 @@ class S3StorageService {
 
       // Create multipart upload
       const createCommand = new CreateMultipartUploadCommand({
-        Bucket: this.secureConfig.bucket,
+        Bucket: this.config.bucket,
         Key: key,
         ContentType: metadata.fileType,
         Metadata: s3Metadata,
@@ -346,7 +288,7 @@ class S3StorageService {
         ContentDisposition: `attachment; filename="${metadata.fileName}"`,
       });
 
-      const createResponse = await this.s3SecureClient.send(createCommand);
+      const createResponse = await this.s3Client.send(createCommand);
 
       if (!createResponse.UploadId) {
         throw new Error('Failed to get upload ID from S3');
@@ -355,7 +297,7 @@ class S3StorageService {
       const uploadId = createResponse.UploadId;
       const totalParts = Math.ceil(metadata.fileSize / chunkSize);
 
-      logger.debug('Initialized multipart upload', {
+      this.logger.debug('Initialized multipart upload', {
         uploadId: metadata.uploadId,
         s3UploadId: uploadId,
         key,
@@ -370,14 +312,14 @@ class S3StorageService {
 
       for (let partNumber = 1; partNumber <= totalParts; partNumber++) {
         const uploadPartCommand = new UploadPartCommand({
-          Bucket: this.secureConfig.bucket,
+          Bucket: this.config.bucket,
           Key: key,
           PartNumber: partNumber,
           UploadId: uploadId,
         });
 
         const partUploadUrl = await getSignedUrl(
-          this.s3SecureClient,
+          this.s3Client,
           uploadPartCommand,
           {
             expiresIn,
@@ -391,7 +333,7 @@ class S3StorageService {
         });
       }
 
-      const fileUrl = `https://${this.secureConfig.bucket}.s3.${this.secureConfig.region}.amazonaws.com/${key}`;
+      const fileUrl = `https://${this.config.bucket}.s3.${this.config.region}.amazonaws.com/${key}`;
 
       const result: MultipartUploadResult = {
         uploadId,
@@ -400,7 +342,7 @@ class S3StorageService {
         parts,
       };
 
-      logger.debug('Generated multipart upload URLs', {
+      this.logger.debug('Generated multipart upload URLs', {
         uploadId: metadata.uploadId,
         s3UploadId: uploadId,
         partsCount: parts.length,
@@ -408,7 +350,7 @@ class S3StorageService {
 
       return result;
     } catch (error: any) {
-      logger.error('Failed to initialize multipart upload', {
+      this.logger.error('Failed to initialize multipart upload', {
         error: error.message,
         uploadId: metadata.uploadId,
         fileSize: metadata.fileSize,
@@ -436,14 +378,14 @@ class S3StorageService {
 
       for (const partNumber of partNumbers) {
         const uploadPartCommand = new UploadPartCommand({
-          Bucket: this.secureConfig.bucket,
+          Bucket: this.config.bucket,
           Key: key,
           PartNumber: partNumber,
           UploadId: uploadId,
         });
 
         const partUploadUrl = await getSignedUrl(
-          this.s3SecureClient,
+          this.s3Client,
           uploadPartCommand,
           {
             expiresIn,
@@ -457,7 +399,7 @@ class S3StorageService {
         });
       }
 
-      logger.debug('Generated additional part URLs', {
+      this.logger.debug('Generated additional part URLs', {
         s3UploadId: uploadId,
         key,
         partNumbers,
@@ -466,7 +408,7 @@ class S3StorageService {
 
       return parts;
     } catch (error: any) {
-      logger.error('Failed to generate additional part URLs', {
+      this.logger.error('Failed to generate additional part URLs', {
         error: error.message,
         uploadId,
         key,
@@ -489,14 +431,14 @@ class S3StorageService {
   ): Promise<ListPartsResult> {
     try {
       const command = new ListPartsCommand({
-        Bucket: this.secureConfig.bucket,
+        Bucket: this.config.bucket,
         Key: key,
         UploadId: uploadId,
         MaxParts: maxParts,
         PartNumberMarker: partNumberMarker?.toString(),
       });
 
-      const response = await this.s3SecureClient.send(command);
+      const response = await this.s3Client.send(command);
 
       const parts: UploadedPart[] =
         response.Parts?.map(part => ({
@@ -512,7 +454,7 @@ class S3StorageService {
         nextPartNumberMarker: parseInt(response.NextPartNumberMarker || ''),
       };
 
-      logger.debug('Listed uploaded parts', {
+      this.logger.debug('Listed uploaded parts', {
         uploadId,
         key,
         partsCount: parts.length,
@@ -521,7 +463,7 @@ class S3StorageService {
 
       return result;
     } catch (error: any) {
-      logger.error('Failed to list uploaded parts', {
+      this.logger.error('Failed to list uploaded parts', {
         error: error.message,
         uploadId,
         key,
@@ -550,7 +492,7 @@ class S3StorageService {
       }
 
       const command = new CompleteMultipartUploadCommand({
-        Bucket: this.secureConfig.bucket,
+        Bucket: this.config.bucket,
         Key: key,
         UploadId: uploadId,
         MultipartUpload: {
@@ -561,7 +503,7 @@ class S3StorageService {
         },
       });
 
-      const response = await this.s3SecureClient.send(command);
+      const response = await this.s3Client.send(command);
 
       if (!response.Location) {
         throw new Error(
@@ -570,12 +512,12 @@ class S3StorageService {
       }
 
       const result: CompleteMultipartResult = {
-        url: `https://${this.secureConfig.bucket}.s3.${this.secureConfig.region}.amazonaws.com/${key}`,
+        url: `https://${this.config.bucket}.s3.${this.config.region}.amazonaws.com/${key}`,
         location: response.Location,
         etag: response.ETag?.replace(/"/g, '') || '',
       };
 
-      logger.debug('Completed multipart upload', {
+      this.logger.debug('Completed multipart upload', {
         uploadId,
         key,
         partsCount: parts.length,
@@ -584,7 +526,7 @@ class S3StorageService {
 
       return result;
     } catch (error: any) {
-      logger.error('Failed to complete multipart upload', {
+      this.logger.error('Failed to complete multipart upload', {
         error: error.message,
         uploadId,
         key,
@@ -600,19 +542,19 @@ class S3StorageService {
   async abortMultipartUpload(key: string, uploadId: string): Promise<void> {
     try {
       const command = new AbortMultipartUploadCommand({
-        Bucket: this.secureConfig.bucket,
+        Bucket: this.config.bucket,
         Key: key,
         UploadId: uploadId,
       });
 
-      await this.s3SecureClient.send(command);
+      await this.s3Client.send(command);
 
-      logger.debug('Aborted multipart upload', {
+      this.logger.debug('Aborted multipart upload', {
         uploadId,
         key,
       });
     } catch (error: any) {
-      logger.error('Failed to abort multipart upload', {
+      this.logger.error('Failed to abort multipart upload', {
         error: error.message,
         uploadId,
         key,
@@ -641,7 +583,7 @@ class S3StorageService {
         return false;
       }
 
-      logger.error('Failed to check if object exists', {
+      this.logger.error('Failed to check if object exists', {
         error: error.message,
         key,
       });
@@ -651,11 +593,11 @@ class S3StorageService {
   async objectSecureExists(key: string): Promise<boolean> {
     try {
       const command = new HeadObjectCommand({
-        Bucket: this.secureConfig.bucket,
+        Bucket: this.config.bucket,
         Key: key,
       });
 
-      await this.s3SecureClient.send(command);
+      await this.s3Client.send(command);
       return true;
     } catch (error: any) {
       if (
@@ -665,7 +607,7 @@ class S3StorageService {
         return false;
       }
 
-      logger.error('Failed to check if object exists', {
+      this.logger.error('Failed to check if object exists', {
         error: error.message,
         key,
       });
@@ -694,7 +636,7 @@ class S3StorageService {
         serverSideEncryption: response.ServerSideEncryption,
       };
     } catch (error: any) {
-      logger.error('Failed to get object metadata', {
+      this.logger.error('Failed to get object metadata', {
         error: error.message,
         key,
       });
@@ -704,11 +646,11 @@ class S3StorageService {
   async getSecureObjectMetadata(key: string): Promise<any> {
     try {
       const command = new HeadObjectCommand({
-        Bucket: this.secureConfig.bucket,
+        Bucket: this.config.bucket,
         Key: key,
       });
 
-      const response = await this.s3SecureClient.send(command);
+      const response = await this.s3Client.send(command);
 
       return {
         contentType: response.ContentType,
@@ -719,7 +661,7 @@ class S3StorageService {
         serverSideEncryption: response.ServerSideEncryption,
       };
     } catch (error: any) {
-      logger.error('Failed to get object metadata', {
+      this.logger.error('Failed to get object metadata', {
         error: error.message,
         key,
       });
@@ -733,17 +675,17 @@ class S3StorageService {
   async deleteObject(key: string): Promise<void> {
     try {
       const command = new DeleteObjectCommand({
-        Bucket: this.secureConfig.bucket,
+        Bucket: this.config.bucket,
         Key: key,
       });
 
-      await this.s3SecureClient.send(command);
+      await this.s3Client.send(command);
 
-      logger.debug('Deleted object from S3', {
+      this.logger.debug('Deleted object from S3', {
         key,
       });
     } catch (error: any) {
-      logger.error('Failed to delete object', {
+      this.logger.error('Failed to delete object', {
         error: error.message,
         key,
       });
@@ -770,14 +712,14 @@ class S3StorageService {
         expiresIn,
       });
 
-      logger.debug('Generated presigned download URL', {
+      this.logger.debug('Generated presigned download URL', {
         key,
         expiresIn,
       });
 
       return downloadUrl;
     } catch (error: any) {
-      logger.error('Failed to generate presigned download URL', {
+      this.logger.error('Failed to generate presigned download URL', {
         error: error.message,
         key,
       });
@@ -793,23 +735,23 @@ class S3StorageService {
   ): Promise<string> {
     try {
       const command = new PutObjectCommand({
-        Bucket: this.secureConfig.bucket,
+        Bucket: this.config.bucket,
         Key: key,
         ContentDisposition: responseContentDisposition,
       });
 
-      const downloadUrl = await getSignedUrl(this.s3SecureClient, command, {
+      const downloadUrl = await getSignedUrl(this.s3Client, command, {
         expiresIn,
       });
 
-      logger.debug('Generated presigned download URL', {
+      this.logger.debug('Generated presigned download URL', {
         key,
         expiresIn,
       });
 
       return downloadUrl;
     } catch (error: any) {
-      logger.error('Failed to generate presigned download URL', {
+      this.logger.error('Failed to generate presigned download URL', {
         error: error.message,
         key,
       });
@@ -927,24 +869,3 @@ class S3StorageService {
   //   return { aborted: true };
   // }
 }
-
-// Create singleton instance
-const s3Config: S3Config = {
-  bucket: config.s3.bucketName || process.env.S3_BUCKET_NAME!,
-  region: config.s3.region,
-  accessKeyId: config.s3.accessKey || process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: config.s3.accessSecret || process.env.AWS_SECRET_ACCESS_KEY,
-  maxRetries: 3,
-  timeout: 60000, // 60 seconds for large file operations
-};
-const s3SecureConfig: S3Config = {
-  bucket: config.s3.secureBucketName,
-  region: config.s3.secureRegion,
-  accessKeyId: config.s3.secureAccessKey,
-  secretAccessKey: config.s3.secureAccessSecret,
-  maxRetries: 3,
-  timeout: 60000, // 60 seconds for large file operations
-};
-
-export const s3StorageService = new S3StorageService(s3Config, s3SecureConfig);
-export { S3StorageService };

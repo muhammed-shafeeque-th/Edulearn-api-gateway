@@ -1,15 +1,19 @@
 import { fork, ForkOptions } from 'child_process';
 import { IWorkerService } from './interfaces/woker.interface';
 import path from 'path';
-import { LoggingService } from '../observability/logging/logging.service';
-const logger = LoggingService.getInstance();
+import { LoggerService } from '../observability/implementations/logging/logger.service';
+const logger = LoggerService.getInstance();
 
 export class WorkerService implements IWorkerService {
   private workerPath: string;
   private options: ForkOptions;
 
   public constructor(workerPath: string, options: ForkOptions = {}) {
-    this.workerPath = path.join(__dirname, '../shared/utils/workers', workerPath);
+    this.workerPath = path.join(
+      __dirname,
+      '../shared/utils/workers',
+      workerPath
+    );
     this.options = {
       stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
       ...options,

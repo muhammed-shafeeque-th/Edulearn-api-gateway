@@ -1,11 +1,11 @@
 import cloudinary from '@/config/cloudinary.config';
 import { IMediaService } from './interfaces/media.interface';
 import { Readable } from 'stream';
-import { LoggingService } from '../observability/logging';
+import { LoggerService } from '../observability/implementations/logging';
 import { promisify } from 'util';
 import { config } from '@/config';
 
-const logger = LoggingService.getInstance();
+const logger = LoggerService.getInstance();
 
 interface UploadOptions {
   folder?: string;
