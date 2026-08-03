@@ -23,29 +23,12 @@ import { updateLessonProgressSchema } from '../schemas/progress/update-lesson-pr
 import { submitQuizProgressSchema } from '../schemas/progress/submit-quiz-progress.schema';
 import { deleteProgressSchema } from '../schemas/progress/delete-enrollment.schema';
 import { checkEnrollmentSchema } from '../schemas/enrollment/check-enrollment.schema';
-import {
-  EnrollmentProgressData,
-  ProgressData,
-} from '@/domains/service-clients/course/proto/generated/course/types/progress';
 import { ReviewData } from '@/domains/service-clients/course/proto/generated/course/types/review';
 import { videoPlaybackRefreshUrlSchema } from '../schemas/video-playback-refresh.schema';
 import { videoPlaybackUrlSchema } from '../schemas/video-playback.schema';
 import { AuthorizationError } from '@/shared/errors/unauthorize.error';
-import {
-  s3StorageService,
-  S3StorageService,
-} from '@/services/media/storage.service';
+import { S3StorageService } from '@/services/media/storage.service';
 import { ENROLLMENT_MESSAGES } from '../utils/resposne-messages';
-import {
-  DomainEnrollmentDetail,
-  Enrollment,
-  QuestionOption,
-  QuizQuestion,
-} from '../types';
-import {
-  EnrollmentData,
-  EnrollmentDetail,
-} from '@/domains/service-clients/course/proto/generated/course/types/enrollment';
 import { getCertificateSchema } from '../schemas/certificate/get-certificate.schema';
 import { CertificateData } from '@/domains/service-clients/course/proto/generated/course/types/certificate';
 import { getCertificateByEnrollmentSchema } from '../schemas/certificate/get-certificate-by-enrollment.schema';
@@ -62,15 +45,13 @@ import { TYPES } from '@/services/di';
 @Observe({ logLevel: 'debug' })
 @injectable()
 export class EnrollmentController {
-  private storageService: S3StorageService;
   constructor(
     @inject(TYPES.UserService) private userServiceClient: UserService,
     @inject(TYPES.CourseService) private courseService: CourseService,
     @inject(TYPES.EnrollmentService)
-    private enrollmentServiceClient: EnrollmentService
-  ) {
-    this.storageService = s3StorageService;
-  }
+    private enrollmentServiceClient: EnrollmentService,
+    @inject(TYPES.StorageService) private storageService: S3StorageService
+  ) {}
 
   // =================================================================================================================================
   //                                                    REVIEWS
