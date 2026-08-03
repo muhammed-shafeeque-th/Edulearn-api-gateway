@@ -66,10 +66,4 @@ export interface ILoggerService {
    * @param {LogContext} [context] - Optional context information for the log entry
    */
   debug(message: string, context?: LogContext): void;
-
-  /**
-   * Shuts down the logger service and releases any resources.
-   * @returns {Promise<void>} A promise that resolves when shutdown is complete
-   */
-  shutdown(): Promise<void>;
 }
