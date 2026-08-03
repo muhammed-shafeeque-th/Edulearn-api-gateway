@@ -15,6 +15,7 @@ import {
   ToggleCartItemRequest,
   ToggleCartItemResponse,
 } from '../user/proto/generated/user/types/cart_types';
+import { getProtoPath, PROTO_ROOT_DIR } from '@edulearn/core';
 
 export class CartService {
   private readonly client: GrpcClient<CartServiceClient>;
@@ -25,18 +26,13 @@ export class CartService {
       config.grpc.services.userServiceClient.split(':');
 
     this.client = new GrpcClient({
-      protoPath: path.join(
-        process.cwd(),
-        'proto',
-        'user',
-        'user_service.proto'
-      ),
+      protoPath: path.join(getProtoPath('user')),
       packageName: 'user_service',
       serviceName: 'CartService',
       host,
       port: parseInt(port),
       loaderOptions: {
-        includeDirs: [path.join(process.cwd(), 'proto', 'user')],
+        includeDirs: [path.join(PROTO_ROOT_DIR, 'user')],
       },
     });
   }
