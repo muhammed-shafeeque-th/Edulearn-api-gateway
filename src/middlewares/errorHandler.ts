@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { MulterError } from 'multer';
 import { BaseError } from '../shared/errors/base-error';
 import { clearCookies } from '@/domains/auth/v1/utils/manage-cookies';
+import { config } from '@/config';
 
 const ResponseStatus = {
   success: 'success',
@@ -34,7 +35,9 @@ export const errorHandler = async (
   let statusCode: number = 500;
 
   // Add request ID for tracing
-  const requestId = (req.headers['x-request-id'] as string) || 'unknown';
+  const requestId =
+    ((req.headers['x-request-id'] ?? req.headers['X-Request-ID']) as string) ||
+    'unknown';
 
   if (error instanceof MulterError) {
     statusCode = 400;
@@ -74,7 +77,7 @@ export const errorHandler = async (
         details: [
           {
             message:
-              process.env.NODE_ENV === 'production'
+              config.nodeEnv === 'production'
                 ? 'An unexpected error occurred'
                 : error.message || 'An unexpected error occurred',
           },
@@ -99,7 +102,7 @@ export const errorHandler = async (
   }
 
   // Don't send error details in production for unknown errors
-  if (process.env.NODE_ENV === 'production' && statusCode === 500) {
+  if (config.nodeEnv === 'production' && statusCode === 500) {
     errorResponse.error.details = [{ message: 'Internal server error' }];
   }
 
