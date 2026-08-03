@@ -1,5 +1,5 @@
-import { NotificationData } from "@/domains/service-clients/notification/proto/generated/notification";
-import { Notification } from "../types";
+import { NotificationData } from '@/domains/service-clients/notification/proto/generated/notification';
+import { Notification } from '../types';
 
 export class NotificationResponseMapper {
   // Mapping Functions
