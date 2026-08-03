@@ -1,28 +1,23 @@
 import { HttpStatus } from '@/shared/constants/http-status';
 import { CorsOptions } from 'cors';
-import { config } from '@/config/dev-config';
+import { config } from '@/config/app.config';
 
-const allowedOrigins = config.cors.allowedOrigins;
-const allowedMethods = config.cors.allowedMethods;
+const allowedOrigins = config.security.cors.allowedOrigins;
+const allowedMethods = config.security.cors.allowedMethods;
 
 export const corsOptions: CorsOptions = {
-  origin: (requestOrigin, callback) => {
-    // In development allow requests with no origin (curl, Postman, mobile).
-    // In production all requests must originate from an allowed origin.
-    if (!requestOrigin) {
-      if (process.env.NODE_ENV !== 'production') {
-        return callback(null, true);
-      }
-      return callback(
-        new Error('CORS policy violation: origin required in production')
-      );
+  origin: (origin, callback) => {
+    // Requests without Origin are non-browser requests
+    // (curl, Postman, mobile apps, server-to-server, health checks)
+    if (!origin) {
+      return callback(null, true);
     }
 
-    if (allowedOrigins.includes(requestOrigin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS policy violation'));
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
     }
+
+    return callback(new Error('CORS policy violation'));
   },
   credentials: true,
   methods: allowedMethods,
