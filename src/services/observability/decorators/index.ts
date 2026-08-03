@@ -1,7 +1,9 @@
+import {
+  lazyLogger,
+  lazyMetrics,
+  lazyTracer,
+} from '@/shared/utils/lazy.services';
 import { SpanStatusCode } from '@opentelemetry/api';
-import { TracingService } from '../tracing/trace.service';
-import { MetricsService } from '../metrics/metrics.service';
-import { LoggingService } from '../logging/logging.service';
 
 export interface TraceOptions {
   name?: string;
@@ -20,7 +22,6 @@ export function TraceSpan(options: TraceOptions = {}): MethodDecorator {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {
-      const tracer = TracingService.getInstance();
       const spanName = options.name || propertyKey.toString();
       const attributes = {
         ...options.attributes,
@@ -28,7 +29,7 @@ export function TraceSpan(options: TraceOptions = {}): MethodDecorator {
         method: propertyKey.toString(),
       };
 
-      return tracer.startActiveSpan(
+      return lazyTracer()?.startActiveSpan(
         spanName,
         async span => {
           try {
@@ -69,7 +70,6 @@ export function traceSpan(options: TraceOptions = {}): MethodDecorator {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {
-      const tracer = TracingService.getInstance();
       const spanName = options.name || propertyKey.toString();
       const attributes = {
         ...options.attributes,
@@ -77,7 +77,7 @@ export function traceSpan(options: TraceOptions = {}): MethodDecorator {
         method: propertyKey.toString(),
       };
 
-      return tracer.startActiveSpan(
+      return lazyTracer()?.startActiveSpan(
         spanName,
         async span => {
           try {
@@ -120,10 +120,6 @@ export function observe(options: ObservabilityOptions = {}): MethodDecorator {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {
-      const tracing = TracingService.getInstance();
-      const metrics = MetricsService.getInstance();
-      const logger = LoggingService.getInstance();
-
       const spanName =
         options.spanName || `${target.constructor.name}.${String(propertyKey)}`;
       const attributes = {
@@ -135,11 +131,11 @@ export function observe(options: ObservabilityOptions = {}): MethodDecorator {
       const metricName = options.metricName || 'http_request_duration_seconds';
       const startTime = process.hrtime();
 
-      return tracing.startActiveSpan(
+      return lazyTracer()?.startActiveSpan(
         spanName,
         async span => {
           try {
-            logger.debug(`Executing ${spanName}`, {
+            lazyLogger()?.debug(`Executing ${spanName}`, {
               ctx: `${target.constructor.name}.${String(propertyKey)}`,
             });
 
@@ -148,10 +144,10 @@ export function observe(options: ObservabilityOptions = {}): MethodDecorator {
             const diff = process.hrtime(startTime);
             const durationSeconds = diff[0] + diff[1] / 1e9;
 
-            metrics.recordHistogram(metricName, durationSeconds, {
-              method: propertyKey.toString(),
-              route: target.constructor.name,
-            });
+            // lazyMetrics()?.recordHistogram(metricName, durationSeconds, {
+            //   method: propertyKey.toString(),
+            //   route: target.constructor.name,
+            // });
 
             span.setStatus({
               code: SpanStatusCode.OK,
@@ -159,7 +155,7 @@ export function observe(options: ObservabilityOptions = {}): MethodDecorator {
             });
 
             if (options.logLevel === 'debug' || options.logLevel === 'info') {
-              logger.debug(`Execution completed for  ${spanName}`, {
+              lazyLogger()?.debug(`Execution completed for  ${spanName}`, {
                 ctx: `${target.constructor.name}.${String(propertyKey)}`,
                 duration: durationSeconds,
               });
@@ -173,13 +169,13 @@ export function observe(options: ObservabilityOptions = {}): MethodDecorator {
               message: error.message,
             });
 
-            metrics.incrementHttpErrorCounter(
+            lazyMetrics()?.incrementHttpErrorCounter(
               'unknown',
               target.constructor.name,
               500
             );
 
-            logger.error(`Error in ${spanName}`, {
+            lazyLogger()?.error(`Error in ${spanName}`, {
               ctx: `${target.constructor.name}.${String(propertyKey)}`,
               error: error.message,
             });
