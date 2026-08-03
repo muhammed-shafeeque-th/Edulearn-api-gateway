@@ -1,43 +1,17 @@
-import { injectable } from 'inversify';
-import {
-  httpRequestDurationSeconds,
-  httpRequestsTotal,
-  httpErrorsTotal,
-  gRPCRequestDurationSeconds,
-  gRPCErrorsTotal,
-} from './setup';
-import {
-  Counter,
-  Histogram,
-  Gauge,
-  Summary,
-  collectDefaultMetrics,
-  Registry,
-} from 'prom-client';
+import { inject, injectable } from 'inversify';
 import {
   IMetricService,
   MetricLabels,
 } from '../../interfaces/metric.interface';
-import {
-  MetricService as MetricsService,
-  globalRegistry,
-} from '@edulearn/core';
+import { TYPES } from '@/services/di';
+import { MetricsEngine } from './setup';
 
 @injectable()
-export class MetricService extends MetricsService implements IMetricService {
-  private static instance: MetricService;
-  private readonly registry: Registry;
-
-  private constructor() {
-    super();
-    this.registry = globalRegistry;
-  }
-
-  public static getInstance(): MetricService {
-    if (!MetricService.instance) {
-      MetricService.instance = new MetricService();
-    }
-    return MetricService.instance;
+export class MetricService implements IMetricService {
+  public constructor(
+    @inject(TYPES.MetricsEngine) private metricsEngine: MetricsEngine
+  ) {
+    
   }
 
   public measureHttpRequestDuration(
@@ -46,10 +20,16 @@ export class MetricService extends MetricsService implements IMetricService {
     duration?: number
   ): void | ((statusCode: number) => void) {
     if (typeof duration === 'number') {
-      httpRequestDurationSeconds.observe({ method, route }, duration);
+      this.metricsEngine.httpRequestDurationSeconds.observe(
+        { method, route },
+        duration
+      );
       return;
     }
-    const end = httpRequestDurationSeconds.startTimer({ method, route });
+    const end = this.metricsEngine.httpRequestDurationSeconds.startTimer({
+      method,
+      route,
+    });
     return (statusCode: number) => {
       end({ status_code: statusCode.toString() });
     };
@@ -61,13 +41,16 @@ export class MetricService extends MetricsService implements IMetricService {
     serviceTo?: string
   ): void | (() => void) {
     if (typeof duration === 'number') {
-      gRPCRequestDurationSeconds.observe(
+      this.metricsEngine.gRPCRequestDurationSeconds.observe(
         { method, serviceTo, duration },
         duration
       );
       return;
     }
-    const end = gRPCRequestDurationSeconds.startTimer({ method, serviceTo });
+    const end = this.metricsEngine.gRPCRequestDurationSeconds.startTimer({
+      method,
+      serviceTo,
+    });
     return () => {
       end();
     };
@@ -78,7 +61,7 @@ export class MetricService extends MetricsService implements IMetricService {
     route: string,
     statusCode?: number | string
   ): void {
-    httpRequestsTotal.inc({
+    this.metricsEngine.httpRequestsTotal.inc({
       method,
       route,
       status_code: statusCode?.toString(),
@@ -90,7 +73,7 @@ export class MetricService extends MetricsService implements IMetricService {
     route: string,
     statusCode: number | string
   ): void {
-    httpErrorsTotal.inc({
+    this.metricsEngine.httpErrorsTotal.inc({
       method,
       route,
       status_code: statusCode.toString(),
@@ -103,7 +86,7 @@ export class MetricService extends MetricsService implements IMetricService {
     serviceTo?: string,
     code?: string
   ): void {
-    gRPCErrorsTotal.inc({
+    this.metricsEngine.gRPCErrorsTotal.inc({
       method,
       errorName,
       serviceTo,
@@ -112,91 +95,12 @@ export class MetricService extends MetricsService implements IMetricService {
   }
 
   public incrementCounter(metricName: string, labels?: MetricLabels): void {
-    const counter = this.registry.getSingleMetric(metricName);
-    if (counter && counter instanceof Counter) {
-      counter.inc({ ...labels });
-    } else {
-      console.warn(`[MetricService] Counter metric '${metricName}' not found.`);
-    }
+    const counter = this.metricsEngine.engine.counter({
+      name: metricName,
+      help: 'custom_counter',
+    });
+    counter.inc({ ...labels });
   }
 
-  public recordHistogram(
-    metricName: string,
-    value: number,
-    labels?: MetricLabels
-  ): void {
-    const histogram = this.registry.getSingleMetric(metricName);
-    if (histogram && histogram instanceof Histogram) {
-      histogram.observe({ ...labels }, value);
-    } else {
-      console.warn(
-        `[MetricService] Histogram metric '${metricName}' not found.`
-      );
-    }
-  }
 
-  public setGauge(
-    metricName: string,
-    value: number,
-    labels?: MetricLabels
-  ): void {
-    const metric = this.registry.getSingleMetric(metricName);
-    if (metric && metric instanceof Gauge) {
-      metric.set({ ...labels }, value);
-    } else {
-      console.warn(`[MetricService] Gauge metric '${metricName}' not found.`);
-    }
-  }
-
-  public observeSummary(
-    metricName: string,
-    value: number,
-    labels?: MetricLabels
-  ): void {
-    const metric = this.registry.getSingleMetric(metricName);
-    if (metric && metric instanceof Summary) {
-      metric.observe({ ...labels }, value);
-    } else {
-      console.warn(`[MetricService] Summary metric '${metricName}' not found.`);
-    }
-  }
-
-  public removeMetric(metricName: string): void {
-    try {
-      this.registry.removeSingleMetric(metricName);
-    } catch (err) {
-      console.warn(
-        `[MetricService] Failed removing metric '${metricName}'.`,
-        err
-      );
-    }
-  }
-
-  public async getMetrics(): Promise<string> {
-    try {
-      return this.registry.metrics();
-    } catch (error) {
-      console.error(
-        '[MetricService] Error while fetching prometheus metrics:',
-        error
-      );
-      throw error;
-    }
-  }
-
-  public resetAllMetrics(): void {
-    this.registry.resetMetrics();
-  }
-
-  public listMetricNames(): string[] {
-    return Object.keys(
-      this.registry.getMetricsAsArray().reduce(
-        (acc, m) => {
-          acc[m.name] = true;
-          return acc;
-        },
-        {} as Record<string, boolean>
-      )
-    );
-  }
 }

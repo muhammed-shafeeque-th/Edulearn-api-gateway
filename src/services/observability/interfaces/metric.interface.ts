@@ -42,24 +42,21 @@ export interface IMetricService {
 
   incrementCounter(metricName: string, labels?: MetricLabels): void;
 
-  recordHistogram(
-    metricName: string,
-    value: number,
-    labels?: MetricLabels
-  ): void;
+  // recordHistogram(
+  //   metricName: string,
+  //   value: number,
+  //   labels?: MetricLabels
+  // ): void;
 
-  setGauge(metricName: string, value: number, labels?: MetricLabels): void;
+  // setGauge(metricName: string, value: number, labels?: MetricLabels): void;
 
-  observeSummary(
-    metricName: string,
-    value: number,
-    labels?: MetricLabels
-  ): void;
+  // observeSummary(
+  //   metricName: string,
+  //   value: number,
+  //   labels?: MetricLabels
+  // ): void;
 
-  removeMetric(metricName: string): void;
 
-  getMetrics(): Promise<string>;
-
-  resetAllMetrics(): void;
-  listMetricNames(): string[];
+  // resetAllMetrics(): void;
+  // listMetricNames(): string[];
 }
