@@ -26,9 +26,10 @@ import {
   AdminRefreshRequest,
   AdminRefreshResponse,
 } from './proto/generated/auth_service';
-import { config } from 'config';
+import { config } from '@/config';
 
 import { injectable } from 'inversify';
+import { getProtoPath } from '@edulearn/core';
 
 @injectable()
 export class AuthService {
@@ -40,12 +41,7 @@ export class AuthService {
       config.grpc.services.authService.split(':');
 
     this.client = new GrpcClient({
-      protoPath: path.join(
-        process.cwd(),
-        'proto',
-        'auth',
-        'auth_service.proto'
-      ),
+      protoPath: path.join(getProtoPath('auth')),
       packageName: 'auth_service',
       serviceName: 'AuthService',
       host,
