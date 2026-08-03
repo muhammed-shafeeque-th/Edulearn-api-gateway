@@ -1,3 +1,3 @@
 export interface IWorkerService {
-    runTask<T>(data: any): Promise<T>;
+  runTask<T>(data: any): Promise<T>;
 }
