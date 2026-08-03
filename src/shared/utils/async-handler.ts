@@ -1,3 +1,5 @@
+import { TYPES } from '@/services/di';
+import { container } from '@/services/di/di.config';
 import {
   LoggerService,
   MetricService,
@@ -10,8 +12,8 @@ type AsyncHandler = (
   next: NextFunction
 ) => Promise<any>;
 
-const logger = LoggerService.getInstance();
-const monitoring = MetricService.getInstance();
+const logger = container.get<LoggerService>(TYPES.LoggerService);
+const metrics = container.get<MetricService>(TYPES.MetricService);
 
 /**
  * Generic async handler for Express route handlers.
@@ -43,7 +45,7 @@ export const asyncHandler = (handler: AsyncHandler) => {
         statusCode: res.statusCode,
       });
 
-      monitoring.measureHttpRequestDuration(
+      metrics.measureHttpRequestDuration(
         req.method,
         req.originalUrl,
         duration
@@ -71,7 +73,7 @@ export const asyncHandler = (handler: AsyncHandler) => {
       });
 
       // Record error metrics
-      monitoring.incrementHttpErrorCounter(
+      metrics.incrementHttpErrorCounter(
         req.method,
         req.originalUrl,
         error instanceof Error ? error.name : 'UnknownError'
@@ -116,8 +118,8 @@ export const apiAsyncHandler = (handler: AsyncHandler) => {
       );
 
       // Record external API metrics, fallback to http metric if unavailable
-      if (typeof monitoring.measureHttpRequestDuration === 'function') {
-        monitoring.measureHttpRequestDuration(
+      if (typeof metrics.measureHttpRequestDuration === 'function') {
+        metrics.measureHttpRequestDuration(
           req.method,
           req.originalUrl,
           duration
@@ -147,8 +149,8 @@ export const apiAsyncHandler = (handler: AsyncHandler) => {
       );
 
       // Use generic error metric fallback
-      if (typeof monitoring.incrementHttpErrorCounter === 'function') {
-        monitoring.incrementHttpErrorCounter(
+      if (typeof metrics.incrementHttpErrorCounter === 'function') {
+        metrics.incrementHttpErrorCounter(
           req.method,
           req.originalUrl,
           error instanceof Error ? error.name : 'UnknownError'
@@ -209,8 +211,8 @@ export function asyncGrpcCall<TArgs extends any[], TResult>(
         duration,
       });
 
-      if (typeof monitoring?.measureGRPCRequestDuration === 'function') {
-        monitoring.measureGRPCRequestDuration(methodName, duration);
+      if (typeof metrics?.measureGRPCRequestDuration === 'function') {
+        metrics.measureGRPCRequestDuration(methodName, duration);
       }
 
       return result;
@@ -230,8 +232,8 @@ export function asyncGrpcCall<TArgs extends any[], TResult>(
             : error,
       });
 
-      if (typeof monitoring?.incrementGrpcErrorCounter === 'function') {
-        monitoring.incrementGrpcErrorCounter(
+      if (typeof metrics?.incrementGrpcErrorCounter === 'function') {
+        metrics.incrementGrpcErrorCounter(
           methodName,
           error instanceof Error ? error.name : 'UnknownError'
         );

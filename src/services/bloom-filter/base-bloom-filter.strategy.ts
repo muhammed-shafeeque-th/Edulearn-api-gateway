@@ -1,21 +1,19 @@
 import { BloomFilter } from 'bloom-filters';
 import { BloomFilterConfig } from './bloom-filter.config';
 import { IBloomFilterStrategy } from './bloom-filter.interface';
-import { LoggingService } from '../observability/logging/logging.service';
-import { MetricsService } from '../observability/metrics/metrics.service';
+import { LoggerService } from '../observability/implementations/logging/logger.service';
+import { MetricService } from '../observability/implementations/metrics/metrics.service';
 import { RedisService } from '@/services/redis';
-import {
-  bloomFilterErrors,
-  bloomFilterQueries,
-  bloomFilterResponseTimes,
-} from '../observability/metrics/setup';
+import { container } from '../di/di.config';
+import { TYPES } from '../di';
+import { MetricsEngine } from '../observability/implementations/metrics/setup';
 
 export abstract class BaseBloomFilterStrategy implements IBloomFilterStrategy {
   protected bloomFilter: BloomFilter;
   protected redis: RedisService;
   protected config: BloomFilterConfig;
-  protected logger = LoggingService.getInstance();
-  protected metrics = MetricsService.getInstance();
+  protected logger = LoggerService.getInstance();
+  protected metricsEngine = container.get<MetricsEngine>(TYPES.MetricsEngine);
 
   constructor(redis: RedisService, config: BloomFilterConfig) {
     this.redis = redis;
@@ -45,7 +43,7 @@ export abstract class BaseBloomFilterStrategy implements IBloomFilterStrategy {
         await this.seedFromDatabase();
       }
     } catch (error) {
-      bloomFilterErrors.inc();
+      this.metricsEngine.bloomFilterErrors.inc();
       this.logger.error(
         `Bloom filter initialization failed for ${this.getFilterType()}:`,
         {
@@ -61,16 +59,16 @@ export abstract class BaseBloomFilterStrategy implements IBloomFilterStrategy {
     const startTime = Date.now();
     try {
       if (!this.bloomFilter.has(item)) {
-        bloomFilterQueries
+        this.metricsEngine.bloomFilterQueries
           .labels({ result: 'negative', type: this.getFilterType() })
           .inc();
-        bloomFilterResponseTimes
+        this.metricsEngine.bloomFilterResponseTimes
           .labels({ stage: 'bloom_filter', type: this.getFilterType() })
           .observe(Date.now() - startTime);
         return true;
       }
 
-      bloomFilterQueries
+      this.metricsEngine.bloomFilterQueries
         .labels({ result: 'positive', type: this.getFilterType() })
         .inc();
       const existsInDb = await this.checkInDatabase(item);
@@ -82,13 +80,13 @@ export abstract class BaseBloomFilterStrategy implements IBloomFilterStrategy {
         }
       );
 
-      bloomFilterResponseTimes
+      this.metricsEngine.bloomFilterResponseTimes
         .labels({ stage: 'database', type: this.getFilterType() })
         .observe(Date.now() - startTime);
 
       return !existsInDb;
     } catch (error) {
-      bloomFilterErrors.inc();
+      this.metricsEngine.bloomFilterErrors.inc();
       this.logger.error(
         `Error checking ${this.getFilterType()} availability:`,
         {
@@ -104,7 +102,7 @@ export abstract class BaseBloomFilterStrategy implements IBloomFilterStrategy {
     try {
       this.bloomFilter.add(item);
       await this.persistFilter();
-      bloomFilterQueries
+      this.metricsEngine.bloomFilterQueries
         .labels({ result: 'added', type: this.getFilterType() })
         .inc();
 
@@ -115,7 +113,7 @@ export abstract class BaseBloomFilterStrategy implements IBloomFilterStrategy {
         }
       );
     } catch (error) {
-      bloomFilterErrors.inc();
+      this.metricsEngine.bloomFilterErrors.inc();
       this.logger.error(
         `Error adding ${this.getFilterType()} to Bloom filter:`,
         {
@@ -143,11 +141,11 @@ export abstract class BaseBloomFilterStrategy implements IBloomFilterStrategy {
         this.config.redisKey,
         JSON.stringify(this.bloomFilter.saveAsJSON())
       );
-      bloomFilterQueries
+      this.metricsEngine.bloomFilterQueries
         .labels({ result: 'persisted', type: this.getFilterType() })
         .inc();
     } catch (error) {
-      bloomFilterErrors.inc();
+      this.metricsEngine.bloomFilterErrors.inc();
       this.logger.error(
         `Error persisting Bloom filter to Redis for ${this.getFilterType()}:`,
         {

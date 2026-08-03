@@ -24,8 +24,7 @@ export class NotificationController {
   constructor(
     @inject(TYPES.NotificationService)
     private notificationService: NotificationService
-  ) {
-  }
+  ) {}
 
   async getNotifications(req: Request, res: Response) {
     const validPayload = validateSchema(

@@ -79,20 +79,20 @@ export class AdminController {
   }
 
   async adminRefresh(req: Request, res: Response): Promise<void> {
-    this.logger.debug(`Processing grpc method 'adminRefresh'`);
     const validPayload = validateSchema(
       {
         refreshToken: req.cookies[adminRefreshToken],
       },
       adminRefreshSchema
     )!;
-
+    
     const { success } = await this.authServiceClient.adminRefresh(
       validPayload,
       {
         metadata: attachMetadata(req),
       }
     );
+    this.logger.debug(`'adminRefresh' request completed`);
 
     const resWrap = new ResponseWrapper(res);
     attachAdminCookies(resWrap, success!.refreshToken, success!.accessToken);
@@ -105,9 +105,8 @@ export class AdminController {
   }
 
   async blockAccount(req: Request, res: Response): Promise<void> {
-    this.logger.debug(`Processing grpc method 'blockAccount'`);
     const validPayload = validateSchema({ ...req.params }, blockUserSchema)!;
-
+    
     const serverResponse = await this.userServiceClient.blockAccount(
       validPayload,
       {
@@ -115,7 +114,8 @@ export class AdminController {
       }
     );
     await this.accountAccessService.blockAccount(validPayload.userId);
-
+    
+    this.logger.debug(` grpc 'blockAccount' request completed`);
     return new ResponseWrapper(res)
       .status(ADMIN_MESSAGES.USER_BLOCK_SUCCESS.statusCode)
       .success(

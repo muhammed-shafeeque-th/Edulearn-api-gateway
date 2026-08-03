@@ -1,12 +1,8 @@
 import dotenv from 'dotenv';
 
 // Only enable debug mode in development
-if (process.env.DOCKER_ENV !== 'true') {
-  if (process.env.NODE_ENV === 'development') {
-    dotenv.config({ debug: true });
-  } else {
-    dotenv.config();
-  }
+if (process.env.NODE_ENV === 'development') {
+  dotenv.config({ debug: true });
 }
 
 export const config = {
@@ -24,7 +20,7 @@ export const config = {
     maxRetriesPerRequest: process.env.REDIS_MAX_RETRIES,
   },
   serviceName: process.env.SERVICE_NAME as string,
-  serviceVersion: process.env.SERVICE_NAME || '1.0.0',
+  serviceVersion: process.env.SERVICE_VERSION || '1.0.0',
   serviceClientId: process.env.SERVICE_NAME || 'api-gateway',
   jwt: {
     refreshTokenExpiry: process.env.REFRESH_TOKEN_EXPIRY as string,
@@ -48,7 +44,6 @@ export const config = {
       notificationService:
         process.env.NOTIFICATION_SERVICE_GRPC || 'localhost:50056',
     },
-    usePool: (process.env.GRPC_USE_POOL || 'true') as 'true' | 'false',
   },
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,
@@ -61,13 +56,11 @@ export const config = {
     accessSecret: process.env.AWS_S3_API_SECRET!,
     bucketName: process.env.AWS_S3_BUCKET_NAME!,
     secureBucketName: process.env.AWS_S3_SECURE_BUCKET_NAME!,
-    secureAccessKey: process.env.AWS_S3_SECURE_API_KEY!,
-    secureAccessSecret: process.env.AWS_S3_SECURE_API_SECRET!,
     secureRegion: process.env.AWS_S3_SECURE_REGION!,
   },
   kafka: {
     clientId: process.env.KAFKA_CLIENT_ID || 'edulearn-api-gateway',
-    brokers: (process.env.KAFKA_BROKERS || 'localhost:9092').split(','),
+    brokers: (process.env.KAFKA_BROKERS || 'localhost:9092,').split(','),
     ssl: process.env.KAFKA_SSL === 'true',
     sals: {
       mechanism: 'plain',
@@ -77,31 +70,36 @@ export const config = {
   },
   observability: {
     tracer: {
-      samplingRate: process.env.JAEGER_SAMPLING_RATE,
-      collectorUrl: process.env.TRACE_COLLECTOR_URL,
+      samplingRate: process.env.TRACE_SAMPLING_RATE,
+      collectorUrl: process.env.OTLP_ENDPOINT ?? "http://otel-collector:8473/api/traces",
     },
     metrics: {
-      port: process.env.JAEGER_PORT,
-      path: process.env.PROMETHEUS_PATH,
-      collectorUrl: process.env.METRICS_COLLECTOR_URL,
+      path: process.env.METRICS_PATH,
     },
 
     logger: {
       logLevel: process.env.LOG_LEVEL,
     },
   },
-  cors: {
-    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || [
-      'http://localhost:9000',
-    ],
-    allowedMethods: process.env.ALLOWED_METHODS?.split(',') || [
-      'GET',
-      'POST',
-      'PUT',
-      'DELETE',
-      'PATCH',
-      'OPTIONS',
-    ],
+  security: {
+    cors: {
+      allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || [
+        'http://localhost:9000',
+      ],
+      allowedMethods: process.env.ALLOWED_METHODS?.split(',') || [
+        'GET',
+        'POST',
+        'PUT',
+        'DELETE',
+        'PATCH',
+        'OPTIONS',
+      ],
+    },
+    rateLimiter: {
+      points: parseInt(process.env.RATE_LIMIT_POINTS || '100'),
+      duration: parseInt(process.env.RATE_LIMIT_DURATION || '60'),
+    },
   },
-  healthPort: process.env.HEALTH_PORT ?? 3000,
+
+  httpPort: process.env.HTTP_PORT ?? 3000,
 };

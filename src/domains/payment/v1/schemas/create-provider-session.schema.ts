@@ -1,9 +1,6 @@
-import {
-  CreateProviderSessionRequest,
-} from '@/domains/service-clients/payment/proto/generated/payment_service';
+import { CreateProviderSessionRequest } from '@/domains/service-clients/payment/proto/generated/payment_service';
 import { Provider } from '@/domains/service-clients/payment/proto/generated/payment/common';
 import { z, ZodType } from 'zod';
-
 
 export const createProviderSessionSchema: ZodType<CreateProviderSessionRequest> =
   z.object({

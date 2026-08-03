@@ -18,10 +18,11 @@ import {
   OTPRequest,
   VerifyOTPRequest,
 } from './proto/generated/notification';
-import { config } from 'config';
+import { config } from '@/config';
 import { ForgotPasswordResponse } from '../auth/proto/generated/auth_service';
 
 import { injectable } from 'inversify';
+import { getProtoPath } from '@edulearn/core';
 
 @injectable()
 export class NotificationService {
@@ -33,12 +34,7 @@ export class NotificationService {
       config.grpc.services.notificationService.split(':');
 
     this.client = new GrpcClient({
-      protoPath: path.join(
-        process.cwd(),
-        'proto',
-        'notification',
-        'notification.proto'
-      ),
+      protoPath: path.join(getProtoPath('notification', 'notification.proto')),
       packageName: 'notification',
       serviceName: 'NotificationService',
       host,

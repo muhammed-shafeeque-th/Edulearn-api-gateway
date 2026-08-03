@@ -5,8 +5,11 @@ const logger = createLogger({
   level: config.observability.logger.logLevel,
   serviceName: config.serviceName.toString(),
   environment: config.nodeEnv.toString(),
+  
+
 });
 
-shutdownLogger(logger);
+process.on('SIGINT', () => shutdownLogger(logger));
+process.on('SIGTERM', () => shutdownLogger(logger));
 
 export { logger };

@@ -20,6 +20,6 @@ export const cancelPaymentSchema: ZodType<CancelPaymentRequest> = z.object({
       }
     }),
   providerOrderId: z.string(),
-}) as unknown as  ZodType<CancelPaymentRequest>;
+}) as unknown as ZodType<CancelPaymentRequest>;
 
 export type CancelPaymentSchemaType = z.infer<typeof cancelPaymentSchema>;

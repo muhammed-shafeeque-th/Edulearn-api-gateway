@@ -1,4 +1,4 @@
-import { WorkerService } from "../media/worker.service";
+import { WorkerService } from '../media/worker.service';
 
 export interface UploadImageResponseDto {
   image: string;
@@ -8,16 +8,16 @@ export interface UploadImageResponseDto {
 
 export class MediaProcessor {
   constructor(
-    private workerService: WorkerService = new WorkerService("media.worker.js")
+    private workerService: WorkerService = new WorkerService('media.worker.js')
   ) {}
 
   async uploadImage(
     file: Express.Multer.File
   ): Promise<UploadImageResponseDto> {
     return this.workerService.runTask<UploadImageResponseDto>({
-      type: "uploadImage",
+      type: 'uploadImage',
       file: {
-        buffer: file.buffer.toString("base64"),
+        buffer: file.buffer.toString('base64'),
         originalname: file.originalname,
         mimetype: file.mimetype,
       },
@@ -26,9 +26,9 @@ export class MediaProcessor {
 
   async uploadFile(file: Express.Multer.File): Promise<UploadImageResponseDto> {
     return this.workerService.runTask<UploadImageResponseDto>({
-      type: "uploadFile",
+      type: 'uploadFile',
       file: {
-        buffer: file.buffer.toString("base64"),
+        buffer: file.buffer.toString('base64'),
         originalname: file.originalname,
         mimetype: file.mimetype,
       },
@@ -36,7 +36,7 @@ export class MediaProcessor {
   }
   async deleteMedia(publicId: string): Promise<void> {
     return this.workerService.runTask<void>({
-      type: "deleteMedia",
+      type: 'deleteMedia',
       publicId,
     });
   }

@@ -4,31 +4,29 @@ import {
   CancelPaymentResponse,
   CreatePaymentRequest,
   CreatePaymentResponse,
+  CreateProviderSessionRequest,
+  CreateProviderSessionResponse,
   GetPaymentRequest,
   GetPaymentResponse,
   PaymentServiceClient,
   ResolvePaymentRequest,
   ResolvePaymentResponse,
 } from './proto/generated/payment_service';
-import { config } from 'config';
+import { config } from '@/config';
 import { GrpcClient } from '@/shared/utils/grpc/client';
 import { GrpcClientOptions } from '@/shared/utils/grpc/types';
+import { getProtoPath } from '@edulearn/core';
 
 export class PaymentService {
   private readonly client: GrpcClient<PaymentServiceClient>;
   private static instance: PaymentService;
 
-  private constructor() {
+  public constructor() {
     const [host = 'localhost', port = '50052'] =
       config.grpc.services.paymentService.split(':');
 
     this.client = new GrpcClient({
-      protoPath: path.join(
-        process.cwd(),
-        'proto',
-        'payment',
-        'payment_service.proto'
-      ),
+      protoPath: path.join(getProtoPath('payment')),
       packageName: 'payment_service',
       serviceName: 'PaymentService',
       host,
@@ -53,6 +51,18 @@ export class PaymentService {
       options
     );
     return response as CreatePaymentResponse;
+  }
+
+  async createProviderSession(
+    request: CreateProviderSessionRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<CreateProviderSessionResponse> {
+    const response = await this.client.unaryCall(
+      'createProviderSession',
+      request,
+      options
+    );
+    return response as CreateProviderSessionResponse;
   }
 
   async resolvePayment(
@@ -102,7 +112,9 @@ export class PaymentService {
   //   return response as ProcessRefundResponse;
   // }
 
-  // Singleton pattern
+  /**
+   * @deprecated Use Dependency Injection
+   */
   public static getInstance(): PaymentService {
     if (!PaymentService.instance) {
       PaymentService.instance = new PaymentService();

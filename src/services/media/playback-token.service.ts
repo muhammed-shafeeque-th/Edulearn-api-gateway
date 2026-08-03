@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
-import { LoggingService } from '@/services/observability/logging/logging.service';
+import { LoggerService } from '@/services/observability/implementations/logging/logger.service';
 
-const logger = LoggingService.getInstance();
+const logger = LoggerService.getInstance();
 
 export interface PlaybackTokenPayload {
   sub: string; // userId

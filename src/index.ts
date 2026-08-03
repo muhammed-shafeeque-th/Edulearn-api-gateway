@@ -1,17 +1,23 @@
-import { App } from './app';
-import { LoggingService } from './services/observability/logging/logging.service';
+import 'reflect-metadata';
+import { GatewayApplication } from './app';
+import { TYPES } from './services/di';
+import { container } from './services/di/di.config';
+import { ILoggerService } from './services/observability/interfaces';
 
-const app = new App();
-const logger = LoggingService.getInstance();
+container.loadSync();
 
-process.on('SIGINT', () => setTimeout(async () => await app.shutdown(), 1000));
-process.on('SIGTERM', () => setTimeout(async () => await app.shutdown(), 1000));
+const app: GatewayApplication = new GatewayApplication(
+  container.get(TYPES.LoggerService),
+  container.get(TYPES.CacheService),
+  container.get(TYPES.HealthController),
+  container.get(TYPES.MetricsEngine)
+);
+const logger: ILoggerService = container.get(TYPES.LoggerService);
 
-(async () => {
-  try {
-    await app.initialize();
-  } catch (error) {
-    logger.error('Error while initializing app :(', { error });
-    process.exit(1);
-  }
-})();
+process.on('SIGINT', async () => await app.shutdown());
+process.on('SIGTERM', async () => await app.shutdown());
+
+app.initialize().catch(error => {
+  logger.error('Error while initializing app ', { error });
+  process.exit(1);
+});

@@ -1,5 +1,3 @@
-
-
 export interface DomainEnrollmentDetail {
   enrollmentId: string;
   userId: string;
@@ -60,8 +58,6 @@ export interface QuizProgress {
   completedAt?: string | undefined;
 }
 
-
-
 export interface Enrollment {
   id: string;
   userId: string;
@@ -93,7 +89,6 @@ export interface CourseInstructor {
   avatar?: string | undefined;
   email?: string | undefined;
 }
-
 
 export interface EnrollmentProgressResponse {
   enrollmentId: string;

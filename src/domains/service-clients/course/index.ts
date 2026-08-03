@@ -1,7 +1,7 @@
 import path from 'path';
 import { GrpcClient } from '@/shared/utils/grpc/client';
 import { GrpcClientOptions } from '@/shared/utils/grpc/types';
-import { config } from 'config';
+import { config } from '@/config';
 import {
   CourseResponse,
   CoursesListResponse,
@@ -72,6 +72,7 @@ import {
 } from './proto/generated/course/types/category';
 
 import { injectable } from 'inversify';
+import { getProtoPath, PROTO_ROOT_DIR } from '@edulearn/core';
 
 @injectable()
 export class CourseService {
@@ -83,12 +84,7 @@ export class CourseService {
       config.grpc.services.courseService.split(':');
 
     this.client = new GrpcClient({
-      protoPath: path.join(
-        process.cwd(),
-        'proto',
-        'course',
-        'course_service.proto'
-      ),
+      protoPath: path.join(getProtoPath('course')),
       packageName: 'course_service',
       serviceName: 'CourseService',
       // // To use mTLS/SSL credentials, import grpc and configure certificates like so:
@@ -102,7 +98,7 @@ export class CourseService {
       host,
       port: parseInt(port),
       loaderOptions: {
-        includeDirs: [path.join(process.cwd(), 'proto', 'course')],
+        includeDirs: [path.join(PROTO_ROOT_DIR, 'course')],
       },
     });
   }
@@ -257,11 +253,7 @@ export class CourseService {
     request: GetModuleRequest,
     options: GrpcClientOptions = {}
   ): Promise<ModuleResponse> {
-    const response = await this.client.unaryCall(
-      'getModule',
-      request,
-      options
-    );
+    const response = await this.client.unaryCall('getModule', request, options);
     return response as ModuleResponse;
   }
   async updateModule(
@@ -489,7 +481,7 @@ export class CourseService {
     );
     return response as DeleteCategoryResponse;
   }
-  
+
   async getCategoriesStats(
     request: GetCategoriesStatsRequest,
     options: GrpcClientOptions = {}

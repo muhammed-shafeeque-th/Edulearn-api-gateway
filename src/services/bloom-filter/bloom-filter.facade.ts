@@ -6,16 +6,15 @@ import {
 import { EmailAvailabilityStrategy } from './email-availability.strategy';
 import { CourseNameAvailabilityStrategy } from './course-name-availability.strategy';
 import { RedisService } from '@/services/redis';
-import { LoggingService } from '../observability/logging/logging.service';
-import { MetricsService } from '../observability/metrics/metrics.service';
+import { LoggerService } from '../observability/implementations/logging/logger.service';
+import { MetricService } from '../observability/implementations/metrics/metrics.service';
 
 export class BloomFilterFacade implements IBloomFilterService {
   private emailStrategy: EmailAvailabilityStrategy;
   private courseNameStrategy: CourseNameAvailabilityStrategy;
   private redis: RedisService;
   private config: BloomFilterServiceConfig;
-  private logger = LoggingService.getInstance();
-  private metrics = MetricsService.getInstance();
+  private logger = LoggerService.getInstance();
   private static instance: BloomFilterFacade;
 
   private constructor(redis: RedisService, config: BloomFilterServiceConfig) {
@@ -64,6 +63,7 @@ export class BloomFilterFacade implements IBloomFilterService {
       });
     } catch (error) {
       this.logger.error('Failed to initialize Bloom Filter Facade:', {
+        error,
         ctx: BloomFilterFacade.name,
       });
       throw error;

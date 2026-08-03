@@ -12,8 +12,11 @@ if (!svc) {
 const repoRoot = path.resolve(__dirname, '..');
 const srcDir = path.join(
   repoRoot,
-  'proto',
-  svc,
+  'node_modules',
+  '@edulearn',
+  'core',
+  'protos',
+  svc
 );
 const trgDir = path.join(
   repoRoot,
@@ -53,3 +56,12 @@ if (result.status !== 0) {
 }
 
 console.log(`Generated ts-proto for ${svc}`);
+
+/**
+ * # Using standard protoc cli
+    protoc \
+      --proto_path=./node_modules/@edulearn/core/protos \
+      --js_out=import_style=commonjs,binary:./src/generated \
+      ./node_modules/@edulearn/core/protos/users/user_service.proto
+
+ */

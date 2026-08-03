@@ -32,7 +32,7 @@ export class OrderController {
     @inject(TYPES.UserService) private userServiceClient: UserService,
     @inject(TYPES.CourseService) private courseServiceClient: CourseService,
     @inject(TYPES.OrderService) private orderServiceClient: OrderService
-  ) { }
+  ) {}
 
   async placeOrder(req: Request, res: Response) {
     const validPayload = validateSchema(

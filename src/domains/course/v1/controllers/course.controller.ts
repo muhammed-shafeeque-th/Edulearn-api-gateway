@@ -42,10 +42,13 @@ import { WalletService } from '@/domains/service-clients/wallet';
 import { unPublishCourseSchema } from '../schemas/course/unpublish-course.schema';
 import { getCourseSummerySchema } from '../schemas/course/get-course-summery.schema';
 import { injectable, inject } from 'inversify';
-import { LoggingService } from '@/services/observability/logging/logging.service';
-import { TracingService } from '@/services/observability/tracing/trace.service';
-import { MetricsService } from '@/services/observability/metrics/metrics.service';
 import { TYPES } from '@/services/di';
+import { LoggerService } from '@/services/observability/implementations';
+import {
+  ILoggerService,
+  IMetricService,
+  ITraceService,
+} from '@/services/observability/interfaces';
 
 @injectable()
 export class CourseController {
@@ -55,9 +58,9 @@ export class CourseController {
     private enrollmentService: EnrollmentService,
     @inject(TYPES.WalletService) private walletService: WalletService,
     @inject(TYPES.CourseService) private courseServiceClient: CourseService,
-    @inject(TYPES.LoggingService) private logger: LoggingService,
-    @inject(TYPES.TracingService) private tracer: TracingService,
-    @inject(TYPES.MetricsService) private monitor: MetricsService
+    @inject(TYPES.LoggerService) private logger: ILoggerService,
+    @inject(TYPES.TraceService) private tracer: ITraceService,
+    @inject(TYPES.MetricService) private monitor: IMetricService
   ) {}
 
   @Trace('CourseController.createCourse')
@@ -200,7 +203,6 @@ export class CourseController {
         { metadata: attachMetadata(req) }
       ),
     ]);
-
 
     const ratingBreakDown = ratingsStats?.breakdown as any;
 
@@ -523,12 +525,9 @@ export class CourseController {
       getModuleSchema
     )!;
 
-    const { module } = await this.courseServiceClient.getModule(
-      validPayload,
-      {
-        metadata: attachMetadata(req),
-      }
-    );
+    const { module } = await this.courseServiceClient.getModule(validPayload, {
+      metadata: attachMetadata(req),
+    });
 
     return new ResponseWrapper(res)
       .status(COURSE_MESSAGES.SECTION_FETCHED.statusCode)

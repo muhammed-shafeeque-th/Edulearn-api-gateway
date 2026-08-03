@@ -29,5 +29,5 @@ module.exports = {
     node: true,
     es2022: true,
   },
-  ignorePatterns: ['dist/', 'node_modules/', '*.js', "**/_*/**", "**/_*"],
+  ignorePatterns: ['dist/', 'node_modules/', '*.js', '**/_*/**', '**/_*'],
 };

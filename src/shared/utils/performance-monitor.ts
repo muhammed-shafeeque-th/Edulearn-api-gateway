@@ -5,7 +5,6 @@ import {
 import { performance } from 'perf_hooks';
 
 const logger = LoggerService.getInstance();
-const metrics = MetricService.getInstance();
 
 interface PerformanceMetrics {
   operation: string;

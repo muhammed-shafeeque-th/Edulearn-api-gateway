@@ -1,11 +1,11 @@
 import cloudinary from '../../config/cloudinary.config';
 import { IMediaService } from './interfaces/media.interface';
 import { Readable } from 'stream';
-import { LoggingService } from '../observability/logging/logging.service';
-import { promisify } from 'util';
 import { config } from '@/config';
+import { inject, injectable } from 'inversify';
+import { TYPES } from '../di';
+import { ILoggerService } from '../observability/interfaces';
 
-const logger = LoggingService.getInstance();
 
 interface UploadOptions {
   folder?: string;
@@ -14,7 +14,10 @@ interface UploadOptions {
   transformation?: any[];
 }
 
+@injectable()
 export class CloudinaryMediaService implements IMediaService {
+
+
   private readonly defaultImageOptions: UploadOptions = {
     folder: 'edulearn/images',
     format: 'auto',
@@ -29,6 +32,10 @@ export class CloudinaryMediaService implements IMediaService {
     folder: 'edulearn/files',
     quality: 90,
   };
+
+   constructor(
+      @inject(TYPES.LoggerService) private readonly logger: ILoggerService
+    ) {}
 
   async uploadImage(
     file: Express.Multer.File,
@@ -61,7 +68,7 @@ export class CloudinaryMediaService implements IMediaService {
           const duration = Date.now() - startTime;
 
           if (error) {
-            logger.error('Image upload failed', {
+            this.logger.error('Image upload failed', {
               error: error.message,
               duration,
               fileSize: file.size,
@@ -71,14 +78,14 @@ export class CloudinaryMediaService implements IMediaService {
           }
 
           if (!result) {
-            logger.error('Image upload returned no result', {
+            this.logger.error('Image upload returned no result', {
               duration,
               fileSize: file.size,
             });
             return reject(new Error('Image upload failed: No result returned'));
           }
 
-          logger.debug('Image uploaded successfully', {
+          this.logger.debug('Image uploaded successfully', {
             publicId: result.public_id,
             url: result.secure_url,
             duration,
@@ -103,7 +110,7 @@ export class CloudinaryMediaService implements IMediaService {
       });
 
       readableStream.on('error', error => {
-        logger.error('Stream error during image upload', {
+        this.logger.error('Stream error during image upload', {
           error: error.message,
         });
         reject(error);
@@ -134,7 +141,7 @@ export class CloudinaryMediaService implements IMediaService {
           const duration = Date.now() - startTime;
 
           if (error) {
-            logger.error('File upload failed', {
+            this.logger.error('File upload failed', {
               error: error.message,
               duration,
               fileSize: file.size,
@@ -144,14 +151,14 @@ export class CloudinaryMediaService implements IMediaService {
           }
 
           if (!result) {
-            logger.error('File upload returned no result', {
+            this.logger.error('File upload returned no result', {
               duration,
               fileSize: file.size,
             });
             return reject(new Error('File upload failed: No result returned'));
           }
 
-          logger.debug('File uploaded successfully', {
+          this.logger.debug('File uploaded successfully', {
             publicId: result.public_id,
             url: result.secure_url,
             duration,
@@ -175,7 +182,7 @@ export class CloudinaryMediaService implements IMediaService {
       });
 
       readableStream.on('error', error => {
-        logger.error('Stream error during file upload', {
+        this.logger.error('Stream error during file upload', {
           error: error.message,
         });
         reject(error);
@@ -192,16 +199,16 @@ export class CloudinaryMediaService implements IMediaService {
       const duration = Date.now() - startTime;
 
       if (result.result === 'ok') {
-        logger.debug('Media deleted successfully', { publicId, duration });
+        this.logger.debug('Media deleted successfully', { publicId, duration });
       } else {
-        logger.warn('Media deletion returned unexpected result', {
+        this.logger.warn('Media deletion returned unexpected result', {
           publicId,
           result: result.result,
           duration,
         });
       }
     } catch (error) {
-      logger.error('Media deletion failed', {
+      this.logger.error('Media deletion failed', {
         publicId,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
@@ -222,7 +229,7 @@ export class CloudinaryMediaService implements IMediaService {
   ): Promise<Express.Multer.File> {
     // TODO: Implement image optimization using sharp or similar library
     // This would resize, compress, and optimize images before upload
-    logger.debug('Image optimization not yet implemented', {
+    this.logger.debug('Image optimization not yet implemented', {
       fileName: file.originalname,
       fileSize: file.size,
     });
@@ -234,7 +241,7 @@ export class CloudinaryMediaService implements IMediaService {
       const result = await cloudinary.api.resource(publicId);
       return result;
     } catch (error) {
-      logger.error('Failed to get media info', {
+      this.logger.error('Failed to get media info', {
         publicId,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
@@ -257,7 +264,7 @@ export class CloudinaryMediaService implements IMediaService {
       });
       return url;
     } catch (error) {
-      logger.error('Failed to generate signed URL', {
+      this.logger.error('Failed to generate signed URL', {
         publicId,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
@@ -299,7 +306,7 @@ export class CloudinaryMediaService implements IMediaService {
       );
 
       // Log upload request for monitoring
-      logger.debug(
+      this.logger.debug(
         `Upload signature generated for user ${userId}, type: ${uploadType}`
       );
 
@@ -323,7 +330,7 @@ export class CloudinaryMediaService implements IMediaService {
         },
       };
     } catch (error: any) {
-      logger.error('Upload signature generation error:', { error });
+      this.logger.error('Upload signature generation error:', { error });
       throw error;
     }
   }

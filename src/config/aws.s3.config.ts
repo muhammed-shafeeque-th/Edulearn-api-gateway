@@ -1,5 +1,5 @@
 import { S3Client, S3ClientConfig } from '@aws-sdk/client-s3';
-import { config as appConfig } from './dev-config';
+import { config as appConfig } from './app.config';
 
 const createS3Client = (): S3Client => {
   const config: S3ClientConfig = {

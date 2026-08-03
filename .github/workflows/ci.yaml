@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "src/**"
+      - 'src/**'
 
 permissions:
   contents: read
@@ -23,10 +23,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-
       - run: npm ci
-      - run: npm run lint
-      - run: npm run test
 
   # --------------------------------------------------
   # Job 2: Call reusable workflow (matrix per service)

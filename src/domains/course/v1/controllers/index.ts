@@ -1,2 +1,2 @@
-export * from "./category.controller"
-export * from "./course.controller"
+export * from './category.controller';
+export * from './course.controller';

@@ -25,24 +25,29 @@ import {
   ChatsListResponse,
   ListInstructorChatsRequest,
   OnlineUsersResponse,
+  DiscussionRoomResponse,
+  SendDiscussionMessageRequest,
+  DiscussionMessageResponse,
+  GetDiscussionMessagesRequest,
+  GetDiscussionMessagesListResponse,
+  CreateDiscussionRoomRequest,
 } from './proto/generated/chat_service';
-import { config } from 'config';
+import { config } from '@/config';
 
+import { injectable } from 'inversify';
+import { getProtoPath } from '@edulearn/core';
+
+@injectable()
 export class ChatService {
   private readonly client: GrpcClient<ChatServiceClient>;
   private static instance: ChatService;
 
-  private constructor() {
+  public constructor() {
     const [host = 'localhost', port = '50059'] =
       config.grpc.services.chatService.split(':');
 
     this.client = new GrpcClient({
-      protoPath: path.join(
-        process.cwd(),
-        'proto',
-        'chat',
-        'chat_service.proto'
-      ),
+      protoPath: path.join(getProtoPath('chat')),
       packageName: 'chat_service',
       serviceName: 'ChatService',
       host,
@@ -50,7 +55,7 @@ export class ChatService {
     });
   }
 
-  // Singleton pattern
+  // Singleton pattern (Deprecated)
   public static getInstance(): ChatService {
     if (!ChatService.instance) {
       ChatService.instance = new ChatService();
@@ -233,6 +238,42 @@ export class ChatService {
       options
     );
     return response as ChatResponse;
+  }
+
+  async createOrGetDiscussionRoom(
+    request: CreateDiscussionRoomRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<DiscussionRoomResponse> {
+    const response = await this.client.unaryCall(
+      'createOrGetDiscussionRoom',
+      request,
+      options
+    );
+    return response as DiscussionRoomResponse;
+  }
+
+  async sendDiscussionMessage(
+    request: SendDiscussionMessageRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<DiscussionMessageResponse> {
+    const response = await this.client.unaryCall(
+      'sendDiscussionMessage',
+      request,
+      options
+    );
+    return response as DiscussionMessageResponse;
+  }
+
+  async getDiscussionMessages(
+    request: GetDiscussionMessagesRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<GetDiscussionMessagesListResponse> {
+    const response = await this.client.unaryCall(
+      'getDiscussionMessages',
+      request,
+      options
+    );
+    return response as GetDiscussionMessagesListResponse;
   }
 
   close() {

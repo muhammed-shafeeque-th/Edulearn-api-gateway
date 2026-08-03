@@ -1,11 +1,8 @@
-import { UserService } from '../../../service-clients/user';
 import { Request, Response } from 'express';
 import validateSchema from '../../../../services/security/validate-schema';
 
 import { HttpStatus } from '@/shared/constants/http-status';
 import { ResponseWrapper } from '@/shared/utils/response-wrapper';
-import { NotificationService } from '@/domains/service-clients/notification';
-import { CourseService } from '@/domains/service-clients/course';
 import { Observe } from '@/services/observability/decorators';
 import { PaymentService } from '@/domains/service-clients/payment';
 import { attachMetadata } from '../utils/attach-metadata';
@@ -26,15 +23,15 @@ import { TYPES } from '@/services/di';
 export class PaymentController {
   constructor(
     @inject(TYPES.PaymentService) private paymentServiceClient: PaymentService
-  ) { }
+  ) {}
 
   async createPayment(req: Request, res: Response) {
     const validPayload = validateSchema(
       {
         ...req.body,
         userId: req.user?.userId,
-        idempotencyKey:
-          req.headers['idempotency-key'] ?? req.headers['x-request-id'],
+        // Keep userId as idempotency key
+        idempotencyKey: req.user?.userId ?? req.headers['idempotency-key'],
       },
       createPaymentSchema
     )!;
@@ -49,12 +46,7 @@ export class PaymentController {
 
     return new ResponseWrapper(res)
       .status(PAYMENT_MESSAGES.PAYMENT_CREATED.statusCode)
-      .success(
-        {
-          ...success,
-        },
-        PAYMENT_MESSAGES.PAYMENT_CREATED.message
-      );
+      .success(success, PAYMENT_MESSAGES.PAYMENT_CREATED.message);
   }
 
   async createProviderSession(req: Request, res: Response) {
@@ -73,8 +65,6 @@ export class PaymentController {
         options: { deadline: Date.now() + 60_000 },
       }
     );
-
-    console.log('Provider session :' + JSON.stringify(success, null, 2));
 
     return new ResponseWrapper(res).status(HttpStatus.OK).success(
       {
@@ -153,15 +143,14 @@ export class PaymentController {
   }
 
   async refundPayment(req: Request, res: Response) {
-    //TODO: Implementation for future
+    //TODO
     return new ResponseWrapper(res)
       .status(PAYMENT_MESSAGES.PAYMENT_REFUNDED.statusCode)
       .success({}, PAYMENT_MESSAGES.PAYMENT_REFUNDED.message);
   }
 
-  
   async updatePaymentStatus(req: Request, res: Response) {
-    //TODO: Implementation for future
+    //TODO
     return new ResponseWrapper(res)
       .status(PAYMENT_MESSAGES.PAYMENT_STATUS_UPDATED.statusCode)
       .success({}, PAYMENT_MESSAGES.PAYMENT_STATUS_UPDATED.message);

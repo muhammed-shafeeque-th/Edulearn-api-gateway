@@ -2,43 +2,47 @@ import { asyncHandler } from '@/shared/utils/async-handler';
 import { cacheMiddleware } from '@/middlewares/cache.middleware';
 import { NotificationController } from '../controllers';
 import { Router } from 'express';
-import { container, TYPES } from '@/services/di';
+import { container } from '@/services/di/di.config';
+import { TYPES } from '@/services/di';
+import { notificationEndpoints } from './route.constants';
 
 const router = Router();
 
-const notificationController = container.get<NotificationController>(TYPES.NotificationController);
+const notificationController = container.get<NotificationController>(
+  TYPES.NotificationController
+);
 
 //  ============================================================================
 //                               CART ROUTES
 //  ============================================================================
 
 router.get(
-  '/',
+  notificationEndpoints.base,
   asyncHandler(
     notificationController.getNotifications.bind(notificationController)
   )
 );
 
 router.get(
-  '/:notificationId',
+  notificationEndpoints.notification,
   asyncHandler(
     notificationController.getNotification.bind(notificationController)
   )
 );
 router.delete(
-  '/:notificationId',
+  notificationEndpoints.notification,
   asyncHandler(
     notificationController.deleteNotification.bind(notificationController)
   )
 );
 
 router.patch(
-  '/:notificationId/read',
+  notificationEndpoints.read,
   asyncHandler(notificationController.markAsRead.bind(notificationController))
 );
 
 router.patch(
-  '/read-all',
+  notificationEndpoints.readAll,
   asyncHandler(
     notificationController.markAllAsRead.bind(notificationController)
   )

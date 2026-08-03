@@ -19,7 +19,6 @@ import { attachCookies, clearCookies } from '../utils/manage-cookies';
 import { resetPasswordSchema } from '../schemas/reset-password.schema';
 import { attachMetadata } from '../utils/attach-metadata';
 import { AUTH_MESSAGES } from '../utils/resposne-messages';
-import { Trace, MonitorGrpc } from '@/services/decorators/decorators';
 import { TYPES } from '@/services/di';
 import { emailAvailabilitySchema } from '@/domains/admin/v1/schemas/email-availability.schema';
 import { Observe } from '@/services/observability/decorators';
@@ -49,7 +48,6 @@ export class AuthController {
     return this._emailAvailabilityService;
   }
 
-  // @Trace('AuthController.registerUser')
   // @MonitorGrpc('AuthService', 'RegisterUser')
   async registerUser(req: Request, res: Response) {
     this.logger.info(`Processing grpc method 'registerUser'`);
@@ -119,7 +117,6 @@ export class AuthController {
     res.status(200).json({ csrfToken: token });
   }
 
-  // @Trace('AuthController.changePassword')
   // @MonitorGrpc('AuthService', 'ChangePassword')
   async changePassword(req: Request, res: Response) {
     const { currentPassword, newPassword, userId } = validateSchema(
@@ -137,7 +134,6 @@ export class AuthController {
       .success({ updated: true }, AUTH_MESSAGES.CHANGE_PASSWORD.message);
   }
 
-  // @Trace('AuthController.resetPassword')
   // @MonitorGrpc('AuthService', 'ResetPassword')
   async resetPassword(req: Request, res: Response) {
     const schemaResponse = validateSchema(
@@ -154,7 +150,6 @@ export class AuthController {
       .success({ updated: true }, AUTH_MESSAGES.RESET_PASSWORD.message);
   }
 
-  // @Trace('AuthController.forgotPassword')
   // @MonitorGrpc('AuthService', 'ForgotPassword')
   async forgotPassword(req: Request, res: Response) {
     const schemaResponse = validateSchema(req.body, forgotPasswordSchema)!;
@@ -171,7 +166,6 @@ export class AuthController {
       .success({ updated: true }, AUTH_MESSAGES.FORGOT_PASSWORD.message);
   }
 
-  // @Trace('AuthController.oauthSign')
   // @MonitorGrpc('AuthService', 'Auth2Sign')
   async oauthSign(req: Request, res: Response) {
     const { provider, token, authType } = validateSchema(
@@ -190,7 +184,6 @@ export class AuthController {
       .success(serverResponse, AUTH_MESSAGES.OAUTH_SIGN.message);
   }
 
-  // @Trace('AuthController.checkEmailAvailability')
   async checkEmailAvailability(req: Request, res: Response) {
     const { email } = validateSchema(req.query, emailAvailabilitySchema)!;
 
@@ -206,7 +199,6 @@ export class AuthController {
       );
   }
 
-  // @Trace('AuthController.resendOtp')
   // @MonitorGrpc('NotificationService', 'SendOtp')
   async resendOtp(req: Request, res: Response) {
     const { email, userId, username } = validateSchema(
@@ -225,7 +217,6 @@ export class AuthController {
       .success({}, AUTH_MESSAGES.RESEND_OTP.message);
   }
 
-  // @Trace('AuthController.verifyUser')
   // @MonitorGrpc('AuthService', 'VerifyUser')
   async verifyUser(req: Request, res: Response) {
     const { email, code } = validateSchema(req.body, VerifyUserSchema)!;
@@ -259,7 +250,6 @@ export class AuthController {
       );
   }
 
-  // @Trace('AuthController.loginUser')
   // @MonitorGrpc('AuthService', 'LoginUser')
   async loginUser(req: Request, res: Response) {
     const { email, password, rememberMe } = validateSchema(
@@ -283,7 +273,6 @@ export class AuthController {
       );
   }
 
-  // @Trace('AuthController.logoutUser')
   // @MonitorGrpc('AuthService', 'LogoutUser')
   async logoutUser(req: Request, res: Response) {
     const { userId } = validateSchema(req.user, LogoutUserSchema)!;
@@ -300,7 +289,6 @@ export class AuthController {
       .success(serverResponse, AUTH_MESSAGES.LOGOUT_USER.message);
   }
 
-  // @Trace('AuthController.refreshToken')
   // @MonitorGrpc('AuthService', 'RefreshToken')
   async refreshToken(req: Request, res: Response) {
     const { refreshToken } = validateSchema(

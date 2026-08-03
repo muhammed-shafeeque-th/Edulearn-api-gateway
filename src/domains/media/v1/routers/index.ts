@@ -3,20 +3,22 @@ import { Router } from 'express';
 import { authGuard } from '@/middlewares/auth.middleware';
 import { Permissions } from '@/shared/types';
 import { MediaController } from '../controllers';
-import { container, TYPES } from '@/services/di';
+import { container } from '@/services/di/di.config';
+import { TYPES } from '@/services/di';
+import { mediaEndpoints } from './route.constants';
 
 const router = Router();
 
 const medialController = container.get<MediaController>(TYPES.MediaController);
 
 router.post(
-  '/avatar/signature',
+  mediaEndpoints.avatarSignature,
   asyncHandler(
     medialController.generateAvatarUpdateSignature.bind(medialController)
   )
 );
 router.post(
-  '/course/signature',
+  mediaEndpoints.courseSignature,
   authGuard({
     roles: ['instructor'],
     permissions: [Permissions.COURSE_CONTENT_MANAGE],
@@ -26,7 +28,7 @@ router.post(
   )
 );
 router.post(
-  '/course/secure/signature',
+  mediaEndpoints.secureCourseSignature,
   authGuard({
     permissions: [Permissions.COURSE_CONTENT_MANAGE],
   }),
@@ -35,33 +37,33 @@ router.post(
   )
 );
 router.post(
-  '/course/secure/content',
+  mediaEndpoints.viewSecureContent,
   authGuard({ permissions: [Permissions.COURSE_VIEW] }),
   asyncHandler(medialController.generateSignedCourseUrl.bind(medialController))
 );
 router.post(
-  '/course/secure/signature/multipart/init',
+  mediaEndpoints.multipartInit,
   authGuard({
     permissions: [Permissions.COURSE_CONTENT_MANAGE],
   }),
   asyncHandler(medialController.multipartSignInit.bind(medialController))
 );
 router.post(
-  '/course/secure/signature/multipart/parts',
+  mediaEndpoints.multipartParts,
   authGuard({
     permissions: [Permissions.COURSE_CONTENT_MANAGE],
   }),
   asyncHandler(medialController.multipartSignGetParts.bind(medialController))
 );
 router.post(
-  '/course/secure/signature/multipart/complete',
+  mediaEndpoints.multipartComplete,
   authGuard({
     permissions: [Permissions.COURSE_CONTENT_MANAGE],
   }),
   asyncHandler(medialController.multipartSignComplete.bind(medialController))
 );
 router.post(
-  '/course/secure/signature/multipart/abort',
+  mediaEndpoints.multipartAbort,
   authGuard({
     permissions: [Permissions.COURSE_CONTENT_MANAGE],
   }),

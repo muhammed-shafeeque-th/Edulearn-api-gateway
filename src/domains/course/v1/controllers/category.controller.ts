@@ -3,10 +3,6 @@ import { injectable, inject } from 'inversify';
 import { ResponseWrapper } from '@/shared/utils/response-wrapper';
 import { CourseService } from '@/domains/service-clients/course';
 import { TYPES } from '@/services/di';
-import { LoggingService } from '@/services/observability/logging/logging.service';
-import { TracingService } from '@/services/observability/tracing/trace.service';
-import { MetricsService } from '@/services/observability/metrics/metrics.service';
-import { Trace, MonitorGrpc } from '@/services/decorators/decorators';
 import validateSchema from '../../../../services/security/validate-schema';
 import { attachMetadata } from '../utils/attach-metadata';
 import { getAllCategoriesSchema } from '../schemas/category/get-all-categories.schema';
@@ -20,19 +16,22 @@ import { CATEGORY_MESSAGES } from '../utils/response-messages';
 import { CategoryResponseMapper } from '../utils/mappers';
 import { Observe } from '@/services/observability/decorators';
 import { config } from '@/config';
+import {
+  ILoggerService,
+  IMetricService,
+  ITraceService,
+} from '@/services/observability/interfaces';
 
 @injectable()
 @Observe({ logLevel: config.observability.logger.logLevel as 'debug' })
 export class CategoryController {
   constructor(
     @inject(TYPES.CourseService) private courseServiceClient: CourseService,
-    @inject(TYPES.LoggingService) private logger: LoggingService,
-    @inject(TYPES.TracingService) private tracer: TracingService,
-    @inject(TYPES.MetricsService) private monitor: MetricsService
+    @inject(TYPES.LoggerService) private logger: ILoggerService,
+    @inject(TYPES.TraceService) private tracer: ITraceService,
+    @inject(TYPES.MetricService) private monitor: IMetricService
   ) {}
 
-  // @Trace('CategoryController.getAllCategories')
-  // @MonitorGrpc('CourseService', 'getAllCategories')
   async getAllCategories(req: Request, res: Response) {
     const validPayload = validateSchema(
       {
@@ -75,8 +74,6 @@ export class CategoryController {
       .success(stats?.stats, CATEGORY_MESSAGES.CATEGORIES_FETCHED.message);
   }
 
-  // @Trace('CategoryController.createCategory')
-  // @MonitorGrpc('CourseService', 'createCategory')
   async createCategory(req: Request, res: Response) {
     const validPayload = validateSchema(req.body, createCategorySchema)!;
 
@@ -102,8 +99,6 @@ export class CategoryController {
       );
   }
 
-  // @Trace('CategoryController.updateCategory')
-  // @MonitorGrpc('CourseService', 'updateCategory')
   async updateCategory(req: Request, res: Response) {
     const validPayload = validateSchema(
       { ...req.body, id: req.params.id },
@@ -123,8 +118,6 @@ export class CategoryController {
       );
   }
 
-  // @Trace('CategoryController.toggleCategoryStatus')
-  // @MonitorGrpc('CourseService', 'toggleCategoryStatus')
   async toggleCategoryStatus(req: Request, res: Response) {
     const validPayload = validateSchema(
       { id: req.params.id },
@@ -144,8 +137,6 @@ export class CategoryController {
       );
   }
 
-  @Trace('CategoryController.deleteCategory')
-  @MonitorGrpc('CourseService', 'deleteCategory')
   async deleteCategory(req: Request, res: Response) {
     const validPayload = validateSchema(
       { id: req.params.id },

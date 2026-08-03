@@ -1,0 +1,16 @@
+export const enrollmentEndpoints = {
+  base: '/',
+  certificateMe: '/certificates/me',
+  certificate: '/certificates/:certificateId',
+  certificateDownload: '/certificates/:certificateId/download',
+  enrollment: '/:enrollmentId',
+  enrollmentCheck: '/:enrollmentId/check',
+  enrollmentProgress: '/:enrollmentId/progress',
+  lessonProgress: '/:enrollmentId/lessons/:lessonId/progress',
+  enrollmentReview: '/:enrollmentId/review',
+  review: '/:enrollmentId/review/:reviewId',
+  quizAttempt: '/:enrollmentId/quizzes/:quizId/attempt',
+  playbackUrl: '/:enrollmentId/lessons/:lessonId/playback/url',
+  playbackRefreshUrl: '/:enrollmentId/lessons/:lessonId/playback/url/refresh',
+  enrollmentCertificate: '/:enrollmentId/certificate',
+} as const;

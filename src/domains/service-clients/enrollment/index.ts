@@ -1,7 +1,7 @@
 import path from 'path';
 import { GrpcClient } from '@/shared/utils/grpc/client';
 import { GrpcClientOptions } from '@/shared/utils/grpc/types';
-import { config } from 'config';
+import { config } from '@/config';
 import {
   CheckEnrollmentRequest,
   CheckEnrollmentResponse,
@@ -63,6 +63,8 @@ import {
   GetInstructorCourseEnrollmentSummeryResponse,
   GetInstructorCourseEnrollmentTrendRequest,
   GetInstructorCourseEnrollmentTrendResponse,
+  GetInstructorCourseRevenueSummeryRequest,
+  GetInstructorCourseRevenueSummeryResponse,
   GetInstructorCoursesEnrollmentSummeryRequest,
   GetInstructorCoursesEnrollmentSummeryResponse,
   GetMonthlyCoursesEnrollmentStatsRequest,
@@ -72,6 +74,7 @@ import {
 } from '../course/proto/generated/course/types/stats';
 
 import { injectable } from 'inversify';
+import { getProtoPath, PROTO_ROOT_DIR } from '@edulearn/core';
 
 @injectable()
 export class EnrollmentService {
@@ -83,12 +86,7 @@ export class EnrollmentService {
       config.grpc.services.courseService.split(':');
 
     this.client = new GrpcClient({
-      protoPath: path.join(
-        process.cwd(),
-        'proto',
-        'course',
-        'course_service.proto'
-      ),
+      protoPath: path.join(getProtoPath('course')),
       packageName: 'course_service',
       serviceName: 'EnrollmentService',
       // // To use mTLS/SSL credentials, import grpc and configure certificates like so:
@@ -102,7 +100,7 @@ export class EnrollmentService {
       host,
       port: parseInt(port),
       loaderOptions: {
-        includeDirs: [path.join(process.cwd(), 'proto', 'course')],
+        includeDirs: [path.join(PROTO_ROOT_DIR, 'course')],
       },
     });
   }
@@ -417,6 +415,17 @@ export class EnrollmentService {
       options
     );
     return response as GetInstructorCourseEnrollmentSummeryResponse;
+  }
+  async getInstructorCourseRevenueSummery(
+    request: GetInstructorCourseRevenueSummeryRequest,
+    options: GrpcClientOptions = {}
+  ): Promise<GetInstructorCourseRevenueSummeryResponse> {
+    const response = await this.client.unaryCall(
+      'getInstructorCourseRevenueSummery',
+      request,
+      options
+    );
+    return response as GetInstructorCourseRevenueSummeryResponse;
   }
 
   async getInstructorCourseEnrollmentTrend(
