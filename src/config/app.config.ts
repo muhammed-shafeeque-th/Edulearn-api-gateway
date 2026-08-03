@@ -2,8 +2,8 @@ import dotenv from 'dotenv';
 
 // Only enable debug mode in development
 if (process.env.NODE_ENV === 'development') {
+  dotenv.config({ debug: true });
 }
-dotenv.config({ debug: true });
 
 export const config = {
   port: (process.env.PORT as string) || 4000,
