@@ -26,15 +26,15 @@ import { TYPES } from '@/services/di';
 export class PaymentController {
   constructor(
     @inject(TYPES.PaymentService) private paymentServiceClient: PaymentService
-  ) { }
+  ) {}
 
   async createPayment(req: Request, res: Response) {
     const validPayload = validateSchema(
       {
         ...req.body,
         userId: req.user?.userId,
-        idempotencyKey:
-          req.headers['idempotency-key'] ?? req.headers['x-request-id'],
+        // Keep userId as idempotency key
+        idempotencyKey: req.user?.userId ?? req.headers['idempotency-key'],
       },
       createPaymentSchema
     )!;
@@ -49,12 +49,7 @@ export class PaymentController {
 
     return new ResponseWrapper(res)
       .status(PAYMENT_MESSAGES.PAYMENT_CREATED.statusCode)
-      .success(
-        {
-          ...success,
-        },
-        PAYMENT_MESSAGES.PAYMENT_CREATED.message
-      );
+      .success(success, PAYMENT_MESSAGES.PAYMENT_CREATED.message);
   }
 
   async createProviderSession(req: Request, res: Response) {
@@ -159,7 +154,6 @@ export class PaymentController {
       .success({}, PAYMENT_MESSAGES.PAYMENT_REFUNDED.message);
   }
 
-  
   async updatePaymentStatus(req: Request, res: Response) {
     //TODO: Implementation for future
     return new ResponseWrapper(res)
