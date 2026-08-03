@@ -11,7 +11,7 @@ export class AccountAccessService {
   private static instance: AccountAccessService;
 
   public constructor(
-    @inject(TYPES.RedisService) private readonly redisService: RedisService
+    @inject(TYPES.CacheService) private readonly redisService: RedisService
   ) {
     this.redisClient = redisService.getClient();
   }
@@ -47,7 +47,12 @@ export class AccountAccessService {
     role?: string,
     ttlSeconds: number = AccountAccessService.DEFAULT_TTL_SECONDS
   ): Promise<void> {
-    await this.redisClient.set(this.getBlockKey(userId, role), '1', 'EX', ttlSeconds);
+    await this.redisClient.set(
+      this.getBlockKey(userId, role),
+      '1',
+      'EX',
+      ttlSeconds
+    );
   }
 
   /**
@@ -74,8 +79,13 @@ export class AccountAccessService {
    * @param role Optional. The specific role to check.
    * @returns True if the user/role is blocked, false otherwise.
    */
-  public async isUserRoleBlocked(userId: string, role?: string): Promise<boolean> {
-    const exists = await this.redisClient.exists(this.getBlockKey(userId, role));
+  public async isUserRoleBlocked(
+    userId: string,
+    role?: string
+  ): Promise<boolean> {
+    const exists = await this.redisClient.exists(
+      this.getBlockKey(userId, role)
+    );
     return exists === 1;
   }
 
