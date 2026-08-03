@@ -13,6 +13,7 @@ import {
   ToggleWishlistItemRequest,
   ToggleWishlistItemResponse,
 } from '../user/proto/generated/user/types/wishlist_types';
+import { getProtoPath, PROTO_ROOT_DIR } from '@edulearn/core';
 export class WishlistService {
   private readonly client: GrpcClient<WishlistServiceClient>;
   private static instance: WishlistService;
@@ -22,18 +23,13 @@ export class WishlistService {
       config.grpc.services.userServiceClient.split(':');
 
     this.client = new GrpcClient({
-      protoPath: path.join(
-        process.cwd(),
-        'proto',
-        'user',
-        'user_service.proto'
-      ),
+      protoPath: path.join(getProtoPath('user')),
       packageName: 'user_service',
       serviceName: 'WishlistService',
       host,
       port: parseInt(port),
       loaderOptions: {
-        includeDirs: [path.join(process.cwd(), 'proto', 'user')],
+        includeDirs: [path.join(PROTO_ROOT_DIR, 'user')],
       },
     });
   }

@@ -9,34 +9,36 @@ import {
   GetWalletTransactionsRequest,
   GetWalletTransactionsResponse,
 } from '../user/proto/generated/user/types/user_wallet_types';
-import { GetInstructorRevenueSummeryRequest, GetInstructorRevenueSummeryResponse } from '../user/proto/generated/user/types/stats_types';
+import {
+  GetInstructorRevenueSummeryRequest,
+  GetInstructorRevenueSummeryResponse,
+} from '../user/proto/generated/user/types/stats_types';
 
+import { injectable } from 'inversify';
+import { getProtoPath, PROTO_ROOT_DIR } from '@edulearn/core';
+
+@injectable()
 export class WalletService {
   private readonly client: GrpcClient<WalletServiceClient>;
   private static instance: WalletService;
 
-  private constructor() {
+  public constructor() {
     const [host = 'localhost', port = '50052'] =
       config.grpc.services.userServiceClient.split(':');
 
     this.client = new GrpcClient({
-      protoPath: path.join(
-        process.cwd(),
-        'proto',
-        'user',
-        'user_service.proto'
-      ),
+      protoPath: path.join(getProtoPath('user')),
       packageName: 'user_service',
       serviceName: 'WalletService',
       host,
       port: parseInt(port),
       loaderOptions: {
-        includeDirs: [path.join(process.cwd(), 'proto', 'user')],
+        includeDirs: [path.join(PROTO_ROOT_DIR, 'user')],
       },
     });
   }
 
-  // Singleton pattern
+  // Singleton pattern (Deprecated)
   public static getInstance(): WalletService {
     if (!WalletService.instance) {
       WalletService.instance = new WalletService();
@@ -54,9 +56,7 @@ export class WalletService {
     }
   }
 
-
-
-  // User wallet methods 
+  // User wallet methods
   async getUserWallet(
     request: GetUserWalletRequest,
     options: GrpcClientOptions = {}
@@ -92,8 +92,6 @@ export class WalletService {
     );
     return response as GetInstructorRevenueSummeryResponse;
   }
-
-
 
   close() {
     this.client.close();

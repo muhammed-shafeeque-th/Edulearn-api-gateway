@@ -47,6 +47,7 @@ import {
 } from './proto/generated/user/types/stats_types';
 
 import { injectable } from 'inversify';
+import { getProtoPath, PROTO_ROOT_DIR } from '@edulearn/core';
 
 @injectable()
 export class UserService {
@@ -58,18 +59,13 @@ export class UserService {
       config.grpc.services.userServiceClient.split(':');
 
     this.client = new GrpcClient({
-      protoPath: path.join(
-        process.cwd(),
-        'proto',
-        'user',
-        'user_service.proto'
-      ),
+      protoPath: path.join(getProtoPath('user')),
       packageName: 'user_service',
       serviceName: 'UserService',
       host,
       port: parseInt(port),
       loaderOptions: {
-        includeDirs: [path.join(process.cwd(), 'proto', 'user')],
+        includeDirs: [path.join(PROTO_ROOT_DIR, 'user')],
       },
     });
   }
@@ -162,19 +158,26 @@ export class UserService {
     return response as UpdateUserDetailsResponse;
   }
 
-
   async blockAccount(
     request: BlockAccountRequest,
     options: GrpcClientOptions = {}
   ): Promise<BlockAccountResponse> {
-    const response = await this.client.unaryCall('blockAccount', request, options);
+    const response = await this.client.unaryCall(
+      'blockAccount',
+      request,
+      options
+    );
     return response as BlockAccountResponse;
   }
   async unBlockAccount(
     request: UnBlockAccountRequest,
     options: GrpcClientOptions = {}
   ): Promise<UnBlockAccountResponse> {
-    const response = await this.client.unaryCall('unBlockAccount', request, options);
+    const response = await this.client.unaryCall(
+      'unBlockAccount',
+      request,
+      options
+    );
     return response as UnBlockAccountResponse;
   }
 
@@ -182,14 +185,22 @@ export class UserService {
     request: BlockInstructorRequest,
     options: GrpcClientOptions = {}
   ): Promise<BlockInstructorResponse> {
-    const response = await this.client.unaryCall('blockInstructor', request, options);
+    const response = await this.client.unaryCall(
+      'blockInstructor',
+      request,
+      options
+    );
     return response as BlockInstructorResponse;
   }
   async unBlockInstructor(
     request: UnBlockInstructorRequest,
     options: GrpcClientOptions = {}
   ): Promise<UnBlockInstructorResponse> {
-    const response = await this.client.unaryCall('unBlockInstructor', request, options);
+    const response = await this.client.unaryCall(
+      'unBlockInstructor',
+      request,
+      options
+    );
     return response as UnBlockInstructorResponse;
   }
 
