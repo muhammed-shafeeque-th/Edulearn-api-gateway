@@ -18,7 +18,8 @@
       "@/middlewares/*": ["./src/middlewares/*"],
       "@/services/*": ["./src/services/*"],
       "@/routes/*": ["./src/routes/*"],
-      "@/domains/*": ["./src/domains/*"]
+      "@/domains/*": ["./src/domains/*"],
+      "src/*": ["./src"]
     },
     "typeRoots": ["node_modules/@types", "./src/shared/types"],
 
@@ -47,7 +48,11 @@
     "sourceMap": true
   },
 
-  "include": ["src/**/*", "test/**/*"],
+  "include": [
+    "src/**/*",
+    "tests/**/*",
+    "../edulearn-node-sdk/src/utils/retryable.ts"
+  ],
 
   "exclude": ["node_modules", "dist"]
 }
