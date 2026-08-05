@@ -9,8 +9,6 @@
 
     "rootDir": ".",
 
-    "baseUrl": ".",
-
     "paths": {
       "@/*": ["./src/*"],
       "@/config/*": ["./src/config/*"],
