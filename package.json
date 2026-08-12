@@ -1,5 +1,5 @@
 {
-  "name": "api-gateway",
+  "name": "edulearn-api-gateway",
   "version": "1.0.0",
   "description": "EduLearn API Gateway - Microservices gateway with authentication, rate limiting, and observability",
   "main": "dist/index.js",
