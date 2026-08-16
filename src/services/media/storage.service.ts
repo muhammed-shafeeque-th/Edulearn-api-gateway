@@ -512,7 +512,7 @@ export class S3StorageService {
       }
 
       const result: CompleteMultipartResult = {
-        url: `https://${this.config.bucket}.s3.${this.config.region}.amazonaws.com/${key}`,
+        url: `${config.appAssetsUrl}/${key}`,
         location: response.Location,
         etag: response.ETag?.replace(/"/g, '') || '',
       };
