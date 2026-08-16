@@ -16,7 +16,7 @@ export const getAccessTokenOptions = (token?: string): ITokenOptions => {
     maxAge: maxAge,
     sameSite: 'none',
     secure: true,
-    path: '/',
+    path: config.appBaseDomain,
   } as ITokenOptions;
 
   return cookie;
@@ -37,7 +37,7 @@ export const getRefreshTokenOptions = (token?: string): ITokenOptions => {
     sameSite: 'none',
     secure: true,
     // path: '/api/v1/auth',
-    path: '/',
+    path: config.appBaseDomain,
   };
 
   return cookie;
