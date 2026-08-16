@@ -18,7 +18,7 @@ export const getAdminAccessTokenOptions = (token?: string): ITokenOptions => {
     maxAge: maxAge,
     sameSite: isProduction ? 'none' : 'lax',
     secure: isProduction,
-    path: '/',
+    path: config.appBaseDomain,
   } as ITokenOptions;
 
   return cookie;
@@ -41,7 +41,7 @@ export const getAdminRefreshTokenOptions = (token?: string): ITokenOptions => {
     sameSite: isProduction ? 'none' : 'lax',
     secure: isProduction,
     // path: '/api/v1/auth',
-    path: '/',
+    path: config.appBaseDomain,
   };
 
   return cookie;
