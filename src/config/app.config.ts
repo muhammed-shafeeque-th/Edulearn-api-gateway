@@ -7,6 +7,7 @@ if (process.env.NODE_ENV === 'development') {
 
 export const config = {
   port: (process.env.PORT as string) || 4000,
+  appAssetsUrl: process.env.APP_ASSETS_URL || 'https://assets.edulearn.com',
   redis: {
     host: process.env.REDIS_HOST as string,
     cluster: process.env.IS_CLUSTER as string,
@@ -71,7 +72,8 @@ export const config = {
   observability: {
     tracer: {
       samplingRate: process.env.TRACE_SAMPLING_RATE,
-      collectorUrl: process.env.OTLP_ENDPOINT ?? "http://otel-collector:8473/api/traces",
+      collectorUrl:
+        process.env.OTLP_ENDPOINT ?? 'http://otel-collector:8473/api/traces',
     },
     metrics: {
       path: process.env.METRICS_PATH,

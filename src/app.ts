@@ -115,11 +115,11 @@ export class GatewayApplication {
     }
   }
 
-  private registerRoutes(): void {
+  private async registerRoutes(): Promise<void> {
     try {
       this.server.use('/api/v1', routerV1);
 
-      this._metricEngine.start();
+      await this._metricEngine.start();
 
       // // 404 handler
       // this.server.use('*', (req, res) => {
