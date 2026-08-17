@@ -32,7 +32,8 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
  */
 const EXEMPT_PATHS = new Set([
   '/api/v1/auth/csrf-token',
-
+  '/api/v1/auth/refresh',
+  '/api/v1/auth/logout',
   '/metrics',
   '/health',
   '/live',

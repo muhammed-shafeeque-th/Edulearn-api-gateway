@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
-import { CSRF_COOKIE_NAME, CSRF_HEADER_NAME } from '@/services/auth-token';
+import { CSRF_COOKIE_NAME, CSRF_HEADER_NAME } from '@/shared/constants/security.constance';
 
 /**
  * CSRF-safe methods — no token needed for read-only requests
