@@ -2,7 +2,7 @@ import { config } from '@/config';
 import { ITokenOptions } from '@/services/auth-token';
 import { decode } from 'jsonwebtoken';
 
-export const getAccessTokenOptions = (token?: string): ITokenOptions => {
+export const baseTokenOptions = (token?: string): ITokenOptions => {
   let expiresAtDate, maxAge;
   if (token) {
     const jwtPayload: any = decode(token);
@@ -16,29 +16,21 @@ export const getAccessTokenOptions = (token?: string): ITokenOptions => {
     maxAge: maxAge,
     sameSite: 'none',
     secure: true,
-    path: config.appBaseDomain,
+    domain: config.appBaseDomain,
+    path: '/',
   } as ITokenOptions;
 
   return cookie;
 };
 
 export const getRefreshTokenOptions = (token?: string): ITokenOptions => {
-  let expiresAtDate, maxAge;
-  if (token) {
-    const jwtPayload: any = decode(token);
-    expiresAtDate = new Date(jwtPayload.exp * 1000);
-    maxAge = (jwtPayload.exp - jwtPayload.iat) * 1000;
-  }
-
-  const cookie: ITokenOptions = {
-    expires: expiresAtDate,
-    httpOnly: true || config.nodeEnv === 'production',
-    maxAge: maxAge,
-    sameSite: 'none',
-    secure: true,
-    // path: '/api/v1/auth',
-    path: config.appBaseDomain,
+  return {
+    ...baseTokenOptions(token),
+    // Optional: /api/v1/auth/refresh
+    path: '/',
   };
+};
 
-  return cookie;
+export const getAccessTokenOptions = (token?: string): ITokenOptions => {
+  return baseTokenOptions(token);
 };
