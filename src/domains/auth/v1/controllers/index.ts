@@ -103,18 +103,25 @@ export class AuthController {
       token = this._generateCsrfToken();
     }
 
-    // SameSite=Strict ensures the cookie is only sent on same-site requests.
-    // HttpOnly=false so that JS can read it and forward it as a header.
-    // __Host- prefix requires Secure + no Domain + Path=/ — prevents subdomain attacks.
     res.cookie(CSRF_COOKIE_NAME, token, {
+      /**
+       * JS must be able to read this cookie
+       */
       httpOnly: false,
+
+      // Required for __Secure- cookies.
       secure: true,
-      sameSite: 'none',
+      domain: config.appBaseDomain,
       path: '/',
-      // No explicit maxAge → session cookie; will be refreshed on each app load
+
+      // app.edulearn.com -> api.edulearn.com  is same-site.
+      sameSite: 'lax',
     });
 
-    res.status(200).json({ csrfToken: token });
+    res.status(200).json({
+      success: true,
+      csrfToken: token,
+    });
   }
 
   // @MonitorGrpc('AuthService', 'ChangePassword')

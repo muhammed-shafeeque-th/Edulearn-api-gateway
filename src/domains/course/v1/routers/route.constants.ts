@@ -24,4 +24,4 @@ export const categoryEndpoints = {
   stats: '/categories/stats',
   category: '/categories/:id',
   status: '/categories/:id/toggle-status',
-};
+} as const;
