@@ -34,3 +34,19 @@ export const getRefreshTokenOptions = (token?: string): ITokenOptions => {
 export const getAccessTokenOptions = (token?: string): ITokenOptions => {
   return baseTokenOptions(token);
 };
+export const getCsrfTokenOptions = (): ITokenOptions => {
+  return {
+    /**
+     * JS must be able to read this cookie
+     */
+    httpOnly: false,
+
+    // Required for __Secure- cookies.
+    secure: true,
+    domain: config.appBaseDomain,
+    path: '/',
+
+    // app.edulearn.com -> api.edulearn.com  is same-site.
+    sameSite: 'lax',
+  };
+};

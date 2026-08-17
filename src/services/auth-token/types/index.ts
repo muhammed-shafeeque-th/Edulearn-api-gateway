@@ -1,3 +1,4 @@
+import { CookieOptions } from 'express';
 import { JwtPayload as StandardJwtPayload } from 'jsonwebtoken';
 /**
  * Custom JWT Payload extending standard claims
@@ -17,7 +18,7 @@ export interface TokenPayload extends StandardJwtPayload {
 /**
  * Cookie options interface
  */
-export interface CookieOptions {
+export interface CookOptions extends CookieOptions {
   expires?: Date;
   httpOnly?: boolean;
   maxAge?: number;

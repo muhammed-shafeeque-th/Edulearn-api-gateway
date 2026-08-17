@@ -23,9 +23,11 @@ import { TYPES } from '@/services/di';
 import { emailAvailabilitySchema } from '@/domains/admin/v1/schemas/email-availability.schema';
 import { Observe } from '@/services/observability/decorators';
 import { config } from '@/config';
-import { CSRF_COOKIE_NAME } from '@/services/auth-token';
 import { randomBytes } from 'node:crypto';
 import { ILoggerService } from '@/services/observability/interfaces/logger.service';
+import { CSRF_COOKIE_NAME } from '@/shared/constants/security.constance';
+import { generateCsrfToken } from '@/middlewares/csrf.middleware';
+import { getCsrfTokenOptions } from '../utils/token-options';
 
 @injectable()
 @Observe({ logLevel: config.observability.logger.logLevel as 'debug' })
@@ -103,20 +105,7 @@ export class AuthController {
       token = this._generateCsrfToken();
     }
 
-    res.cookie(CSRF_COOKIE_NAME, token, {
-      /**
-       * JS must be able to read this cookie
-       */
-      httpOnly: false,
-
-      // Required for __Secure- cookies.
-      secure: true,
-      domain: config.appBaseDomain,
-      path: '/',
-
-      // app.edulearn.com -> api.edulearn.com  is same-site.
-      sameSite: 'lax',
-    });
+    res.cookie(CSRF_COOKIE_NAME, token, getCsrfTokenOptions());
 
     res.status(200).json({
       success: true,
@@ -322,6 +311,6 @@ export class AuthController {
    * Generates a cryptographically secure CSRF token (64 hex chars).
    */
   private _generateCsrfToken = (): string => {
-    return randomBytes(32).toString('hex');
+    return generateCsrfToken();
   };
 }
