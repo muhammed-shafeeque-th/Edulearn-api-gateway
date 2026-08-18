@@ -44,9 +44,7 @@ export function TraceSpan(options: TraceOptions = {}): MethodDecorator {
               message: error.message,
             });
             throw error;
-          } finally {
-            span.end();
-          }
+          } 
         },
         attributes
       );
@@ -92,9 +90,7 @@ export function traceSpan(options: TraceOptions = {}): MethodDecorator {
               message: error.message,
             });
             throw error;
-          } finally {
-            span.end();
-          }
+          } 
         },
         attributes
       );
@@ -181,9 +177,7 @@ export function observe(options: ObservabilityOptions = {}): MethodDecorator {
             });
 
             throw error;
-          } finally {
-            span.end();
-          }
+          } 
         },
         attributes
       );
