@@ -11,7 +11,6 @@ import {
   GetObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { v4 as uuidv4 } from 'uuid';
 import { config } from '@/config';
 import {
   CompletedPart,
@@ -86,11 +85,11 @@ export class S3StorageService {
   private generateFileKey(metadata: FileMetadata): string {
     const sanitizedFileName = this.sanitizeFileName(metadata.fileName);
     const timestamp = new Date().toISOString().split('T')[0];
-    const uniqueId = uuidv4();
+    // const uniqueId = uuidv4();
     const fileExtension =
       metadata.fileName.split('.').pop()?.toLowerCase() || '';
 
-    return `courses/${metadata.courseId}/users/${metadata.userId}/${timestamp}/${uniqueId}/${sanitizedFileName}.${fileExtension}`;
+    return `courses/${metadata.courseId}/${timestamp}/${sanitizedFileName}.${fileExtension}`;
   }
 
   /**
@@ -168,7 +167,8 @@ export class S3StorageService {
         expiresIn,
       });
 
-      const fileUrl = `https://${config.s3.bucketName}.s3.${config.s3.region}.amazonaws.com/${key}`;
+      // const fileUrl = `https://${config.s3.bucketName}.s3.${config.s3.region}.amazonaws.com/${key}`;
+      const fileUrl = `${config.appAssetsUrl}/${key}`;
 
       const result: PresignedUploadResult = {
         uploadUrl,
@@ -333,7 +333,8 @@ export class S3StorageService {
         });
       }
 
-      const fileUrl = `https://${this.config.bucket}.s3.${this.config.region}.amazonaws.com/${key}`;
+      // const fileUrl = `https://${this.config.bucket}.s3.${this.config.region}.amazonaws.com/${key}`;
+      const fileUrl = `${config.appAssetsUrl}/${key}`;
 
       const result: MultipartUploadResult = {
         uploadId,
