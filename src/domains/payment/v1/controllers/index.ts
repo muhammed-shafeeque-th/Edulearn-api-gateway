@@ -31,10 +31,14 @@ export class PaymentController {
         ...req.body,
         userId: req.user?.userId,
         // Keep userId as idempotency key
-        idempotencyKey: req.user?.userId ?? req.headers['idempotency-key'],
+        idempotencyKey: req.headers['idempotency-key'],
       },
       createPaymentSchema
     )!;
+    console.log(
+      'CreatePayment request : ',
+      JSON.stringify(validPayload, null, 2)
+    );
 
     const { success } = await this.paymentServiceClient.createPayment(
       validPayload,
@@ -43,6 +47,8 @@ export class PaymentController {
         options: { deadline: Date.now() + 60_000 },
       }
     );
+
+    console.log('CreatePayment Response : ', JSON.stringify(success, null, 2));
 
     return new ResponseWrapper(res)
       .status(PAYMENT_MESSAGES.PAYMENT_CREATED.statusCode)
