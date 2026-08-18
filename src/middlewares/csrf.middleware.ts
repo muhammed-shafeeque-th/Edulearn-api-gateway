@@ -34,6 +34,7 @@ const EXEMPT_PATHS = new Set([
   '/api/v1/auth/csrf-token',
   '/api/v1/auth/refresh',
   '/api/v1/auth/logout',
+  '/api/v1/admin/auth/refresh',
   '/metrics',
   '/health',
   '/live',
