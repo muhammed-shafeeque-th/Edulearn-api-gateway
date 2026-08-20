@@ -25,6 +25,7 @@ import { getInstructorCourseStatsSchema } from '@/domains/course/v1/schemas/cour
 import { WalletService } from '@/domains/service-clients/wallet';
 import { EnrollmentService } from '@/domains/service-clients/enrollment';
 import { CourseService } from '@/domains/service-clients/course';
+import { AuthService } from '@/domains/service-clients/auth';
 import { COURSE_MESSAGES } from '@/domains/course/v1/utils/response-messages/course-messages';
 import { getInstructorStatsSchema } from '@/domains/course/v1/schemas/course/get-instructor-stats.schema';
 import {
@@ -49,6 +50,7 @@ import {
   IMetricService,
   ITraceService,
 } from '@/services/observability/interfaces';
+import { changePasswordSchema } from '../schemas/user/change-password.schema';
 
 @injectable()
 @Observe({ logLevel: 'debug' })
@@ -56,6 +58,7 @@ export class UserController {
   private _bloomFilterService!: BloomFilterFacade;
   constructor(
     @inject(TYPES.UserService) private userServiceClient: UserService,
+    @inject(TYPES.AuthService) private authServiceClient: AuthService,
     @inject(TYPES.NotificationService)
     private notificationService: NotificationService,
     @inject(TYPES.WalletService) private walletService: WalletService,
@@ -158,6 +161,22 @@ export class UserController {
         USER_MESSAGES.CURRENT_USER_FETCHED.message
       );
   }
+
+    async changePassword(req: Request, res: Response) {
+      const { currentPassword, newPassword, userId } = validateSchema(
+        { ...req.body, userId: req.user?.userId },
+        changePasswordSchema
+      )!;
+  
+      await this.authServiceClient.changePassword(
+        { oldPassword: currentPassword, newPassword, userId },
+        { metadata: attachMetadata(req) }
+      );
+  
+      return new ResponseWrapper(res)
+        .status(USER_MESSAGES.CHANGE_PASSWORD.statusCode)
+        .success({ updated: true }, USER_MESSAGES.CHANGE_PASSWORD.message);
+    }
 
   async getUsers(req: Request, res: Response) {
     const {

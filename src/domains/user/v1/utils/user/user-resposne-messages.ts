@@ -18,6 +18,10 @@ export const USER_MESSAGES = {
     message: 'Fetched current user data successfully',
     statusCode: HttpStatus.OK,
   },
+    CHANGE_PASSWORD: {
+    message: 'Your password has been changed successfully.',
+    statusCode: HttpStatus.OK,
+  },
   USERS_FETCHED: {
     message: 'User response fetched successfully',
     statusCode: HttpStatus.OK,
