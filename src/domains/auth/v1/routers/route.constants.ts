@@ -9,6 +9,5 @@ export const authEndpoints = {
   verify: '/verify',
   resendOtp: '/resend-otp',
   resetPassword: '/reset-password',
-  changePassword: '/change-password',
   forgotPassword: '/forgot-password',
 };

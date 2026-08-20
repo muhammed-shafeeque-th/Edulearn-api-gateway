@@ -32,6 +32,7 @@ export const userEndpoints = {
   me: '/me',
   myInstructors: '/me/instructors',
   myStudents: '/me/students',
+  changePassword: '/me/change-password',
   instructors: '/instructors',
   instructorsStats: '/instructors/stats',
   instructorRegister: '/instructors/register',

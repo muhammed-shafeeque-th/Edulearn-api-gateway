@@ -105,6 +105,12 @@ router.get(
 );
 
 router.post(
+  userEndpoints.changePassword,
+  authGuard(),
+  asyncHandler(userController.changePassword.bind(userController))
+);
+
+router.post(
   userEndpoints.instructorRegister,
   authGuard(),
   blocklistMiddleware,

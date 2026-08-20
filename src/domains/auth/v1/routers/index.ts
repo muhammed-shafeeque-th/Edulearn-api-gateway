@@ -75,13 +75,6 @@ router.post(
 );
 
 router.post(
-  authEndpoints.changePassword,
-  authGuard(),
-  blocklistMiddleware,
-  asyncHandler(authController.changePassword.bind(authController))
-);
-
-router.post(
   authEndpoints.forgotPassword,
   forgotPasswordRateLimiter,
   asyncHandler(authController.forgotPassword.bind(authController))

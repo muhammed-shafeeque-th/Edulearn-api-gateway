@@ -6,10 +6,7 @@ export const AUTH_MESSAGES = {
       'Registration successful. An OTP has been sent to your email address for verification.',
     statusCode: HttpStatus.CREATED,
   },
-  CHANGE_PASSWORD: {
-    message: 'Your password has been changed successfully.',
-    statusCode: HttpStatus.OK,
-  },
+
   RESET_PASSWORD: {
     message:
       'Your password has been reset successfully. You can now log in with your new password.',

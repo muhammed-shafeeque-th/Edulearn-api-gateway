@@ -11,7 +11,6 @@ import { ResendOtpSchema } from '../schemas/resend-otp.schema';
 import { Auth2SignSchema } from '../schemas/auth2-sign.schema';
 import { LogoutUserSchema } from '../schemas/logout.schema';
 import { refreshTokenSchema } from '../schemas/refresh-token.schema';
-import { changePasswordSchema } from '../schemas/change-password.schema';
 import { BloomFilterFacade } from '@/services/bloom-filter';
 import { forgotPasswordSchema } from '../schemas/forgot-password.schema';
 import { authRefreshToken } from '../utils/constants';
@@ -113,22 +112,7 @@ export class AuthController {
     });
   }
 
-  // @MonitorGrpc('AuthService', 'ChangePassword')
-  async changePassword(req: Request, res: Response) {
-    const { currentPassword, newPassword, userId } = validateSchema(
-      { ...req.body, userId: req.user?.userId },
-      changePasswordSchema
-    )!;
-
-    await this.userServiceClient.changePassword(
-      { oldPassword: currentPassword, newPassword, userId },
-      { metadata: attachMetadata(req) }
-    );
-
-    return new ResponseWrapper(res)
-      .status(AUTH_MESSAGES.CHANGE_PASSWORD.statusCode)
-      .success({ updated: true }, AUTH_MESSAGES.CHANGE_PASSWORD.message);
-  }
+  
 
   // @MonitorGrpc('AuthService', 'ResetPassword')
   async resetPassword(req: Request, res: Response) {
