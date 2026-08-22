@@ -2,19 +2,12 @@ import { UserService } from '@/domains/service-clients/user';
 import { Request, Response } from 'express';
 import validateSchema from '@/services/security/validate-schema';
 import { ResponseWrapper } from '@/shared/utils/response-wrapper';
-
-import { NotificationService } from '@/domains/service-clients/notification';
-
-import { blockUserSchema } from '../schemas/user/block-user.schema';
 import { updateUserSchema } from '../schemas/user/update-user.schema';
-import { unBlockUserSchema } from '../schemas/user/unblock-user.schema';
 import { detailedUserSchema } from '../schemas/user/get-user.schema';
-import { UserData } from '@/domains/service-clients/user/proto/generated/user/types/user_types';
 import { updateCurrentUserSchema } from '../schemas/user/update-current-user.schema';
 import { currentUserSchema } from '../schemas/user/current-user.schema';
 import { registerInstructorSchema } from '../schemas/user/register-instructor.schema';
 import { attachMetadata } from '../utils/attach-metadata';
-import { User } from '../types';
 import { USER_MESSAGES } from '../utils/user/user-resposne-messages';
 import { getUsersSchema } from '../schemas/user/get-users.schema';
 import { mapPaginationResponse } from '@/shared/utils/map-pagination';
@@ -28,27 +21,19 @@ import { CourseService } from '@/domains/service-clients/course';
 import { AuthService } from '@/domains/service-clients/auth';
 import { COURSE_MESSAGES } from '@/domains/course/v1/utils/response-messages/course-messages';
 import { getInstructorStatsSchema } from '@/domains/course/v1/schemas/course/get-instructor-stats.schema';
-import {
-  InstructorsStats,
-  UsersStats,
-} from '@/domains/service-clients/user/proto/generated/user/types/stats_types';
+import { UsersStats } from '@/domains/service-clients/user/proto/generated/user/types/stats_types';
 import { getCourseSummerySchema } from '@/domains/course/v1/schemas/course/get-course-summery.schema';
 import { RedisService } from '@/services/redis';
-import { Cache } from '@/services/decorators/cache';
-import { RESPONSE_CACHE_KEYS } from '@/services/redis/cache-keys';
 import { ADMIN_MESSAGES } from '@/domains/admin/v1/utils/resposne-messages';
 import { getInstructorsSchema } from '../schemas/user/get-instructors.schema';
 import { ChatService } from '@/domains/service-clients/chat';
 
 import { injectable, inject } from 'inversify';
-import { Trace, MonitorGrpc } from '@/services/decorators/decorators';
 import { TYPES } from '@/services/di';
 import { Observe } from '@/services/observability/decorators';
 import { BloomFilterFacade } from '@/services/bloom-filter';
 import {
   ILoggerService,
-  IMetricService,
-  ITraceService,
 } from '@/services/observability/interfaces';
 import { changePasswordSchema } from '../schemas/user/change-password.schema';
 
@@ -59,8 +44,6 @@ export class UserController {
   constructor(
     @inject(TYPES.UserService) private userServiceClient: UserService,
     @inject(TYPES.AuthService) private authServiceClient: AuthService,
-    @inject(TYPES.NotificationService)
-    private notificationService: NotificationService,
     @inject(TYPES.WalletService) private walletService: WalletService,
     @inject(TYPES.EnrollmentService)
     private enrollmentService: EnrollmentService,
@@ -68,8 +51,6 @@ export class UserController {
     @inject(TYPES.CourseService) private courseServiceClient: CourseService,
     @inject(TYPES.CacheService) private cacheService: RedisService,
     @inject(TYPES.LoggerService) private logger: ILoggerService,
-    @inject(TYPES.TraceService) private tracer: ITraceService,
-    @inject(TYPES.MetricService) private monitor: IMetricService
   ) {}
 
   private get bloomFilterService(): BloomFilterFacade {
@@ -162,21 +143,21 @@ export class UserController {
       );
   }
 
-    async changePassword(req: Request, res: Response) {
-      const { currentPassword, newPassword, userId } = validateSchema(
-        { ...req.body, userId: req.user?.userId },
-        changePasswordSchema
-      )!;
-  
-      await this.authServiceClient.changePassword(
-        { oldPassword: currentPassword, newPassword, userId },
-        { metadata: attachMetadata(req) }
-      );
-  
-      return new ResponseWrapper(res)
-        .status(USER_MESSAGES.CHANGE_PASSWORD.statusCode)
-        .success({ updated: true }, USER_MESSAGES.CHANGE_PASSWORD.message);
-    }
+  async changePassword(req: Request, res: Response) {
+    const { currentPassword, newPassword, userId } = validateSchema(
+      { ...req.body, userId: req.user?.userId },
+      changePasswordSchema
+    )!;
+
+    await this.authServiceClient.changePassword(
+      { oldPassword: currentPassword, newPassword, userId },
+      { metadata: attachMetadata(req) }
+    );
+
+    return new ResponseWrapper(res)
+      .status(USER_MESSAGES.CHANGE_PASSWORD.statusCode)
+      .success({ updated: true }, USER_MESSAGES.CHANGE_PASSWORD.message);
+  }
 
   async getUsers(req: Request, res: Response) {
     const {
@@ -397,9 +378,10 @@ export class UserController {
 
     return new ResponseWrapper(res)
       .status(COURSE_MESSAGES.COURSE_FETCHED.statusCode)
-      .success<
-        typeof mappedStats
-      >(mappedStats, COURSE_MESSAGES.COURSE_FETCHED.message);
+      .success<typeof mappedStats>(
+        mappedStats,
+        COURSE_MESSAGES.COURSE_FETCHED.message
+      );
   }
 
   async getUsersStats(req: Request, res: Response) {
