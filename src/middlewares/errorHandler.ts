@@ -114,10 +114,6 @@ export const errorHandler = async (
   ) {
     // Clear cookies if refresh fails
     clearCookies(res);
-    if (req.path.startsWith('/api/v1/auth/logout')) {
-      res.status(204);
-      return;
-    }
   }
 
   res.status(statusCode).json(errorResponse);

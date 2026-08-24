@@ -48,7 +48,7 @@ router.post(
 
 router.post(
   authEndpoints.logout,
-  authGuard(),
+  // authGuard(),
   asyncHandler(authController.logoutUser.bind(authController))
 );
 
