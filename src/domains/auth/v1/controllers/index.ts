@@ -255,18 +255,18 @@ export class AuthController {
 
   // @MonitorGrpc('AuthService', 'LogoutUser')
   async logoutUser(req: Request, res: Response) {
-    const { userId } = validateSchema(req.user, LogoutUserSchema)!;
+    // const { userId } = validateSchema(req.user, LogoutUserSchema)!;
 
-    const serverResponse = await this.userServiceClient.logoutUser({
-      userId,
-    });
-
-    const resWrap = new ResponseWrapper(res);
-    clearCookies(resWrap);
-
+    // const serverResponse = await this.userServiceClient.logoutUser({
+      //   userId,
+      // });
+      
+      const resWrap = new ResponseWrapper(res);
+      
+      clearCookies(resWrap);
     return resWrap
       .status(AUTH_MESSAGES.LOGOUT_USER.statusCode)
-      .success(serverResponse, AUTH_MESSAGES.LOGOUT_USER.message);
+      .success({}, AUTH_MESSAGES.LOGOUT_USER.message);
   }
 
   // @MonitorGrpc('AuthService', 'RefreshToken')
