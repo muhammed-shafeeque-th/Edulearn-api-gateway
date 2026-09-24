@@ -167,8 +167,7 @@ export class S3StorageService {
         expiresIn,
       });
 
-      // const fileUrl = `https://${config.s3.bucketName}.s3.${config.s3.region}.amazonaws.com/${key}`;
-      const fileUrl = `${config.appAssetsUrl}/${key}`;
+      const fileUrl = `https://${config.s3.bucketName}.s3.${config.s3.region}.amazonaws.com/${key}`;
 
       const result: PresignedUploadResult = {
         uploadUrl,
@@ -333,8 +332,7 @@ export class S3StorageService {
         });
       }
 
-      // const fileUrl = `https://${this.config.bucket}.s3.${this.config.region}.amazonaws.com/${key}`;
-      const fileUrl = `${config.appAssetsUrl}/${key}`;
+      const fileUrl = `https://${this.config.bucket}.s3.${this.config.region}.amazonaws.com/${key}`;
 
       const result: MultipartUploadResult = {
         uploadId,
